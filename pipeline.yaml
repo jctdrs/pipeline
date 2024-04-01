@@ -1,0 +1,27 @@
+meta:
+    name: Convolution pipeline
+    author: JT
+    version: 1.0
+    description: This pipeline only runs the convolution step of HIP
+
+config:
+    input_dir: Inputs
+    output_dir: Outputs
+    kernel_dir: Kernels
+
+data:
+    - body: NGC4254
+      bands:
+        - input: NGC4254_SPIRE3.fits
+          error: NGC4254_SPIRE3_Error.fits
+
+    - body: NGC4254
+      bands:
+        - input: NGC4254_SPIRE3.fits
+          error: NGC4254_SPIRE3_Error.fits
+   
+pipeline:
+    - step: hip.convolution
+      parameters:
+          target: SPIRE3
+    
