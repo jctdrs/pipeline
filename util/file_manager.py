@@ -45,8 +45,8 @@ class FileManager:
                   "Should be declared with '-'.")
             exit()
 
-        self.check_yaml_specification(self.spec)
-        self.check_file(self.spec)
+        self.check_yaml_specification()
+        self.check_file()
 
     def check_yaml_block(
         self, block_name: str, block: dict, required: dict, field_name: str = ""
@@ -66,66 +66,62 @@ class FileManager:
             print(f"[ERROR]\tField(s) in {field_name} missing: {message}.")
             exit()
 
-    def check_yaml_specification(self, spec: dict) -> None:
+    def check_yaml_specification(self) -> None:
         required_top: dict = {"config", "data", "pipeline"}
-        required_config: dict = {"input_dir", "output_dir", "kernel_dir"}
+        required_config: dict = {"parallel", "input_dir", "output_dir", "kernel_dir"}
         required_data: dict = {"body", "bands"}
         required_band: dict = {"input"}
         required_pipeline: dict = {"step"}
 
         # Check for top level keys
-        self.check_yaml_block("'specification'", spec, required_top)
+        self.check_yaml_block("'specification'", self.spec, required_top)
 
         # Check for config
-        config = spec["config"]
-        if isinstance(config, list):
-            print("[ERROR]\tFields in 'config' should be elements.") 
+        self.config = self.spec["config"]
+        if isinstance(self.config, list):
+            print("[ERROR]\t'input_dir' in 'config' should be an element.") 
             print("[HINT]\tElements are declared without a '-'.")
             exit()
         
-        self.check_yaml_block("'config'", config, required_config)
+        self.check_yaml_block("'config'", self.config, required_config, "config")
 
         # Check for data
-        data = spec["data"]
-        # Check for every body
-        for item in data:
-            self.check_yaml_block("data", item, required_data, "body")
-            # Check for every band
-            for subitem in item["bands"]:
-                self.check_yaml_block(
-                    "bands", subitem, required_band, "input"
-                )
+        self.data = self.spec["data"]
+        if isinstance(self.data, list):
+            print("[ERROR]\t'body' in 'data' should be an element.")
+            print("[HINT]\tElements are declared without a '-'.")
+            exit()
+
+        # Check for every band
+        for item in self.data["bands"]:
+            self.check_yaml_block("bands", item, required_band, "input")
 
         # Check for pipeline
-        pipe = spec["pipeline"]
+        self.pipeline = self.spec["pipeline"]
         # Check for every step
-        for item in pipe:
-            self.check_yaml_block(
-                "pipeline", item, required_pipeline, "step"
-            )
+        for item in self.pipeline:
+            self.check_yaml_block("pipeline", item, required_pipeline, "step")
 
         return
 
-    def check_file(self, spec: dict) -> None:
-        bodies: dict = spec["data"]
-        inp_dir: str = spec["config"]["input_dir"]
+    def check_file(self) -> None:
+        inp_dir: str = self.config["input_dir"]
         status: bool = True
 
         files_checked = []
         self.files_without_error = []
-        # Check that files in specification exists for all
+        # Check that files in specification exist for all
         # bodies, all bands, and all input and error files
-        for body in bodies:
-            for band in body["bands"]:
-                if "error" not in band.keys():
-                    self.files_without_error.append(f"{inp_dir}/{band['input']}")
-                for key in band.keys():
-                    filename: str = f"{inp_dir}/{band[key]}"
-                    if filename not in files_checked:
-                        if os.path.exists(filename):
-                            files_checked.append(filename)
-                        else:
-                            print(f"[ERROR]\tFile '{filename}' not found.")
-                            status = status and False
+        for band in self.data["bands"]:
+            if "error" not in band.keys():
+                self.files_without_error.append(f"{inp_dir}/{band['input']}")
+            for key in band.keys():
+                filename: str = f"{inp_dir}/{band[key]}"
+                if filename not in files_checked:
+                    if os.path.exists(filename):
+                        files_checked.append(filename)
                     else:
-                        pass
+                        print(f"[ERROR]\tFile '{filename}' not found.")
+                        status = status and False
+                else:
+                    pass

@@ -1,3 +1,5 @@
 venv/
 Inputs/
 */__pycache__/
+*.yml
+*.yaml
