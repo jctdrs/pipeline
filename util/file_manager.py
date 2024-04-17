@@ -1,25 +1,32 @@
 import yaml
 import os
+from typing import Set
+
+PIPELINE_STEP_CONFIG: dict = {"hip.convolution": {"target"}}
+
 
 class DuplicateKeyError(Exception):
     def __init__(self, key):
         self.key = key
 
+
 class UniqueKeyLoader(yaml.SafeLoader):
-     def construct_mapping(self, node, deep=False):
-         mapping = []
-         for key_node, value_node in node.value:
-             key = self.construct_object(key_node, deep=deep)
-             if key in mapping:
+    def construct_mapping(self, node, deep: bool = False):
+        mapping = []
+        for key_node, value_node in node.value:
+            key = self.construct_object(key_node, deep=deep)
+            if key in mapping:
                 raise DuplicateKeyError(key)
-             mapping.append(key)
-         return super().construct_mapping(node, deep)
+            mapping.append(key)
+        return super().construct_mapping(node, deep)
+
 
 class FileManager:
-    def __init__(self, spec_path):
+    def __init__(self, spec_path: str):
         self.spec_path = spec_path
+        self._parse()
 
-    def parse(self):
+    def _parse(self) -> None:
         # Check if specification exists
         try:
             f = open(self.spec_path, "r")
@@ -33,74 +40,89 @@ class FileManager:
             self.spec = yaml.load(f, UniqueKeyLoader)
             f.close()
         except (yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
-            line = e.problem_mark.line + 1
-            column = e.problem_mark.column + 1
-            print(
-                f"[ERROR]\tYAML parsing error at line {line}, column {column}."
-            )
+            line = e.problem_mark.line + 1  # type: ignore
+            column = e.problem_mark.column + 1  # type: ignore
+            print(f"[ERROR]\tYAML parsing error at line {line}, column {column}.")
             exit()
         except DuplicateKeyError as e:
-            print(f"[ERROR]\tDuplicate definition of \'{e.key}\'.")
-            print(f"[HINT]\tField \'{e.key}\' might be a list. " 
-                  "Should be declared with '-'.")
+            print(f"[ERROR]\tDuplicate definition of '{e.key}'.")
             exit()
 
         self.check_yaml_specification()
         self.check_file()
+        return
 
-    def check_yaml_block(
-        self, block_name: str, block: dict, required: dict, field_name: str = ""
-    ):
-        # Check that the required keys are in the specification
-        if not isinstance(block, dict):
-            print(
-                f"[ERROR]\tField \'{field_name}\' in \'{block_name}\' should "
-                "be a list."
-            )
-            print(f"[HINT]\tLists are declared with a '-'.")
+    def check_yaml_block(self, block_name: str, block: dict, required: Set[str], field_name: str = "") -> None:
+        if block is None:
+            print(f"[ERROR]\tKey '{block_name}' is empty.")
+            exit()
+
+        elif not isinstance(block, dict | set):
+            print(f"[ERROR]\tField '{field_name}' in '{block_name}' should " "be a list.")
             exit()
 
         elif not required.issubset(block):
-            missing_keys = set(required).difference(block)
+            missing_keys = required.difference(block)
             message = ", ".join(item for item in missing_keys)
-            print(f"[ERROR]\tField(s) in {field_name} missing: {message}.")
+            print(f"[ERROR]\tField(s) missing in '{block_name}': {message}.")
             exit()
+        return
+
+    def check_step(self, step: dict) -> None:
+        name: dict = step["step"]
+        if name not in PIPELINE_STEP_CONFIG:
+            print(f"[ERROR]\tPipeline step '{name}' not know.")
+            exit()
+
+        if "parameters" not in step:
+            step["parameters"] = {}
+        else:
+            pars = step["parameters"]
+            if not set(pars.keys()).issubset(PIPELINE_STEP_CONFIG[name]):
+                excess_keys = set(pars.keys()).difference(PIPELINE_STEP_CONFIG[name])
+                message = ", ".join(item for item in excess_keys)
+                print(f"[ERROR]\tExcessive field(s) in '{name}': {message}.")
+                exit()
+
+            self.check_yaml_block("parameters", pars, PIPELINE_STEP_CONFIG[name])
+        return
 
     def check_yaml_specification(self) -> None:
-        required_top: dict = {"config", "data", "pipeline"}
-        required_config: dict = {"parallel", "input_dir", "output_dir", "kernel_dir"}
-        required_data: dict = {"body", "bands"}
-        required_band: dict = {"input"}
-        required_pipeline: dict = {"step"}
+        required_top: Set[str] = {"config", "data", "pipeline"}
+        required_config: Set[str] = {"parallel", "input_dir", "output_dir", "kernel_dir"}
+        required_data: Set[str] = {"body", "bands"}
+        required_band: Set[str] = {"input"}
+        required_pipeline: Set[str] = {"step"}
 
         # Check for top level keys
-        self.check_yaml_block("'specification'", self.spec, required_top)
+        self.check_yaml_block("specification file", self.spec, required_top)
 
-        # Check for config
-        self.config = self.spec["config"]
+        # Check for config keys
+        self.config: dict = self.spec["config"]
         if isinstance(self.config, list):
-            print("[ERROR]\t'input_dir' in 'config' should be an element.") 
-            print("[HINT]\tElements are declared without a '-'.")
+            print("[ERROR]\tElements in 'config' should not be in a list.")
             exit()
-        
-        self.check_yaml_block("'config'", self.config, required_config, "config")
 
-        # Check for data
-        self.data = self.spec["data"]
+        self.check_yaml_block("config", self.config, required_config)
+
+        # Check for data keys
+        self.data: dict = self.spec["data"]
         if isinstance(self.data, list):
-            print("[ERROR]\t'body' in 'data' should be an element.")
-            print("[HINT]\tElements are declared without a '-'.")
+            print("[ERROR]\tElements in 'data' should not be in a list.")
             exit()
 
-        # Check for every band
+        self.check_yaml_block("data", self.data, required_data)
+
+        # Check for every band keys
         for item in self.data["bands"]:
             self.check_yaml_block("bands", item, required_band, "input")
 
-        # Check for pipeline
-        self.pipeline = self.spec["pipeline"]
-        # Check for every step
+        # Check for pipeline keys
+        self.pipeline: dict = self.spec["pipeline"]
+        # Check for every step keys
         for item in self.pipeline:
             self.check_yaml_block("pipeline", item, required_pipeline, "step")
+            self.check_step(item)
 
         return
 
@@ -110,6 +132,7 @@ class FileManager:
 
         files_checked = []
         self.files_without_error = []
+
         # Check that files in specification exist for all
         # bodies, all bands, and all input and error files
         for band in self.data["bands"]:
@@ -125,3 +148,4 @@ class FileManager:
                         status = status and False
                 else:
                     pass
+        return
