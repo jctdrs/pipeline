@@ -2,19 +2,21 @@ import argparse
 
 from util import file_manager
 from util import pipeline
+from util import setup_manager
 
 
-def main():
+def main() -> None:
     # Parse the arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--file", type=str, help="Specification YAML file", required=True)
     args = parser.parse_args()
-
     spec_path: str = args.file
-    file_mng: file_manager.FileManager = file_manager.FileManager(spec_path)
-    pipe: pipeline.Pipeline = pipeline.Pipeline.create(file_mng)
 
-    pipe.execute()
+    file_mng = file_manager.FileManager(spec_path)
+    setup_manager.SetupManager(file_mng).set()
+
+    pipeline.Pipeline.create(file_mng).execute()
+    return
 
 
 if __name__ == "__main__":

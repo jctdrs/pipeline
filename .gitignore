@@ -1,5 +1,10 @@
 venv/
 Inputs/
+inputs/
+Outputs/
+outputs/
+Kernels/
+kernels/
 */__pycache__/
 *.yml
 *.yaml

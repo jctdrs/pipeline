@@ -1,8 +1,7 @@
 import yaml
-import os
 from typing import Set
 
-PIPELINE_STEP_CONFIG: dict = {"hip.convolution": {"target"}}
+PIPELINE_STEP_CONFIG: dict = {"hip.convolution": {"target", "kernel"}, "hip.test": {"target"}}
 
 
 class DuplicateKeyError(Exception):
@@ -49,7 +48,6 @@ class FileManager:
             exit()
 
         self.check_yaml_specification()
-        self.check_file()
         return
 
     def check_yaml_block(self, block_name: str, block: dict, required: Set[str], field_name: str = "") -> None:
@@ -89,9 +87,9 @@ class FileManager:
 
     def check_yaml_specification(self) -> None:
         required_top: Set[str] = {"config", "data", "pipeline"}
-        required_config: Set[str] = {"parallel", "input_dir", "output_dir", "kernel_dir"}
+        required_config: Set[str] = {"parallel"}
         required_data: Set[str] = {"body", "bands"}
-        required_band: Set[str] = {"input"}
+        required_band: Set[str] = {"input", "name"}
         required_pipeline: Set[str] = {"step"}
 
         # Check for top level keys
@@ -124,28 +122,4 @@ class FileManager:
             self.check_yaml_block("pipeline", item, required_pipeline, "step")
             self.check_step(item)
 
-        return
-
-    def check_file(self) -> None:
-        inp_dir: str = self.config["input_dir"]
-        status: bool = True
-
-        files_checked = []
-        self.files_without_error = []
-
-        # Check that files in specification exist for all
-        # bodies, all bands, and all input and error files
-        for band in self.data["bands"]:
-            if "error" not in band.keys():
-                self.files_without_error.append(f"{inp_dir}/{band['input']}")
-            for key in band.keys():
-                filename: str = f"{inp_dir}/{band[key]}"
-                if filename not in files_checked:
-                    if os.path.exists(filename):
-                        files_checked.append(filename)
-                    else:
-                        print(f"[ERROR]\tFile '{filename}' not found.")
-                        status = status and False
-                else:
-                    pass
         return
