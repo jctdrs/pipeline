@@ -10,12 +10,16 @@ class Convolution:
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
         err_hdu: typing.Union[astropy.io.fits.hdu.image.PrimaryHDU, typing.Any],
-        target: str,
+        geom: dict,
+        instruments: dict,
+        name: str,
         kernel: str,
     ):
         self.data_hdu = data_hdu
         self.err_hdu = err_hdu
-        self.target = target
+        self.geom = geom
+        self.instruments = instruments
+        self.name = name
         self.kernel_path = kernel
 
     def run(

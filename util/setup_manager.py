@@ -88,7 +88,7 @@ class SetupManager:
         kernels: list = []
         for step in pipeline:
             if step["step"] == "hip.convolution":
-                target_band = step["parameters"]["target"]
+                target_band = step["parameters"]["name"]
                 kernel = step["parameters"]["kernel"]
                 self.validate_band(target_band)
                 target_bands.append(target_band)

@@ -1,8 +1,11 @@
 import argparse
+import time
 
 from util import file_manager
 from util import pipeline
 from util import setup_manager
+
+import matplotlib.pyplot as plt
 
 
 def main() -> None:
@@ -15,9 +18,16 @@ def main() -> None:
     file_mng = file_manager.FileManager(spec_path)
     setup_manager.SetupManager(file_mng).set()
 
-    pipeline.Pipeline.create(file_mng).execute()
-    return
+    pipe = pipeline.Pipeline.create(file_mng)
+    pipe.execute()
+    return pipe
 
 
 if __name__ == "__main__":
-    main()
+    st = time.time()
+    pipe = main()
+    ed = time.time()
+    print("{:.3f}".format(ed - st), "seconds")
+
+    plt.imshow(pipe.result[0][0].data)
+    plt.show()

@@ -1,0 +1,34 @@
+import typing
+
+import astropy
+import astropy.units as au
+from astropy.wcs import WCS
+from astropy.nddata.utils import Cutout2D
+from astropy.coordinates import SkyCoord, ICRS
+
+
+class Cutout:
+    def __init__(
+        self,
+        data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
+        err_hdu: typing.Union[astropy.io.fits.hdu.image.PrimaryHDU, typing.Any],
+        geom: dict,
+        instruments: dict,
+        raTrim: float,
+        decTrim: float,
+    ):
+        self.data_hdu = data_hdu
+        self.err_hdu = err_hdu
+        self.geom = geom
+        self.instruments = instruments
+        self.ra_trim = raTrim
+        self.dec_trim = decTrim
+
+    def run(self):
+        wcs = WCS(self.data_hdu.header)
+        pos_center = SkyCoord(ra=self.geom["ra"] * au.deg, dec=self.geom["dec"] * au.deg, frame=ICRS)
+        sizeTrim = (self.dec_trim * au.arcmin, self.ra_trim * au.arcmin)
+        cutout = Cutout2D(self.data_hdu.data, position=pos_center, size=sizeTrim, wcs=wcs)
+        self.data_hdu.data = cutout.data
+
+        return self.data_hdu, self.err_hdu

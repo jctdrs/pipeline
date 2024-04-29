@@ -1,7 +1,13 @@
 import yaml
 from typing import Set
 
-PIPELINE_STEP_CONFIG: dict = {"hip.convolution": {"target", "kernel"}, "hip.test": {"target"}}
+PIPELINE_STEP_CONFIG: dict = {
+    "hip.convolution": {"name", "kernel"},
+    "hip.test": {"test"},
+    "hip.background": {"cellSize"},
+    "hip.cutout": {"raTrim", "decTrim"},
+    "hip.reproject": {"target"},
+}
 
 
 class DuplicateKeyError(Exception):
@@ -69,7 +75,7 @@ class FileManager:
     def check_step(self, step: dict) -> None:
         name: dict = step["step"]
         if name not in PIPELINE_STEP_CONFIG:
-            print(f"[ERROR]\tPipeline step '{name}' not know.")
+            print(f"[ERROR]\tPipeline step '{name}' not defined.")
             exit()
 
         if "parameters" not in step:
@@ -88,9 +94,20 @@ class FileManager:
     def check_yaml_specification(self) -> None:
         required_top: Set[str] = {"config", "data", "pipeline"}
         required_config: Set[str] = {"parallel"}
-        required_data: Set[str] = {"body", "bands"}
-        required_band: Set[str] = {"input", "name"}
+        required_data: Set[str] = {"body", "bands", "geometry"}
+        required_band: Set[str] = {"input", "name", "calError"}
         required_pipeline: Set[str] = {"step"}
+        required_geom: Set[str] = {
+            "ra",
+            "dec",
+            "distance",
+            "inclination",
+            "positionAngle",
+            "majorAxis",
+            "axialRatio",
+            "radius",
+            "redshift",
+        }
 
         # Check for top level keys
         self.check_yaml_block("specification file", self.spec, required_top)
@@ -110,6 +127,12 @@ class FileManager:
             exit()
 
         self.check_yaml_block("data", self.data, required_data)
+
+        if isinstance(self.data["geometry"], list):
+            print("[ERROR]\tElements in 'geometry' should not be in a list.")
+            exit()
+
+        self.check_yaml_block("geometry", self.data["geometry"], required_geom)
 
         # Check for every band keys
         for item in self.data["bands"]:

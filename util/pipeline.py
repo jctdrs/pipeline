@@ -1,19 +1,31 @@
 import multiprocessing
 import abc
 import typing
-
+import yaml
 from astropy.io import fits
 
 from hip import convolution
 from hip import test
+from hip import background
+from hip import cutout
+from hip import reproject
+
 from util import file_manager
 
-Interface: dict = {"hip.convolution": convolution.Convolution, "hip.test": test.Test}
+Interface: dict = {
+    "hip.convolution": convolution.Convolution,
+    "hip.test": test.Test,
+    "hip.background": background.Background,
+    "hip.cutout": cutout.Cutout,
+    "hip.reproject": reproject.Reproject,
+}
 
 
 class Pipeline:
     def __init__(self, file_mng: file_manager.FileManager) -> None:
         self.file_mng = file_mng
+        self.geom = file_mng.data["geometry"]
+        self.load_instruments()
 
     @classmethod
     def create(cls, file_mng: file_manager.FileManager):
@@ -42,6 +54,24 @@ class Pipeline:
         hdu = hdul[0]
         return hdu
 
+    def load_instruments(self) -> None:
+        try:
+            f = open("config/instruments.yml", "r")
+        except OSError:
+            print("[ERROR]\tFile 'config/instruments.yml' not found.")
+            exit()
+
+        # Check if specification is valid YAML
+        # In case of failure, capture line/col for debug
+        try:
+            self.instruments = yaml.load(f, yaml.SafeLoader)
+            f.close()
+        except (yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
+            line = e.problem_mark.line + 1  # type: ignore
+            column = e.problem_mark.column + 1  # type: ignore
+            print(f"[ERROR]\tYAML parsing error at line {line}, column {column}.")
+            exit()
+
     @abc.abstractmethod
     def execute(self) -> list:
         pass
@@ -67,7 +97,9 @@ class PipelineSequential(Pipeline):
         data_hdu = self.load_input(self.file_mng, idx)
         err_hdu = self.load_error(self.file_mng, idx)
         for task in self.file_mng.pipeline:
-            data_hdu, err_hdu = Interface[task["step"]](data_hdu, err_hdu, **task["parameters"]).run()
+            data_hdu, err_hdu = Interface[task["step"]](
+                data_hdu, err_hdu, self.geom, self.instruments, **task["parameters"]
+            ).run()
         self.result[idx] = (data_hdu, err_hdu)
         return
 
@@ -97,6 +129,8 @@ class PipelineParallel(Pipeline):
         data_hdu = self.load_input(self.file_mng, idx)
         err_hdu = self.load_error(self.file_mng, idx)
         for task in self.file_mng.pipeline:
-            data_hdu, err_hdu = Interface[task["step"]](data_hdu, err_hdu, **task["parameters"]).run()
+            data_hdu, err_hdu = Interface[task["step"]](
+                data_hdu, err_hdu, self.geom, self.instruments, **task["parameters"]
+            ).run()
         self.result[idx].put((data_hdu, err_hdu))
         return
