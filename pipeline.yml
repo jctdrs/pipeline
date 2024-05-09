@@ -1,0 +1,46 @@
+meta:
+    name: Convolution pipeline
+    author: JT
+    version: 1.0
+    description: This pipeline only runs the convolution step of HIP
+
+config:
+    parallel: No
+
+data:
+    body: NGC4254
+    geometry:
+        ra: 184.70655
+        dec: 14.41641
+        distance: 36
+        inclination: 20.1
+        positionAngle: -35.745
+        majorAxis: 210
+        axialRatio: 1.3471
+        radius: 5.01
+        redshift: 0.00803
+    bands:
+        - input: inputs/NGC4254_NIKA2_1.fits
+          error: inputs/NGC4254_NIKA2_1_Error.fits
+          name: NIKA2_1
+          calError: 5.0
+
+
+pipeline:
+    - step: hip.background
+      parameters:
+          cellSize: 10
+  
+    - step: hip.convolution
+      parameters:
+          name: SPIRE3
+          kernel: kernels/Kernel_HiRes_Gauss_12.0_to_SPIRE_500.fits     
+
+    - step: hip.reproject
+      parameters:
+          target: inputs/NGC4254_SPIRE3.fits
+
+    - step: hip.cutout
+      parameters:
+          raTrim: 10
+          decTrim: 10

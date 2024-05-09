@@ -1,0 +1,161 @@
+WISE1: 
+    WAVELENGTH: 
+        CENTRAL: 3.4
+        UNIT: micron
+    RESOLUTION: 
+        VALUE: 6.1
+        UNIT: arcsec
+WISE2: 
+    WAVELENGTH: 
+        CENTRAL: 4.6
+        UNIT: micron
+    RESOLUTION: 
+        VALUE: 6.4
+        UNIT: arcsec
+WISE3: 
+    WAVELENGTH: 
+        CENTRAL: 11.6
+        UNIT: micron
+    RESOLUTION: 
+        VALUE: 6.5
+        UNIT: arcsec
+WISE4: 
+    WAVELENGTH: 
+        CENTRAL: 22.1
+        UNIT: micron
+    RESOLUTION: 
+        VALUE: 12
+        UNIT: arcsec
+
+IRAC1: 
+    WAVELENGTH: 
+        CENTRAL: 3.5
+        UNIT: micron
+    RESOLUTION: 
+        VALUE: 1.66
+        UNIT: arcsec
+IRAC2: 
+    WAVELENGTH: 
+        CENTRAL: 4.5
+        UNIT: micron
+    RESOLUTION: 
+        VALUE: 1.72
+        UNIT: arcsec
+IRAC3: 
+    WAVELENGTH: 
+        CENTRAL: 5.7
+        UNIT: micron
+    RESOLUTION: 
+        VALUE: 1.88
+        UNIT: arcsec
+IRAC4: 
+    WAVELENGTH: 
+        CENTRAL: 7.8
+        UNIT: micron
+    RESOLUTION: 
+        VALUE: 1.98
+        UNIT: arcsec
+
+MIPS1:
+    WAVELENGTH: 
+        CENTRAL: 23.7
+        UNIT: micron
+    RESOLUTION: 
+        VALUE: 6
+        UNIT: arcsec
+MIPS2: 
+    WAVELENGTH: 
+        CENTRAL: 71
+        UNIT: micron
+    RESOLUTION: 
+        VALUE: 18
+        UNIT: arcsec
+MIPS3:
+    WAVELENGTH: 
+        CENTRAL: 156
+        UNIT: micron
+    RESOLUTION: 
+        VALUE: 35.2
+        UNIT: arcsec
+
+PACS1: 
+    WAVELENGTH: 
+        CENTRAL: 70
+        UNIT: micron
+    RESOLUTION: 
+        VALUE: 9
+        UNIT: arcsec
+PACS2: 
+    WAVELENGTH: 
+        CENTRAL: 350
+        UNIT: micron
+    RESOLUTION: 
+        VALUE: 10
+        UNIT: arcsec
+PACS3: 
+    WAVELENGTH: 
+        CENTRAL: 500
+        UNIT: micron
+    RESOLUTION: 
+        VALUE: 13
+        UNIT: arcsec
+
+SPIRE1: 
+    WAVELENGTH: 
+        CENTRAL: 250
+        UNIT: micron
+    RESOLUTION: 
+        VALUE: 18
+        UNIT: arcsec
+SPIRE2: 
+    WAVELENGTH: 
+        CENTRAL: 350
+        UNIT: micron
+    RESOLUTION: 
+        VALUE: 25
+        UNIT: arcsec
+SPIRE3: 
+    WAVELENGTH: 
+        CENTRAL: 500
+        UNIT: micron
+    RESOLUTION: 
+        VALUE: 36
+        UNIT: arcsec
+
+HFI1:
+    WAVELENGTH: 
+        CENTRAL: 350
+        UNIT: micron
+    RESOLUTION: 
+        VALUE: 300
+        UNIT: arcsec
+HFI2: 
+    WAVELENGTH: 
+        CENTRAL: 550
+        UNIT: micron
+    RESOLUTION: 
+        VALUE: 300
+        UNIT: arcsec
+HFI3: 
+    WAVELENGTH: 
+        CENTRAL: 850
+        UNIT: micron
+    RESOLUTION: 
+        VALUE: 300
+        UNIT: arcsec
+
+NIKA2_1:
+    WAVELENGTH:
+        CENTRAL: 1.5
+        UNIT: mm
+    RESOLUTION:
+        VALUE: 12
+        UNIT: arcsec
+
+NIKA2_2:
+    WAVELENGTH:
+        CENTRAL: 2
+        UNIT: mm
+    RESOLUTION:
+        VALUE: 18
+        UNIT: arcsec
