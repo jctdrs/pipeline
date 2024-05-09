@@ -3,6 +3,10 @@ import typing
 from astropy.io import fits
 
 
+def pixel_size(header: fits.header.Header) -> typing.Tuple[float, float]:
+    return _check_px_size(header)[:2]
+
+
 def pixel_scale(header: fits.header.Header) -> float:
     px_size_fits = _check_px_size(header)
 
@@ -57,3 +61,15 @@ def shape(header: fits.header.Header) -> typing.Tuple[int, int]:
         exit()
 
     return (xsize, ysize)
+
+
+def unit(header: fits.header.Header) -> str:
+    keys: list = list(header.keys())
+
+    if "BUNIT" in keys:
+        return header["BUNIT"]
+    elif "SIGUNIT" in keys:
+        return header["SIGUNIT"]
+    else:
+        print("[ERROR]\tUnable to get unit from header.")
+        exit()

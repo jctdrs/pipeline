@@ -1,8 +1,11 @@
+import math
 import typing
-from scipy.ndimage import zoom
-import astropy
-from astropy.convolution import convolve_fft
+
 from util import read
+
+from scipy.ndimage import zoom
+from astropy.convolution import convolve_fft
+import astropy
 
 
 class Convolution:
@@ -29,7 +32,9 @@ class Convolution:
     ]:
         # TODO: Check if target == input, then don't convolve
         self.setup_kernel()
+        self.convert_from_Jyperpx_to_radiance()
         self.convolve()
+        self.convert_from_radiance_to_Jyperpx()
         return self.data_hdu, self.err_hdu
 
     def setup_kernel(self) -> None:
@@ -56,6 +61,18 @@ class Convolution:
             self.kernel_hdu.data = zoom(self.kernel_hdu.data, ratio) / ratio**2
         return
 
+    def convert_from_Jyperpx_to_radiance(self) -> None:
+        pixel_size = read.pixel_size(self.data_hdu.header)
+        px_x: float = pixel_size[0] * 2 * math.pi / 360
+        px_y: float = pixel_size[1] * 2 * math.pi / 360
+
+        # divide by 3.846x10^26 (Lsun in Watt) to convert W/Hz/m2/sr in
+        # Lsun/Hz/m2/sr multiply by the galaxy distance in m2 to get Lsun/Hz/sr
+        conversion_factor = 1e-26 * pow((self.geom["distance"] * 3.086e22), 2) * 4 * math.pi / (px_x * px_y * 3.846e26)
+
+        self.data_hdu.data *= conversion_factor
+        return
+
     def convolve(self) -> None:
         self.data_hdu.data = convolve_fft(
             self.data_hdu.data,
@@ -68,4 +85,16 @@ class Convolution:
             fill_value=0.0,
             allow_huge=True,
         )
+        return
+
+    def convert_from_radiance_to_Jyperpx(self) -> None:
+        pixel_size = read.pixel_size(self.data_hdu.header)
+        px_x: float = pixel_size[0] * 2 * math.pi / 360
+        px_y: float = pixel_size[1] * 2 * math.pi / 360
+
+        conversion_factor = (px_x * px_y * 3.846e26) / (
+            1e-26 * pow((self.geom["distance"] * 3.086e22), 2) * 4 * math.pi
+        )
+
+        self.data_hdu.data *= conversion_factor
         return

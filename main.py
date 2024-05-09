@@ -29,5 +29,5 @@ if __name__ == "__main__":
     ed = time.time()
     print("{:.3f}".format(ed - st), "seconds")
 
-    plt.imshow(pipe.result[0][0].data)
+    plt.imshow(pipe.result[0][0].data, origin="lower")
     plt.show()

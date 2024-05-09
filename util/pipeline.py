@@ -9,6 +9,7 @@ from hip import test
 from hip import background
 from hip import cutout
 from hip import reproject
+from hip import conversion
 
 from util import file_manager
 
