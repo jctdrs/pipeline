@@ -7,8 +7,6 @@ from util import file_manager
 from util import pipeline
 from util import setup_manager
 
-import matplotlib.pyplot as plt
-
 
 @contextlib.contextmanager
 def chrono():
@@ -37,6 +35,3 @@ if __name__ == "__main__":
     warnings.filterwarnings("ignore")
     with chrono():
         pipe = main()
-
-    plt.imshow(pipe.result[0][0].data, origin="lower")
-    plt.show()

@@ -1,6 +1,6 @@
 astropy
 photutils
-#pyregion
+regions
 reproject
 numpy
 scipy

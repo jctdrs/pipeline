@@ -39,8 +39,3 @@ pipeline:
     - step: hip.reproject
       parameters:
           target: inputs/NGC4254_SPIRE3.fits
-
-    - step: hip.cutout
-      parameters:
-          raTrim: 10
-          decTrim: 10

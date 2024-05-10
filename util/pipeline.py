@@ -7,6 +7,7 @@ from hip import convolution
 from hip import background
 from hip import cutout
 from hip import reproject
+from hip import integrate
 
 from util import file_manager
 
@@ -93,5 +94,9 @@ class PipelineSequential(Pipeline):
             data_hdu, err_hdu = Interface[task["step"]](
                 data_hdu, err_hdu, self.geom, self.instruments, **task["parameters"]
             ).run()
+
+        # Add last step: Integration
+        fluxes = integrate.Integrate(data_hdu, err_hdu, self.geom, self.instruments).run()
         self.result[idx] = (data_hdu, err_hdu)
+        print(f"[DEBUG]\tIntegrated fluxes {fluxes[2]}")
         return None
