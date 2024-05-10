@@ -1,5 +1,7 @@
 import argparse
 import time
+import contextlib
+import warnings
 
 from util import file_manager
 from util import pipeline
@@ -8,7 +10,15 @@ from util import setup_manager
 import matplotlib.pyplot as plt
 
 
-def main() -> None:
+@contextlib.contextmanager
+def chrono():
+    start = time.time()
+    yield
+    end = time.time()
+    print(f"[DEBUG]\tElapsed time {end-start:.3f} seconds.")
+
+
+def main() -> pipeline.Pipeline:
     # Parse the arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--file", type=str, help="Specification YAML file", required=True)
@@ -24,10 +34,9 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    st = time.time()
-    pipe = main()
-    ed = time.time()
-    print("{:.3f}".format(ed - st), "seconds")
+    warnings.filterwarnings("ignore")
+    with chrono():
+        pipe = main()
 
     plt.imshow(pipe.result[0][0].data, origin="lower")
     plt.show()

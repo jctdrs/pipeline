@@ -37,14 +37,14 @@ class Convolution:
         self.convert_from_radiance_to_Jyperpx()
         return self.data_hdu, self.err_hdu
 
-    def setup_kernel(self) -> None:
+    def setup_kernel(self) -> typing.Any:
         with astropy.io.fits.open(self.kernel_path) as hdul_kernel:
             self.kernel_hdu: astropy.io.fits.hdu.image.PrimaryHDU = hdul_kernel[0]
             self.rescale_kernel()
             self.convolve()
-        return
+        return None
 
-    def rescale_kernel(self) -> None:
+    def rescale_kernel(self) -> typing.Any:
         pixel_data = read.pixel_scale(self.data_hdu.header)
         pixel_kernel = read.pixel_scale(self.kernel_hdu.header)
         kernel_xsize, kernel_ysize = read.shape(self.kernel_hdu.header)
@@ -59,9 +59,9 @@ class Convolution:
                 ratio = size / kernel_xsize
 
             self.kernel_hdu.data = zoom(self.kernel_hdu.data, ratio) / ratio**2
-        return
+        return None
 
-    def convert_from_Jyperpx_to_radiance(self) -> None:
+    def convert_from_Jyperpx_to_radiance(self) -> typing.Any:
         pixel_size = read.pixel_size(self.data_hdu.header)
         px_x: float = pixel_size[0] * 2 * math.pi / 360
         px_y: float = pixel_size[1] * 2 * math.pi / 360
@@ -71,9 +71,9 @@ class Convolution:
         conversion_factor = 1e-26 * pow((self.geom["distance"] * 3.086e22), 2) * 4 * math.pi / (px_x * px_y * 3.846e26)
 
         self.data_hdu.data *= conversion_factor
-        return
+        return None
 
-    def convolve(self) -> None:
+    def convolve(self) -> typing.Any:
         self.data_hdu.data = convolve_fft(
             self.data_hdu.data,
             self.kernel_hdu.data,
@@ -85,9 +85,9 @@ class Convolution:
             fill_value=0.0,
             allow_huge=True,
         )
-        return
+        return None
 
-    def convert_from_radiance_to_Jyperpx(self) -> None:
+    def convert_from_radiance_to_Jyperpx(self) -> typing.Any:
         pixel_size = read.pixel_size(self.data_hdu.header)
         px_x: float = pixel_size[0] * 2 * math.pi / 360
         px_y: float = pixel_size[1] * 2 * math.pi / 360
@@ -97,4 +97,4 @@ class Convolution:
         )
 
         self.data_hdu.data *= conversion_factor
-        return
+        return None

@@ -1,7 +1,9 @@
+import math
+import typing
+
 import astropy
 from astropy.wcs import WCS
 from astropy.io import fits
-import typing
 from reproject import reproject_interp
 
 from util import read
@@ -22,7 +24,29 @@ class Reproject:
         self.instruments = instruments
         self.target = target
 
-    def run(self):
+    def run(
+        self,
+    ) -> typing.Tuple[
+        astropy.io.fits.hdu.image.PrimaryHDU, typing.Union[astropy.io.fits.hdu.image.PrimaryHDU, typing.Any]
+    ]:
+        self.convert_from_Jyperpx_to_radiance()
+        self.reproject()
+        self.convert_from_radiance_to_Jyperpx()
+        return self.data_hdu, self.err_hdu
+
+    def convert_from_Jyperpx_to_radiance(self) -> typing.Any:
+        pixel_size = read.pixel_size(self.data_hdu.header)
+        px_x: float = pixel_size[0] * 2 * math.pi / 360
+        px_y: float = pixel_size[1] * 2 * math.pi / 360
+
+        # divide by 3.846x10^26 (Lsun in Watt) to convert W/Hz/m2/sr in
+        # Lsun/Hz/m2/sr multiply by the galaxy distance in m2 to get Lsun/Hz/sr
+        conversion_factor = 1e-26 * pow((self.geom["distance"] * 3.086e22), 2) * 4 * math.pi / (px_x * px_y * 3.846e26)
+
+        self.data_hdu.data *= conversion_factor
+        return None
+
+    def reproject(self) -> typing.Any:
         with fits.open(self.target) as hdul:
             hdr_target = hdul[0].header
             xsize, ysize = read.shape(hdr_target)
@@ -31,5 +55,16 @@ class Reproject:
         self.data_hdu.data, _ = reproject_interp(self.data_hdu, wcs, shape_out=(xsize, ysize))
 
         self.data_hdu.header.update(wcs.to_header())
+        return None
 
-        return self.data_hdu, self.err_hdu
+    def convert_from_radiance_to_Jyperpx(self) -> typing.Any:
+        pixel_size = read.pixel_size(self.data_hdu.header)
+        px_x: float = pixel_size[0] * 2 * math.pi / 360
+        px_y: float = pixel_size[1] * 2 * math.pi / 360
+
+        conversion_factor = (px_x * px_y * 3.846e26) / (
+            1e-26 * pow((self.geom["distance"] * 3.086e22), 2) * 4 * math.pi
+        )
+
+        self.data_hdu.data *= conversion_factor
+        return None

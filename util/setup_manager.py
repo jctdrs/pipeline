@@ -1,5 +1,6 @@
 import os
 import yaml
+import typing
 
 from util import file_manager
 
@@ -13,7 +14,7 @@ class SetupManager:
         self.validate_input_bands()
         self.validate_convolution()
 
-    def validate_files(self) -> None:
+    def validate_files(self) -> typing.Any:
         status: bool = True
         files_not_found: str = ""
         bands: dict = self.file_mng.data["bands"]
@@ -31,15 +32,15 @@ class SetupManager:
         if not status:
             print(f"[ERROR]\tFile(s) not found{files_not_found}.")
             exit()
-        return
+        return None
 
-    def validate_input_bands(self) -> None:
+    def validate_input_bands(self) -> typing.Any:
         bands: dict = self.file_mng.data["bands"]
         for band in bands:
             self.validate_band(band["name"])
-        return
+        return None
 
-    def validate_band(self, band) -> None:
+    def validate_band(self, band) -> typing.Any:
         if (
             band != "IRAC1"
             and band != "IRAC2"
@@ -79,10 +80,9 @@ class SetupManager:
         ):
             print(f"[Error]\tBand '{band}' not valid")
             exit()
+        return None
 
-        return
-
-    def validate_convolution(self) -> None:
+    def validate_convolution(self) -> typing.Any:
         pipeline = self.file_mng.pipeline
         target_bands: list = []
         kernels: list = []
@@ -97,7 +97,7 @@ class SetupManager:
         self.validate_resolution(target_bands)
         self.check_for_kernels(kernels)
 
-    def validate_resolution(self, target_bands: list) -> None:
+    def validate_resolution(self, target_bands: list) -> typing.Any:
         try:
             f = open("config/instruments.yml", "r")
         except OSError:
@@ -133,7 +133,7 @@ class SetupManager:
             print(f"[ERROR]\tCannot implement resolution degradation from{bad_band} to{bad_target}.")
             exit()
 
-    def check_for_kernels(self, kernels: list) -> None:
+    def check_for_kernels(self, kernels: list) -> typing.Any:
         status: bool = True
         kernels_not_found: str = ""
         for kernel in kernels:
@@ -145,4 +145,4 @@ class SetupManager:
             print(f"[ERROR]\tKernel(s) not found{kernels_not_found}.")
             exit()
 
-        return
+        return None

@@ -1,5 +1,5 @@
 import yaml
-from typing import Set
+import typing
 
 PIPELINE_STEP_CONFIG: dict = {
     "hip.convolution": {"name", "kernel"},
@@ -31,7 +31,7 @@ class FileManager:
         self.spec_path = spec_path
         self._parse()
 
-    def _parse(self) -> None:
+    def _parse(self) -> typing.Any:
         # Check if specification exists
         try:
             f = open(self.spec_path, "r")
@@ -54,9 +54,11 @@ class FileManager:
             exit()
 
         self.check_yaml_specification()
-        return
+        return None
 
-    def check_yaml_block(self, block_name: str, block: dict, required: Set[str], field_name: str = "") -> None:
+    def check_yaml_block(
+        self, block_name: str, block: dict, required: typing.Set[str], field_name: str = ""
+    ) -> typing.Any:
         if block is None:
             print(f"[ERROR]\tKey '{block_name}' is empty.")
             exit()
@@ -70,9 +72,9 @@ class FileManager:
             message = ", ".join(item for item in missing_keys)
             print(f"[ERROR]\tField(s) missing in '{block_name}': {message}.")
             exit()
-        return
+        return None
 
-    def check_step(self, step: dict) -> None:
+    def check_step(self, step: dict) -> typing.Any:
         name: dict = step["step"]
         if name not in PIPELINE_STEP_CONFIG:
             print(f"[ERROR]\tPipeline step '{name}' not defined.")
@@ -89,15 +91,15 @@ class FileManager:
                 exit()
 
             self.check_yaml_block("parameters", pars, PIPELINE_STEP_CONFIG[name])
-        return
+        return None
 
-    def check_yaml_specification(self) -> None:
-        required_top: Set[str] = {"config", "data", "pipeline"}
-        required_config: Set[str] = {"parallel"}
-        required_data: Set[str] = {"body", "bands", "geometry"}
-        required_band: Set[str] = {"input", "name", "calError"}
-        required_pipeline: Set[str] = {"step"}
-        required_geom: Set[str] = {
+    def check_yaml_specification(self) -> typing.Any:
+        required_top: typing.Set[str] = {"config", "data", "pipeline"}
+        required_config: typing.Set[str] = {"parallel"}
+        required_data: typing.Set[str] = {"body", "bands", "geometry"}
+        required_band: typing.Set[str] = {"input", "name", "calError"}
+        required_pipeline: typing.Set[str] = {"step"}
+        required_geom: typing.Set[str] = {
             "ra",
             "dec",
             "distance",
@@ -144,5 +146,4 @@ class FileManager:
         for item in self.pipeline:
             self.check_yaml_block("pipeline", item, required_pipeline, "step")
             self.check_step(item)
-
-        return
+        return None

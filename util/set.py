@@ -1,7 +1,9 @@
+import typing
+
 from astropy.io import fits
 
 
-def unit(header: fits.header.Header, elem: str) -> None:
+def unit(header: fits.header.Header, elem: str) -> typing.Any:
     keys: list = list(header.keys())
 
     if "BUNIT" in keys:
