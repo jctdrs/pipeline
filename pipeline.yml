@@ -6,6 +6,7 @@ meta:
 
 config:
     parallel: No
+    error: differr
 
 data:
     body: NGC4254
@@ -20,9 +21,8 @@ data:
         radius: 5.01
         redshift: 0.00803
     bands:
-        - input: inputs/NGC4254_NIKA2_1.fits
-          error: inputs/NGC4254_NIKA2_1_Error.fits
-          name: NIKA2_1
+        - input: inputs/NGC4254_SPIRE2.fits
+          name: SPIRE2
           calError: 5.0
 
 
@@ -34,8 +34,17 @@ pipeline:
     - step: hip.convolution
       parameters:
           name: SPIRE3
-          kernel: kernels/Kernel_HiRes_Gauss_12.0_to_SPIRE_500.fits     
-
+          kernel: kernels/Kernel_LowRes_SPIRE_350_to_SPIRE_500.fits
+  
     - step: hip.reproject
       parameters:
           target: inputs/NGC4254_SPIRE3.fits
+
+    - step: hip.integrate
+
+    - step: hip.cutout
+      parameters:
+          raTrim: 7
+          decTrim: 7
+
+    - step: hip.plot

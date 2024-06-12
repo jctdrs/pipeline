@@ -7,6 +7,8 @@ PIPELINE_STEP_CONFIG: dict = {
     "hip.background": {"cellSize"},
     "hip.cutout": {"raTrim", "decTrim"},
     "hip.reproject": {"target"},
+    "hip.integrate": {},
+    "hip.plot": {},
 }
 
 
@@ -80,8 +82,13 @@ class FileManager:
             print(f"[ERROR]\tPipeline step '{name}' not defined.")
             exit()
 
-        if "parameters" not in step:
+        if set(step) == {"step"}:
             step["parameters"] = {}
+
+        elif "parameters" not in step:
+            print(f"[ERROR]\t'Parameters' required in {name}")
+            exit()
+
         else:
             pars = step["parameters"]
             if not set(pars.keys()).issubset(PIPELINE_STEP_CONFIG[name]):
@@ -95,7 +102,7 @@ class FileManager:
 
     def check_yaml_specification(self) -> typing.Any:
         required_top: typing.Set[str] = {"config", "data", "pipeline"}
-        required_config: typing.Set[str] = {"parallel"}
+        required_config: typing.Set[str] = {"parallel", "error"}
         required_data: typing.Set[str] = {"body", "bands", "geometry"}
         required_band: typing.Set[str] = {"input", "name", "calError"}
         required_pipeline: typing.Set[str] = {"step"}
@@ -121,6 +128,9 @@ class FileManager:
             exit()
 
         self.check_yaml_block("config", self.config, required_config)
+        if self.config["error"] not in {"differr", "MC"}:
+            print("[ERROR]\tError in 'config' can either be 'differr' or 'MC'")
+            exit()
 
         # Check for data keys
         self.data: dict = self.spec["data"]

@@ -8,6 +8,7 @@ from hip import background
 from hip import cutout
 from hip import reproject
 from hip import integrate
+from hip import plot
 
 from util import file_manager
 
@@ -16,6 +17,8 @@ Interface: dict = {
     "hip.background": background.Background,
     "hip.cutout": cutout.Cutout,
     "hip.reproject": reproject.Reproject,
+    "hip.integrate": integrate.Integrate,
+    "hip.plot": plot.Plot,
 }
 
 
@@ -82,21 +85,19 @@ class PipelineSequential(Pipeline):
 
     def execute(self) -> list:
         bands: dict = self.file_mng.data["bands"]
+        # Loop over bands
         for idx, _ in enumerate(bands):
-            self.result.append((None, None))
             self._target(idx)
         return self.result
 
     def _target(self, idx: int) -> typing.Any:
         data_hdu = self.load_input(self.file_mng, idx)
         err_hdu = self.load_error(self.file_mng, idx)
+        # Loop over steps in pipeline
         for task in self.file_mng.pipeline:
             data_hdu, err_hdu = Interface[task["step"]](
                 data_hdu, err_hdu, self.geom, self.instruments, **task["parameters"]
             ).run()
 
-        # Add last step: Integration
-        fluxes = integrate.Integrate(data_hdu, err_hdu, self.geom, self.instruments).run()
-        self.result[idx] = (data_hdu, err_hdu)
-        print(f"[DEBUG]\tIntegrated fluxes {fluxes[2]}")
+        self.result.append((data_hdu, err_hdu))
         return None

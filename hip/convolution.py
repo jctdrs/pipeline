@@ -30,7 +30,6 @@ class Convolution:
     ) -> typing.Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU, typing.Union[astropy.io.fits.hdu.image.PrimaryHDU, typing.Any]
     ]:
-        # TODO: Check if target == input, then don't convolve
         self.setup_kernel()
         self.convert_from_Jyperpx_to_radiance()
         self.convolve()
@@ -40,11 +39,10 @@ class Convolution:
     def setup_kernel(self) -> typing.Any:
         with astropy.io.fits.open(self.kernel_path) as hdul_kernel:
             self.kernel_hdu: astropy.io.fits.hdu.image.PrimaryHDU = hdul_kernel[0]
-            self.rescale_kernel()
-            self.convolve()
+            self.scale_kernel()
         return None
 
-    def rescale_kernel(self) -> typing.Any:
+    def scale_kernel(self) -> typing.Any:
         pixel_data = read.pixel_scale(self.data_hdu.header)
         pixel_kernel = read.pixel_scale(self.kernel_hdu.header)
         kernel_xsize, kernel_ysize = read.shape(self.kernel_hdu.header)

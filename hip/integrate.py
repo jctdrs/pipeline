@@ -106,5 +106,6 @@ class Integrate:
 
         integrated_flux = np.array(integrated_flux_list[0:])
         # integrated_L = (integrated_flux * 1e-26) * pow((self.geom["distance"] * 3.086e22), 2) / (3.846e26)
+        print(f"[DEBUG]\tIntegrated flux = {integrated_flux[2]}")
 
-        return integrated_flux
+        return self.data_hdu, self.err_hdu

@@ -33,5 +33,4 @@ def main() -> pipeline.Pipeline:
 
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
-    with chrono():
-        pipe = main()
+    pipe = main()

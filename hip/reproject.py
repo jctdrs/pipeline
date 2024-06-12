@@ -52,8 +52,7 @@ class Reproject:
             xsize, ysize = read.shape(hdr_target)
 
         wcs = WCS(hdr_target)
-        self.data_hdu.data, _ = reproject_interp(self.data_hdu, wcs, shape_out=(xsize, ysize))
-
+        self.data_hdu.data, _ = reproject_interp(input_data=self.data_hdu, output_projection=wcs)
         self.data_hdu.header.update(wcs.to_header())
         return None
 
