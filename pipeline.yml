@@ -33,20 +33,19 @@ pipeline:
           raTrim: 4
           decTrim: 4
     
-    #- step: hip.background
-    #  parameters:
-    #      cellSize: 10
-    #
+    - step: hip.background
+      parameters:
+          cellSize: 10
 
     - step: hip.convolution
       parameters:
           name: SPIRE3
           kernel: inputs/Kernel_LowRes_PACS1_to_SPIRE3.fits
 
-    #- step: hip.reproject
-    #  parameters:
-    #      target: inputs/NGC4254_SPIRE3.fits
-
+    - step: hip.reproject
+      parameters:
+          target: inputs/NGC4254_SPIRE3.fits
     
-    #- step: hip.integrate
+    - step: hip.integrate
+    
     - step: hip.plot

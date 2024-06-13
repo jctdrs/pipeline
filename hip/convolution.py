@@ -117,12 +117,12 @@ class Convolution:
         self.data_hdu.data = fftconvolve(
             self.data_hdu.data,
             self.kernel_hdu.data,
-            mode="full",
+            mode="same",
         )
         return None
 
     def jax_convolve(self, im) -> jnp.array:
-        data = jax_fftconvolve(im, self.kernel_hdu.data, mode="full")
+        data = jax_fftconvolve(im, self.kernel_hdu.data, mode="same")
         return data
 
     def convert_from_radiance_to_Jyperpx(self) -> typing.Any:
