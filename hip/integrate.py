@@ -1,30 +1,38 @@
-import typing
 import math
+import typing
 
-from util import read
+import numpy as np
 
+import numpy.ma as ma
 import astropy
 from astropy.wcs import WCS
+
 from photutils.aperture.ellipse import EllipticalAperture
 from photutils.aperture import aperture_photometry
-import numpy as np
-import numpy.ma as ma
+
+from util import read
 
 
 class Integrate:
     def __init__(
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
-        err_hdu: typing.Union[astropy.io.fits.hdu.image.PrimaryHDU, typing.Any],
+        err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
         geom: dict,
         instruments: dict,
+        use_jax: bool,
     ):
         self.data_hdu = data_hdu
         self.err_hdu = err_hdu
         self.geom = geom
         self.instruments = instruments
+        self.use_jax = use_jax
 
-    def run(self):
+    def run(
+        self,
+    ) -> typing.Tuple[
+        astropy.io.fits.hdu.image.PrimaryHDU, astropy.io.fits.hdu.image.PrimaryHDU, typing.Union[np.ndarray, typing.Any]
+    ]:
         wcs = WCS(self.data_hdu.header)
         px_size = abs(read.pixel_size(self.data_hdu.header)[0] * 3600)
         ra_ = self.geom["ra"]
@@ -108,4 +116,4 @@ class Integrate:
         # integrated_L = (integrated_flux * 1e-26) * pow((self.geom["distance"] * 3.086e22), 2) / (3.846e26)
         print(f"[DEBUG]\tIntegrated flux = {integrated_flux[2]}")
 
-        return self.data_hdu, self.err_hdu
+        return self.data_hdu, self.err_hdu, None

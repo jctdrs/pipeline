@@ -21,30 +21,32 @@ data:
         radius: 5.01
         redshift: 0.00803
     bands:
-        - input: inputs/NGC4254_SPIRE2.fits
-          name: SPIRE2
+        - input: inputs/NGC4254_PACS1.fits
+          error: inputs/NGC4254_PACS1_Error.fits
+          name: PACS1
           calError: 5.0
 
 
 pipeline:
-    - step: hip.background
+    - step: hip.cutout
       parameters:
-          cellSize: 10
-  
+          raTrim: 4
+          decTrim: 4
+    
+    #- step: hip.background
+    #  parameters:
+    #      cellSize: 10
+    #
+
     - step: hip.convolution
       parameters:
           name: SPIRE3
-          kernel: kernels/Kernel_LowRes_SPIRE_350_to_SPIRE_500.fits
-  
-    - step: hip.reproject
-      parameters:
-          target: inputs/NGC4254_SPIRE3.fits
+          kernel: inputs/Kernel_LowRes_PACS1_to_SPIRE3.fits
 
-    - step: hip.integrate
+    #- step: hip.reproject
+    #  parameters:
+    #      target: inputs/NGC4254_SPIRE3.fits
 
-    - step: hip.cutout
-      parameters:
-          raTrim: 7
-          decTrim: 7
-
+    
+    #- step: hip.integrate
     - step: hip.plot

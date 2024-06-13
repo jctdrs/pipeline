@@ -1,9 +1,13 @@
 import math
 import typing
 
+import numpy as np
+
 import astropy
+
 from astropy.wcs import WCS
 from astropy.io import fits
+
 from reproject import reproject_interp
 
 from util import read
@@ -13,26 +17,28 @@ class Reproject:
     def __init__(
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
-        err_hdu: typing.Union[astropy.io.fits.hdu.image.PrimaryHDU, typing.Any],
+        err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
         geom: dict,
         instruments: dict,
+        use_jax: bool,
         target: str,
     ):
         self.data_hdu = data_hdu
         self.err_hdu = err_hdu
         self.geom = geom
         self.instruments = instruments
+        self.use_jax = use_jax
         self.target = target
 
     def run(
         self,
     ) -> typing.Tuple[
-        astropy.io.fits.hdu.image.PrimaryHDU, typing.Union[astropy.io.fits.hdu.image.PrimaryHDU, typing.Any]
+        astropy.io.fits.hdu.image.PrimaryHDU, astropy.io.fits.hdu.image.PrimaryHDU, typing.Union[np.ndarray, typing.Any]
     ]:
         self.convert_from_Jyperpx_to_radiance()
         self.reproject()
         self.convert_from_radiance_to_Jyperpx()
-        return self.data_hdu, self.err_hdu
+        return self.data_hdu, self.err_hdu, None
 
     def convert_from_Jyperpx_to_radiance(self) -> typing.Any:
         pixel_size = read.pixel_size(self.data_hdu.header)

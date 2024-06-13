@@ -1,12 +1,16 @@
-import typing
 import math
+import typing
+
+import numpy as np
+import numpy.ma as ma
 
 import astropy
 from astropy.wcs import WCS
 from astropy.stats import SigmaClip
+
 from photutils import background
+
 import pyregion
-import numpy.ma as ma
 
 from util import read
 
@@ -15,18 +19,25 @@ class Background:
     def __init__(
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
-        err_hdu: typing.Union[astropy.io.fits.hdu.image.PrimaryHDU, typing.Any],
+        err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
         geom: dict,
         instruments: dict,
+        use_jax: bool,
         cellSize: float,
     ):
         self.data_hdu = data_hdu
         self.err_hdu = err_hdu
         self.geom = geom
         self.instruments = instruments
+        self.use_jax = use_jax
         self.cell_size = cellSize
 
-    def run(self):
+    def run(
+        self,
+    ) -> typing.Tuple[
+        astropy.io.fits.hdu.image.PrimaryHDU, astropy.io.fits.hdu.image.PrimaryHDU, typing.Union[np.ndarray, typing.Any]
+    ]:
+
         wcs = WCS(self.data_hdu.header)
         pixel_size = read.pixel_scale(self.data_hdu.header)
         pos = wcs.all_world2pix(self.geom["ra"], self.geom["dec"], 0)
@@ -84,4 +95,4 @@ class Background:
 
         self.data_hdu.data = self.data_hdu.data - bkg.background
 
-        return self.data_hdu, self.err_hdu
+        return self.data_hdu, self.err_hdu, None
