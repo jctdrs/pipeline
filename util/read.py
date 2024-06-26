@@ -24,21 +24,51 @@ def pixel_scale(header: fits.header.Header) -> typing.Union[float, typing.Any]:
         exit()
 
 
-def _check_px_size(header: fits.header.Header) -> typing.Union[typing.Any, typing.Tuple[float, float, str]]:
+def _check_px_size(
+    header: fits.header.Header,
+) -> typing.Union[typing.Any, typing.Tuple[float, float, str]]:
     keys: list = list(header.keys())
     if ("CDELT1" in keys) and ("CDELT2" in keys):
-        if (header["CDELT1"] != 0) and (header["CDELT1"] != 1) and (header["CDELT1"] != -1):
-            if (header["CDELT2"] != 0) and (header["CDELT2"] != 1) and (header["CDELT2"] != -1):
-                return (float(header["CDELT1"]), float(header["CDELT2"]), "CDELT")
+        if (
+            (header["CDELT1"] != 0)
+            and (header["CDELT1"] != 1)
+            and (header["CDELT1"] != -1)
+        ):
+            if (
+                (header["CDELT2"] != 0)
+                and (header["CDELT2"] != 1)
+                and (header["CDELT2"] != -1)
+            ):
+                return (
+                    float(header["CDELT1"]),
+                    float(header["CDELT2"]),
+                    "CDELT",
+                )
 
     elif ("CD1_1" in keys) and ("CD2_2" in keys):
-        if (header["CD1_1"] != 0) and (header["CD1_1"] != 1) and (header["CD1_1"] != -1):
-            if (header["CD2_2"] != 0) and (header["CD2_2"] != 1) and (header["CD2_2"] != -1):
+        if (
+            (header["CD1_1"] != 0)
+            and (header["CD1_1"] != 1)
+            and (header["CD1_1"] != -1)
+        ):
+            if (
+                (header["CD2_2"] != 0)
+                and (header["CD2_2"] != 1)
+                and (header["CD2_2"] != -1)
+            ):
                 return (float(header["CD1_1"]), float(header["CD2_2"]), "CD")
 
     elif ("PC1_1" in keys) and ("PC2_2" in keys):
-        if (header["PC1_1"] != 0) and (header["PC1_1"] != 1) and (header["PC1_1"] != -1):
-            if (header["PC2_2"] != 0) and (header["PC2_2"] != 1) and (header["PC2_2"] != -1):
+        if (
+            (header["PC1_1"] != 0)
+            and (header["PC1_1"] != 1)
+            and (header["PC1_1"] != -1)
+        ):
+            if (
+                (header["PC2_2"] != 0)
+                and (header["PC2_2"] != 1)
+                and (header["PC2_2"] != -1)
+            ):
                 return (float(header["PC1_1"]), float(header["PC2_2"]), "PC")
 
     else:
@@ -46,7 +76,9 @@ def _check_px_size(header: fits.header.Header) -> typing.Union[typing.Any, typin
         exit()
 
 
-def shape(header: fits.header.Header) -> typing.Union[typing.Any, typing.Tuple[int, int]]:
+def shape(
+    header: fits.header.Header,
+) -> typing.Union[typing.Any, typing.Tuple[int, int]]:
     keys: list = list(header.keys())
     if "NAXIS" in keys and header["NAXIS"] == 2 and "NAXIS1" in keys:
         xsize = header["NAXIS1"]

@@ -49,7 +49,9 @@ class FileManager:
         except (yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
             line = e.problem_mark.line + 1  # type: ignore
             column = e.problem_mark.column + 1  # type: ignore
-            print(f"[ERROR]\tYAML parsing error at line {line}, column {column}.")
+            print(
+                f"[ERROR]\tYAML parsing error at line {line}, column {column}."
+            )
             exit()
         except DuplicateKeyError as e:
             print(f"[ERROR]\tDuplicate definition of '{e.key}'.")
@@ -59,14 +61,21 @@ class FileManager:
         return None
 
     def check_yaml_block(
-        self, block_name: str, block: dict, required: typing.Set[str], field_name: str = ""
+        self,
+        block_name: str,
+        block: dict,
+        required: typing.Set[str],
+        field_name: str = "",
     ) -> typing.Any:
         if block is None:
             print(f"[ERROR]\tKey '{block_name}' is empty.")
             exit()
 
         elif not isinstance(block, dict | set):
-            print(f"[ERROR]\tField '{field_name}' in '{block_name}' should " "be a list.")
+            print(
+                f"[ERROR]\tField '{field_name}' in '{block_name}' should "
+                "be a list."
+            )
             exit()
 
         elif not required.issubset(block):
@@ -92,12 +101,16 @@ class FileManager:
         else:
             pars = step["parameters"]
             if not set(pars.keys()).issubset(PIPELINE_STEP_CONFIG[name]):
-                excess_keys = set(pars.keys()).difference(PIPELINE_STEP_CONFIG[name])
+                excess_keys = set(pars.keys()).difference(
+                    PIPELINE_STEP_CONFIG[name]
+                )
                 message = ", ".join(item for item in excess_keys)
                 print(f"[ERROR]\tExcessive field(s) in '{name}': {message}.")
                 exit()
 
-            self.check_yaml_block("parameters", pars, PIPELINE_STEP_CONFIG[name])
+            self.check_yaml_block(
+                "parameters", pars, PIPELINE_STEP_CONFIG[name]
+            )
         return None
 
     def check_yaml_specification(self) -> typing.Any:

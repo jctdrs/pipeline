@@ -28,9 +28,12 @@ class Plot:
         astropy.io.fits.hdu.image.PrimaryHDU,
         typing.Union[np.ndarray, typing.Any],
     ]:
+        bound = np.argwhere(~np.isnan(self.data_hdu.data))
         plt.imshow(self.data_hdu.data, origin="lower")
         plt.xticks([])
         plt.yticks([])
+        plt.xlim(min(bound[:, 1]), max(bound[:, 1]))
+        plt.ylim(min(bound[:, 0]), max(bound[:, 0]))
         plt.grid()
         plt.show()
         return self.data_hdu, self.err_hdu, None

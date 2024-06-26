@@ -35,14 +35,18 @@ class Background:
     def run(
         self,
     ) -> typing.Tuple[
-        astropy.io.fits.hdu.image.PrimaryHDU, astropy.io.fits.hdu.image.PrimaryHDU, typing.Union[np.ndarray, typing.Any]
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        typing.Union[np.ndarray, typing.Any],
     ]:
 
         wcs = WCS(self.data_hdu.header)
         pixel_size = read.pixel_scale(self.data_hdu.header)
         pos = wcs.all_world2pix(self.geom["ra"], self.geom["dec"], 0)
         rma = math.ceil(self.geom["majorAxis"] / pixel_size)
-        rmi = math.ceil(self.geom["majorAxis"] / self.geom["axialRatio"] / pixel_size)
+        rmi = math.ceil(
+            self.geom["majorAxis"] / self.geom["axialRatio"] / pixel_size
+        )
 
         region = """
                 image
@@ -61,7 +65,10 @@ class Background:
         xsize, ysize = read.shape(self.data_hdu.header)
         while True:
             try:
-                lcell_arcsec = self.cell_size * self.instruments[band_name]["RESOLUTION"]["VALUE"]
+                lcell_arcsec = (
+                    self.cell_size
+                    * self.instruments[band_name]["RESOLUTION"]["VALUE"]
+                )
                 lcell_px = math.ceil(lcell_arcsec / pixel_size)
                 ncells1 = math.ceil(xsize / lcell_px)
                 ncells2 = math.ceil(ysize / lcell_px)
@@ -73,7 +80,9 @@ class Background:
                     stdfunc="std",
                     grow=False,
                 )
-                interpolator = background.BkgZoomInterpolator(order=3, mode="reflect", grid_mode=True)
+                interpolator = background.BkgZoomInterpolator(
+                    order=3, mode="reflect", grid_mode=True
+                )
                 bkg_estimator = background.SExtractorBackground()
                 bkgrms_estimator = background.StdBackgroundRMS()
                 bkg = background.Background2D(

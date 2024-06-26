@@ -19,7 +19,9 @@ def chrono():
 def main() -> pipeline.Pipeline:
     # Parse the arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--file", type=str, help="Specification YAML file", required=True)
+    parser.add_argument(
+        "-f", "--file", type=str, help="Specification YAML file", required=True
+    )
     args = parser.parse_args()
     spec_path: str = args.file
 

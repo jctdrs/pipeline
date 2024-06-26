@@ -2,11 +2,11 @@ meta:
     name: Convolution pipeline
     author: JT
     version: 1.0
-    description: This pipeline only runs the convolution step of HIP
+    description: This pipeline runs HIP 
 
 config:
     parallel: No
-    error: differr
+    error: MC
 
 data:
     body: NGC4254
@@ -21,18 +21,17 @@ data:
         radius: 5.01
         redshift: 0.00803
     bands:
-        - input: inputs/NGC4254_PACS1.fits
-          error: inputs/NGC4254_PACS1_Error.fits
-          name: PACS1
+        - input: inputs/NGC4254_SPIRE2.fits
+          #error: inputs/NGC4254_SPIRE2_Error.fits
+          name: SPIRE2
           calError: 5.0
-
 
 pipeline:
     - step: hip.cutout
       parameters:
-          raTrim: 4
-          decTrim: 4
-    
+          raTrim: 15
+          decTrim: 15
+
     - step: hip.background
       parameters:
           cellSize: 10
@@ -40,7 +39,7 @@ pipeline:
     - step: hip.convolution
       parameters:
           name: SPIRE3
-          kernel: inputs/Kernel_LowRes_PACS1_to_SPIRE3.fits
+          kernel: kernels/Kernel_LowRes_SPIRE_350_to_SPIRE_500.fits
 
     - step: hip.reproject
       parameters:

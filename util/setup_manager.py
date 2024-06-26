@@ -112,7 +112,9 @@ class SetupManager:
         except (yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
             line = e.problem_mark.line + 1  # type: ignore
             column = e.problem_mark.column + 1  # type: ignore
-            print(f"[ERROR]\tYAML parsing error at line {line}, column {column}.")
+            print(
+                f"[ERROR]\tYAML parsing error at line {line}, column {column}."
+            )
             exit()
 
         bands = self.file_mng.data["bands"]
@@ -130,7 +132,9 @@ class SetupManager:
                     bad_target += f" '{target_band}'"
 
         if not status:
-            print(f"[ERROR]\tCannot implement resolution degradation from{bad_band} to{bad_target}.")
+            print(
+                f"[ERROR]\tCannot implement resolution degradation from{bad_band} to{bad_target}."
+            )
             exit()
 
     def check_for_kernels(self, kernels: list) -> typing.Any:

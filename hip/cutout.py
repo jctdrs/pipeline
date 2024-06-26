@@ -31,18 +31,29 @@ class Cutout:
     def run(
         self,
     ) -> typing.Tuple[
-        astropy.io.fits.hdu.image.PrimaryHDU, astropy.io.fits.hdu.image.PrimaryHDU, typing.Union[np.ndarray, typing.Any]
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        typing.Union[np.ndarray, typing.Any],
     ]:
         wcs = WCS(self.data_hdu.header)
-        pos_center = SkyCoord(ra=self.geom["ra"] * au.deg, dec=self.geom["dec"] * au.deg, frame=ICRS)
+        pos_center = SkyCoord(
+            ra=self.geom["ra"] * au.deg,
+            dec=self.geom["dec"] * au.deg,
+            frame=ICRS,
+        )
         sizeTrim = (self.dec_trim * au.arcmin, self.ra_trim * au.arcmin)
 
-        data_cutout = Cutout2D(self.data_hdu.data, position=pos_center, size=sizeTrim, wcs=wcs)
+        data_cutout = Cutout2D(
+            self.data_hdu.data, position=pos_center, size=sizeTrim, wcs=wcs
+        )
         self.data_hdu.data = data_cutout.data
         self.data_hdu.header.update(data_cutout.wcs.to_header())
 
-        err_cutout = Cutout2D(self.err_hdu.data, position=pos_center, size=sizeTrim, wcs=wcs)
-        self.err_hdu.data = err_cutout.data
-        self.err_hdu.header.update(err_cutout.wcs.to_header())
+        if self.err_hdu is not None:
+            err_cutout = Cutout2D(
+                self.err_hdu.data, position=pos_center, size=sizeTrim, wcs=wcs
+            )
+            self.err_hdu.data = err_cutout.data
+            self.err_hdu.header.update(err_cutout.wcs.to_header())
 
         return self.data_hdu, self.err_hdu, None

@@ -64,7 +64,7 @@ class Convolution:
                 0
             ]
             self.scale_kernel()
-            self.crop_kernel()
+             self.crop_kernel()
         return None
 
     def scale_kernel(self) -> typing.Any:
@@ -85,7 +85,7 @@ class Convolution:
         return None
 
     def crop_kernel(self) -> typing.Any:
-        size = 35
+        size = 75
         xsize = self.kernel_hdu.data.shape[0]
         ysize = self.kernel_hdu.data.shape[1]
 

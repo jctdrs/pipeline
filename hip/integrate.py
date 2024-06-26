@@ -31,7 +31,9 @@ class Integrate:
     def run(
         self,
     ) -> typing.Tuple[
-        astropy.io.fits.hdu.image.PrimaryHDU, astropy.io.fits.hdu.image.PrimaryHDU, typing.Union[np.ndarray, typing.Any]
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        typing.Union[np.ndarray, typing.Any],
     ]:
         wcs = WCS(self.data_hdu.header)
         px_size = abs(read.pixel_size(self.data_hdu.header)[0] * 3600)
@@ -95,10 +97,17 @@ class Integrate:
         ]
 
         apertures = [
-            EllipticalAperture(position_px, a=ai + 1e-3, b=bi + 1e-3, theta=self.geom["positionAngle"])
+            EllipticalAperture(
+                position_px,
+                a=ai + 1e-3,
+                b=bi + 1e-3,
+                theta=self.geom["positionAngle"],
+            )
             for (ai, bi) in zip(a, b)
         ]
-        phot_table = aperture_photometry(nan.data, apertures, error=None, mask=nan.mask)
+        phot_table = aperture_photometry(
+            nan.data, apertures, error=None, mask=nan.mask
+        )
 
         for col in phot_table.colnames:
             phot_table[col].info.format = "%.8g"
