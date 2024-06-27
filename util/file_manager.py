@@ -8,7 +8,7 @@ PIPELINE_STEP_CONFIG: dict = {
     "hip.cutout": {"raTrim", "decTrim"},
     "hip.reproject": {"target"},
     "hip.integrate": {},
-    "hip.plot": {},
+    "util.plot": {},
 }
 
 

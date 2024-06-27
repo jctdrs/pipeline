@@ -103,10 +103,12 @@ class Reproject:
         if self.use_jax:
             grad_res = self.setup_interpolate()
             self.convert_from_radiance_to_Jyperpx()
+            self.crop()
             return self.data_hdu, self.err_hdu, grad_res
         else:
             self.reproject()
             self.convert_from_radiance_to_Jyperpx()
+            self.crop()
             return self.data_hdu, self.err_hdu, None
 
     def convert_from_Jyperpx_to_radiance(self) -> typing.Any:
@@ -148,4 +150,12 @@ class Reproject:
         )
 
         self.data_hdu.data *= conversion_factor
+        return None
+
+    def crop(self) -> typing.Any:
+        bound = np.argwhere(~np.isnan(self.data_hdu.data))
+        self.data_hdu.data = self.data_hdu.data[
+            min(bound[:, 0]) : max(bound[:, 0]),
+            min(bound[:, 1]) : max(bound[:, 1]),
+        ]
         return None

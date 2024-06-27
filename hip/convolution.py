@@ -63,8 +63,9 @@ class Convolution:
             self.kernel_hdu: astropy.io.fits.hdu.image.PrimaryHDU = hdul_kernel[
                 0
             ]
+            self.crop_kernel()
             self.scale_kernel()
-             self.crop_kernel()
+            self.normalize_kernel()
         return None
 
     def scale_kernel(self) -> typing.Any:
@@ -85,14 +86,20 @@ class Convolution:
         return None
 
     def crop_kernel(self) -> typing.Any:
-        size = 75
-        xsize = self.kernel_hdu.data.shape[0]
-        ysize = self.kernel_hdu.data.shape[1]
+        xsize_d = self.data_hdu.data.shape[0]
+        ysize_d = self.data_hdu.data.shape[1]
+
+        xsize_k = self.kernel_hdu.data.shape[0]
+        ysize_k = self.kernel_hdu.data.shape[1]
 
         self.kernel_hdu.data = self.kernel_hdu.data[
-            xsize // 2 - size : xsize // 2 + size,
-            ysize // 2 - size : ysize // 2 + size,
+            xsize_k // 2 - xsize_d // 2 : xsize_k // 2 + xsize_d // 2,
+            ysize_k // 2 - ysize_d // 2 : ysize_k // 2 + ysize_d // 2,
         ]
+        return None
+
+    def normalize_kernel(self) -> typing.Any:
+        self.kernel_hdu.data /= np.sum(self.kernel_hdu.data)
         return None
 
     def convert_from_Jyperpx_to_radiance(self) -> typing.Any:

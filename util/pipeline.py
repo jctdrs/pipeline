@@ -11,9 +11,9 @@ from hip import background
 from hip import cutout
 from hip import reproject
 from hip import integrate
-from hip import plot
 
 from util import file_manager
+from util import plot
 
 Interface: dict = {
     "hip.convolution": convolution.Convolution,
@@ -21,7 +21,7 @@ Interface: dict = {
     "hip.cutout": cutout.Cutout,
     "hip.reproject": reproject.Reproject,
     "hip.integrate": integrate.Integrate,
-    "hip.plot": plot.Plot,
+    "util.plot": plot.Plot,
 }
 
 
@@ -122,7 +122,6 @@ class PipelineSequential(Pipeline):
                 self.use_jax,
                 **task["parameters"],
             ).run()
-
             # Accumulate gradient
             if grad_arr is not None:
                 if first_step_with_grad:
