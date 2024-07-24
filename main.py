@@ -1,19 +1,8 @@
 import argparse
-import time
-import contextlib
-import warnings
 
 from util import file_manager
 from util import pipeline
 from util import setup_manager
-
-
-@contextlib.contextmanager
-def chrono():
-    start = time.time()
-    yield
-    end = time.time()
-    print(f"[DEBUG]\tElapsed time {end-start:.3f} seconds.")
 
 
 def main() -> pipeline.Pipeline:
@@ -34,5 +23,4 @@ def main() -> pipeline.Pipeline:
 
 
 if __name__ == "__main__":
-    warnings.filterwarnings("ignore")
     pipe = main()

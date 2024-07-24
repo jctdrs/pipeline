@@ -28,19 +28,14 @@ class Plot:
         astropy.io.fits.hdu.image.PrimaryHDU,
         typing.Union[np.ndarray, typing.Any],
     ]:
-        fig, ax = plt.subplots(2, 1, figsize=(7, 9))
 
         bound = np.argwhere(~np.isnan(self.data_hdu.data))
-        ax[0].imshow(self.data_hdu.data, origin="lower")
+        plt.imshow(self.data_hdu.data, origin="lower")
         if bound.any():
-            ax[0].set_xlim(min(bound[:, 1]), max(bound[:, 1]))
-            ax[0].set_ylim(min(bound[:, 0]), max(bound[:, 0]))
-        ax[0].set_xticks([])
-        ax[0].set_yticks([])
-
-        ax[1].imshow(self.err_hdu.data, origin="lower")
-        ax[1].set_xticks([])
-        ax[1].set_yticks([])
+            plt.xlim(min(bound[:, 1]), max(bound[:, 1]))
+            plt.ylim(min(bound[:, 0]), max(bound[:, 0]))
+        plt.xticks([])
+        plt.yticks([])
         plt.show()
 
         return self.data_hdu, self.err_hdu, None

@@ -46,8 +46,8 @@ class Convolution:
 
         if self.use_jax:
             grad_call = jacfwd(self.jax_convolve)
-            grad_res = grad_call(jnp.array(self.data_hdu.data))
-            data = self.jax_convolve(jnp.array(self.data_hdu.data))
+            grad_res = grad_call(jnp.array(self.data_hdu.data, dtype='bfloat16'))
+            data = self.jax_convolve(jnp.array(self.data_hdu.data), dtype='bfloat16')
             self.data_hdu.data = np.array(data)
             self.convert_from_radiance_to_Jyperpx()
             del grad_call

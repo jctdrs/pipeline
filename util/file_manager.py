@@ -5,9 +5,9 @@ PIPELINE_STEP_CONFIG: dict = {
     "hip.convolution": {"name", "kernel"},
     "hip.test": {"test"},
     "hip.background": {"cellSize"},
-    "hip.cutout": {"raTrim", "decTrim"},
+    "util.cutout": {"raTrim", "decTrim"},
     "hip.reproject": {"target"},
-    "hip.integrate": {},
+    "util.integrate": {},
     "util.plot": {},
 }
 

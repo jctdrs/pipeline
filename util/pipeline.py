@@ -8,20 +8,20 @@ import numpy as np
 
 from hip import convolution
 from hip import background
-from hip import cutout
 from hip import reproject
-from hip import integrate
 
 from util import file_manager
 from util import plot
+from util import integrate
+from util import cutout
 
 Interface: dict = {
     "hip.convolution": convolution.Convolution,
     "hip.background": background.Background,
-    "hip.cutout": cutout.Cutout,
     "hip.reproject": reproject.Reproject,
-    "hip.integrate": integrate.Integrate,
+    "util.integrate": integrate.Integrate,
     "util.plot": plot.Plot,
+    "util.cutout": cutout.Cutout,
 }
 
 

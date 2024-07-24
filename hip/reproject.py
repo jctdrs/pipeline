@@ -76,9 +76,9 @@ class Reproject:
         pixel_in = jnp.array(pixel_in)
 
         grad_call = jacfwd(self.interpolate, argnums=0)
-        grad_res = grad_call(jnp.array(self.data_hdu.data), pixel_in)
-        data = self.interpolate(jnp.array(self.data_hdu.data), pixel_in)
-        self.data_hdu.data = np.array(data)
+        grad_res = grad_call(jnp.array(self.data_hdu.data, dtype='bfloat16'), pixel_in)
+        data = self.interpolate(jnp.array(self.data_hdu.data, dtype='bfloat16'), pixel_in)
+        self.data_hdu.data = np.array(data, dtype='float32')
         del grad_call
         return grad_res
 

@@ -60,7 +60,6 @@ class Background:
         data_nan_masked = ma.masked_invalid(self.data_hdu.data)
         nan_mask = data_nan_masked.mask
 
-        # TODO: Get the band_name. Maybe pass file_mng
         band_name = "NIKA2_1"
         xsize, ysize = read.shape(self.data_hdu.header)
         while True:

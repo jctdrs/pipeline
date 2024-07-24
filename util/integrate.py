@@ -2,8 +2,8 @@ import math
 import typing
 
 import numpy as np
-
 import numpy.ma as ma
+
 import astropy
 from astropy.wcs import WCS
 
