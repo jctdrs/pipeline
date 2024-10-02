@@ -144,6 +144,14 @@ HFI3:
         VALUE: 300
         UNIT: arcsec
 
+HFI4: 
+    WAVELENGTH: 
+        cENTRAL: 1380
+        UNIT: micron
+    RESOLUTION: 
+        VALUE: 330
+        UNIT: arcsec
+
 NIKA2_1:
     WAVELENGTH:
         CENTRAL: 1.5

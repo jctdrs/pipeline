@@ -21,14 +21,16 @@ class Reproject:
     def __init__(
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
-        err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
+        name: str,
+        body: str,
         geom: dict,
         instruments: dict,
         use_jax: bool,
         target: str,
     ):
         self.data_hdu = data_hdu
-        self.err_hdu = err_hdu
+        self.name = name
+        self.body = body
         self.geom = geom
         self.instruments = instruments
         self.use_jax = use_jax
@@ -76,9 +78,11 @@ class Reproject:
         pixel_in = jnp.array(pixel_in)
 
         grad_call = jacfwd(self.interpolate, argnums=0)
-        grad_res = grad_call(jnp.array(self.data_hdu.data, dtype='bfloat16'), pixel_in)
-        data = self.interpolate(jnp.array(self.data_hdu.data, dtype='bfloat16'), pixel_in)
-        self.data_hdu.data = np.array(data, dtype='float32')
+        grad_res = grad_call(jnp.array(self.data_hdu.data, dtype="bfloat16"), pixel_in)
+        data = self.interpolate(
+            jnp.array(self.data_hdu.data, dtype="bfloat16"), pixel_in
+        )
+        self.data_hdu.data = np.array(data, dtype="float32")
         del grad_call
         return grad_res
 
@@ -100,21 +104,22 @@ class Reproject:
         typing.Union[np.ndarray, typing.Any],
     ]:
         self.convert_from_Jyperpx_to_radiance()
+
         if self.use_jax:
             grad_res = self.setup_interpolate()
             self.convert_from_radiance_to_Jyperpx()
             self.crop()
-            return self.data_hdu, self.err_hdu, grad_res
+            return self.data_hdu, grad_res
         else:
             self.reproject()
             self.convert_from_radiance_to_Jyperpx()
-            self.crop()
-            return self.data_hdu, self.err_hdu, None
+            # self.crop()
+            return self.data_hdu, None
 
     def convert_from_Jyperpx_to_radiance(self) -> typing.Any:
-        pixel_size = read.pixel_size(self.data_hdu.header)
-        px_x: float = pixel_size[0] * 2 * math.pi / 360
-        px_y: float = pixel_size[1] * 2 * math.pi / 360
+        pixel_size = read.pixel_size_arcsec(self.data_hdu.header)
+        px_x: float = pixel_size * 2 * math.pi / 360
+        px_y: float = pixel_size * 2 * math.pi / 360
 
         # divide by 3.846x10^26 (Lsun in Watt) to convert W/Hz/m2/sr in
         # Lsun/Hz/m2/sr multiply by the galaxy distance in m2 to get Lsun/Hz/sr
@@ -135,15 +140,17 @@ class Reproject:
 
         wcs = WCS(hdr_target)
         self.data_hdu.data, _ = reproject_interp(
-            input_data=self.data_hdu, output_projection=wcs
+            input_data=self.data_hdu,
+            output_projection=wcs,
         )
         self.data_hdu.header.update(wcs.to_header())
+
         return None
 
     def convert_from_radiance_to_Jyperpx(self) -> typing.Any:
-        pixel_size = read.pixel_size(self.data_hdu.header)
-        px_x: float = pixel_size[0] * 2 * math.pi / 360
-        px_y: float = pixel_size[1] * 2 * math.pi / 360
+        pixel_size = read.pixel_size_arcsec(self.data_hdu.header)
+        px_x: float = pixel_size * 2 * math.pi / 360
+        px_y: float = pixel_size * 2 * math.pi / 360
 
         conversion_factor = (px_x * px_y * 3.846e26) / (
             1e-26 * pow((self.geom["distance"] * 3.086e22), 2) * 4 * math.pi
@@ -154,8 +161,9 @@ class Reproject:
 
     def crop(self) -> typing.Any:
         bound = np.argwhere(~np.isnan(self.data_hdu.data))
-        self.data_hdu.data = self.data_hdu.data[
-            min(bound[:, 0]) : max(bound[:, 0]),
-            min(bound[:, 1]) : max(bound[:, 1]),
-        ]
+        if bound.any():
+            self.data_hdu.data = self.data_hdu.data[
+                min(bound[:, 0]) : max(bound[:, 0]),
+                min(bound[:, 1]) : max(bound[:, 1]),
+            ]
         return None

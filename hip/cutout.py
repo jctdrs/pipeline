@@ -13,7 +13,8 @@ class Cutout:
     def __init__(
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
-        err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
+        name: str,
+        body: str,
         geom: dict,
         instruments: dict,
         use_jax: bool,
@@ -21,7 +22,8 @@ class Cutout:
         decTrim: float,
     ):
         self.data_hdu = data_hdu
-        self.err_hdu = err_hdu
+        self.name = name
+        self.body = body
         self.geom = geom
         self.instruments = instruments
         self.use_jax = use_jax
@@ -31,7 +33,6 @@ class Cutout:
     def run(
         self,
     ) -> typing.Tuple[
-        astropy.io.fits.hdu.image.PrimaryHDU,
         astropy.io.fits.hdu.image.PrimaryHDU,
         typing.Union[np.ndarray, typing.Any],
     ]:
@@ -49,11 +50,4 @@ class Cutout:
         self.data_hdu.data = data_cutout.data
         self.data_hdu.header.update(data_cutout.wcs.to_header())
 
-        if self.err_hdu is not None:
-            err_cutout = Cutout2D(
-                self.err_hdu.data, position=pos_center, size=sizeTrim, wcs=wcs
-            )
-            self.err_hdu.data = err_cutout.data
-            self.err_hdu.header.update(err_cutout.wcs.to_header())
-
-        return self.data_hdu, self.err_hdu, None
+        return self.data_hdu, None

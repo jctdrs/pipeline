@@ -2,13 +2,13 @@ import yaml
 import typing
 
 PIPELINE_STEP_CONFIG: dict = {
-    "hip.convolution": {"name", "kernel"},
-    "hip.test": {"test"},
+    "hip.convolution": {"kernel"},
     "hip.background": {"cellSize"},
-    "util.cutout": {"raTrim", "decTrim"},
+    "hip.cutout": {"raTrim", "decTrim"},
     "hip.reproject": {"target"},
-    "util.integrate": {},
+    "util.integrate": {"radius"},
     "util.plot": {},
+    "hip.foreground": {"factor", "raTrim", "decTrim"},
 }
 
 
@@ -49,9 +49,7 @@ class FileManager:
         except (yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
             line = e.problem_mark.line + 1  # type: ignore
             column = e.problem_mark.column + 1  # type: ignore
-            print(
-                f"[ERROR]\tYAML parsing error at line {line}, column {column}."
-            )
+            print(f"[ERROR]\tYAML parsing error at line {line}, column {column}.")
             exit()
         except DuplicateKeyError as e:
             print(f"[ERROR]\tDuplicate definition of '{e.key}'.")
@@ -73,8 +71,7 @@ class FileManager:
 
         elif not isinstance(block, dict | set):
             print(
-                f"[ERROR]\tField '{field_name}' in '{block_name}' should "
-                "be a list."
+                f"[ERROR]\tField '{field_name}' in '{block_name}' should " "be a list."
             )
             exit()
 
@@ -98,24 +95,19 @@ class FileManager:
             print(f"[ERROR]\t'Parameters' required in {name}")
             exit()
 
-        else:
-            pars = step["parameters"]
-            if not set(pars.keys()).issubset(PIPELINE_STEP_CONFIG[name]):
-                excess_keys = set(pars.keys()).difference(
-                    PIPELINE_STEP_CONFIG[name]
-                )
-                message = ", ".join(item for item in excess_keys)
-                print(f"[ERROR]\tExcessive field(s) in '{name}': {message}.")
-                exit()
+        pars = step["parameters"]
+        if not set(pars.keys()).issubset(PIPELINE_STEP_CONFIG[name]):
+            excess_keys = set(pars.keys()).difference(PIPELINE_STEP_CONFIG[name])
+            message = ", ".join(item for item in excess_keys)
+            print(f"[ERROR]\tExcessive field(s) in '{name}': {message}.")
+            exit()
 
-            self.check_yaml_block(
-                "parameters", pars, PIPELINE_STEP_CONFIG[name]
-            )
+        self.check_yaml_block("parameters", pars, set(PIPELINE_STEP_CONFIG[name]))
         return None
 
     def check_yaml_specification(self) -> typing.Any:
         required_top: typing.Set[str] = {"config", "data", "pipeline"}
-        required_config: typing.Set[str] = {"parallel", "error"}
+        required_config: typing.Set[str] = {"error"}
         required_data: typing.Set[str] = {"body", "bands", "geometry"}
         required_band: typing.Set[str] = {"input", "name", "calError"}
         required_pipeline: typing.Set[str] = {"step"}
@@ -165,8 +157,26 @@ class FileManager:
 
         # Check for pipeline keys
         self.pipeline: dict = self.spec["pipeline"]
+        self.tasks: list = []
+
+        if "before" in self.spec:
+            self.before: dict = self.spec["before"]
+            for item in self.before:
+                self.check_yaml_block("before", item, required_pipeline, "step")
+                self.check_step(item)
+            self.tasks.extend(self.before)
+
         # Check for every step keys
         for item in self.pipeline:
             self.check_yaml_block("pipeline", item, required_pipeline, "step")
             self.check_step(item)
+        self.tasks.extend(self.pipeline)
+
+        if "after" in self.spec:
+            self.after: dict = self.spec["after"]
+            for item in self.after:
+                self.check_yaml_block("after", item, required_pipeline, "step")
+                self.check_step(item)
+            self.tasks.extend(self.after)
+
         return None

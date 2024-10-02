@@ -19,14 +19,16 @@ class Background:
     def __init__(
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
-        err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
+        name: str,
+        body: str,
         geom: dict,
         instruments: dict,
         use_jax: bool,
         cellSize: float,
     ):
         self.data_hdu = data_hdu
-        self.err_hdu = err_hdu
+        self.name = name
+        self.body = body
         self.geom = geom
         self.instruments = instruments
         self.use_jax = use_jax
@@ -36,37 +38,30 @@ class Background:
         self,
     ) -> typing.Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
-        astropy.io.fits.hdu.image.PrimaryHDU,
         typing.Union[np.ndarray, typing.Any],
     ]:
-
+        mask = ma.masked_invalid(self.data_hdu.data).mask
+        self.data_hdu.data[mask] = 0.0
         wcs = WCS(self.data_hdu.header)
-        pixel_size = read.pixel_scale(self.data_hdu.header)
+        pixel_size = read.pixel_size_arcsec(self.data_hdu.header)
         pos = wcs.all_world2pix(self.geom["ra"], self.geom["dec"], 0)
         rma = math.ceil(self.geom["majorAxis"] / pixel_size)
-        rmi = math.ceil(
-            self.geom["majorAxis"] / self.geom["axialRatio"] / pixel_size
-        )
+        rmi = math.ceil(self.geom["majorAxis"] / self.geom["axialRatio"] / pixel_size)
 
         region = """
                 image
                 ellipse({},{},{},{},{})
-                """.format(
-            pos[0], pos[1], rma, rmi, self.geom["positionAngle"]
-        )
+                """.format(pos[0], pos[1], rma, rmi, self.geom["positionAngle"])
+
         r = pyregion.parse(region)
 
         bkg_mask = r.get_mask(hdu=self.data_hdu)
-        data_nan_masked = ma.masked_invalid(self.data_hdu.data)
-        nan_mask = data_nan_masked.mask
-
-        band_name = "NIKA2_1"
         xsize, ysize = read.shape(self.data_hdu.header)
+
         while True:
             try:
                 lcell_arcsec = (
-                    self.cell_size
-                    * self.instruments[band_name]["RESOLUTION"]["VALUE"]
+                    self.cell_size * self.instruments[self.name]["RESOLUTION"]["VALUE"]
                 )
                 lcell_px = math.ceil(lcell_arcsec / pixel_size)
                 ncells1 = math.ceil(xsize / lcell_px)
@@ -91,7 +86,6 @@ class Background:
                     sigma_clip=sigma_clip,
                     interpolator=interpolator,
                     mask=bkg_mask,
-                    coverage_mask=nan_mask,
                     exclude_percentile=10.0,
                     bkg_estimator=bkg_estimator,
                     bkgrms_estimator=bkgrms_estimator,
@@ -102,5 +96,6 @@ class Background:
                 continue
 
         self.data_hdu.data = self.data_hdu.data - bkg.background
+        self.data_hdu.data[mask] = np.nan
 
-        return self.data_hdu, self.err_hdu, None
+        return self.data_hdu, None

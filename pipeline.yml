@@ -5,8 +5,8 @@ meta:
     description: This pipeline runs HIP 
 
 config:
-    parallel: No
     error: MC
+    iterations: 2
 
 data:
     body: NGC4254
@@ -20,31 +20,52 @@ data:
         axialRatio: 1.3471
         radius: 5.01
         redshift: 0.00803
+
+    #body: NGC6946
+    #geometry:
+    #    ra: 308.71905
+    #    dec: 60.15361
+    #    distance: 7
+    #    inclination: 18.3
+    #    positionAngle: 0
+    #    majorAxis: 207
+    #    axialRatio: 1.09205367645
+    #    radius: 11.4815347
+    #    redshift: 0.000133
+
     bands:
-        - input: inputs/NGC4254_SPIRE2.fits
-          #error: inputs/NGC4254_SPIRE2_Error.fits
-          name: SPIRE2
-          calError: 5.0
+        - input: inputs/NGC4254/NGC4254_MIPS3.fits
+          error: inputs/NGC4254/NGC4254_MIPS3_Error.fits
+          calError: 5.4
+          name: MIPS3
 
-pipeline:
-    - step: hip.cutout
-      parameters:
-          raTrim: 15
-          decTrim: 15
+before:
+  - step: hip.cutout
+    parameters:
+      raTrim: 10
+      decTrim: 10
 
+  #- step: hip.foreground
+  #  parameters:
+  #    factor: 3
+  #    raTrim: 10
+  #    decTrim: 10
+
+pipeline: 
     - step: hip.background
       parameters:
-          cellSize: 10
+        cellSize: 4
 
     - step: hip.convolution
       parameters:
-          name: SPIRE3
-          kernel: kernels/Kernel_LowRes_SPIRE_350_to_SPIRE_500.fits
-
+          kernel: kernels/Kernel_LowRes_PACS1_to_SPIRE3.fits
+   
     - step: hip.reproject
       parameters:
-          target: inputs/NGC4254_SPIRE3.fits
+        target: inputs/NGC4254/NGC4254_SPIRE3.fits
     
-    - step: hip.integrate
-    
-    - step: hip.plot
+after:
+    - step: util.integrate
+      parameters:
+          radius: 2
+  

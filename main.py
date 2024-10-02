@@ -19,8 +19,9 @@ def main() -> pipeline.Pipeline:
 
     pipe = pipeline.Pipeline.create(file_mng)
     pipe.execute()
+
     return pipe
 
 
 if __name__ == "__main__":
-    pipe = main()
+    main()

@@ -1,5 +1,4 @@
 import os
-import yaml
 import typing
 
 from util import file_manager
@@ -84,60 +83,12 @@ class SetupManager:
 
     def validate_convolution(self) -> typing.Any:
         pipeline = self.file_mng.pipeline
-        target_bands: list = []
         kernels: list = []
         for step in pipeline:
             if step["step"] == "hip.convolution":
-                target_band = step["parameters"]["name"]
                 kernel = step["parameters"]["kernel"]
-                self.validate_band(target_band)
-                target_bands.append(target_band)
                 kernels.append(kernel)
 
-        self.validate_resolution(target_bands)
-        self.check_for_kernels(kernels)
-
-    def validate_resolution(self, target_bands: list) -> typing.Any:
-        try:
-            f = open("config/instruments.yml", "r")
-        except OSError:
-            print("[ERROR]\tFile 'config/instruments.yml' not found.")
-            exit()
-
-        # Check if specification is valid YAML
-        # In case of failure, capture line/col for debug
-        try:
-            instruments = yaml.load(f, yaml.SafeLoader)
-            f.close()
-        except (yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
-            line = e.problem_mark.line + 1  # type: ignore
-            column = e.problem_mark.column + 1  # type: ignore
-            print(
-                f"[ERROR]\tYAML parsing error at line {line}, column {column}."
-            )
-            exit()
-
-        bands = self.file_mng.data["bands"]
-        status: bool = True
-        bad_band: str = ""
-        bad_target: str = ""
-        for target_band in target_bands:
-            target_resolution = instruments[target_band]["RESOLUTION"]["VALUE"]
-            for band in bands:
-                band_name = band["name"]
-                band_resolution = instruments[band_name]["RESOLUTION"]["VALUE"]
-                if target_resolution < band_resolution:
-                    status = False
-                    bad_band += f" '{band_name}'"
-                    bad_target += f" '{target_band}'"
-
-        if not status:
-            print(
-                f"[ERROR]\tCannot implement resolution degradation from{bad_band} to{bad_target}."
-            )
-            exit()
-
-    def check_for_kernels(self, kernels: list) -> typing.Any:
         status: bool = True
         kernels_not_found: str = ""
         for kernel in kernels:
