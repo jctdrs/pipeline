@@ -19,6 +19,7 @@ class Background:
     def __init__(
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
+        err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
         name: str,
         body: str,
         geom: dict,
@@ -27,6 +28,7 @@ class Background:
         cellSize: float,
     ):
         self.data_hdu = data_hdu
+        self.err_hdu = err_hdu
         self.name = name
         self.body = body
         self.geom = geom
@@ -37,6 +39,7 @@ class Background:
     def run(
         self,
     ) -> typing.Tuple[
+        astropy.io.fits.hdu.image.PrimaryHDU,
         astropy.io.fits.hdu.image.PrimaryHDU,
         typing.Union[np.ndarray, typing.Any],
     ]:
@@ -98,4 +101,4 @@ class Background:
         self.data_hdu.data = self.data_hdu.data - bkg.background
         self.data_hdu.data[mask] = np.nan
 
-        return self.data_hdu, None
+        return self.data_hdu, self.err_hdu, None

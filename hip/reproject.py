@@ -21,6 +21,7 @@ class Reproject:
     def __init__(
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
+        err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
         name: str,
         body: str,
         geom: dict,
@@ -29,6 +30,7 @@ class Reproject:
         target: str,
     ):
         self.data_hdu = data_hdu
+        self.err_hdu = err_hdu
         self.name = name
         self.body = body
         self.geom = geom
@@ -108,13 +110,14 @@ class Reproject:
         if self.use_jax:
             grad_res = self.setup_interpolate()
             self.convert_from_radiance_to_Jyperpx()
-            self.crop()
-            return self.data_hdu, grad_res
+            # TODO: need crop ?
+            # self.crop()
+            return self.data_hdu, self.err_hdu, grad_res
         else:
             self.reproject()
             self.convert_from_radiance_to_Jyperpx()
             # self.crop()
-            return self.data_hdu, None
+            return self.data_hdu, self.err_hdu, None
 
     def convert_from_Jyperpx_to_radiance(self) -> typing.Any:
         pixel_size = read.pixel_size_arcsec(self.data_hdu.header)

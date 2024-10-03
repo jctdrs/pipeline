@@ -1,5 +1,6 @@
 import typing
 import yaml
+import copy
 
 from astropy.io import fits
 
@@ -130,6 +131,7 @@ class DifferentialPipeline(Pipeline):
 
         body = self.file_mng.data["body"]
         name = self.file_mng.data["bands"][idx]["name"]
+
         # Loop over steps in pipeline
         for task in self.file_mng.pipeline:
             data_hdu, err_hdu, grad_arr = Interface[task["step"]](
@@ -173,9 +175,9 @@ class SinglePassPipeline(Pipeline):
         err_hdu = None
 
         for task in self.file_mng.tasks:
-            print(task)
-            data_hdu, _ = Interface[task["step"]](
+            data_hdu, err_hdu, _ = Interface[task["step"]](
                 data_hdu,
+                err_hdu,
                 name,
                 body,
                 self.geom,
@@ -196,6 +198,8 @@ class MonteCarloPipeline(Pipeline):
 
     def _target(self, idx: int) -> typing.Any:
         # Loop over steps in pipeline
+        data_result = None
+        first = True
         count = 0
         mean = 0
         M2 = 0
@@ -204,55 +208,49 @@ class MonteCarloPipeline(Pipeline):
         name = self.file_mng.data["bands"][idx]["name"]
 
         if "error" in self.file_mng.data["bands"][idx]:
-            original_data_hdu = self.load_input(self.file_mng, idx)
-            original_err_hdu = self.load_error(self.file_mng, idx)
+            data_hdu = self.load_input(self.file_mng, idx)
+            err_hdu = self.load_error(self.file_mng, idx)
+            for idx, task in enumerate(self.file_mng.tasks):
+                if self.file_mng.repeat[idx] == 1:
+                    if first:
+                        original_data_hdu = data_hdu
+                        original_err_hdu = err_hdu
+                        first = False
 
-            if hasattr(self.file_mng, "before"):
-                for task in self.file_mng.before:
-                    original_data_hdu, _ = Interface[task["step"]](
-                        original_data_hdu,
-                        name,
-                        body,
-                        self.geom,
-                        self.instruments,
-                        False,
-                        **task["parameters"],
-                    ).run()
+                    data_hdu = fits.PrimaryHDU(
+                        header=original_data_hdu.header,
+                        data=original_data_hdu.data
+                        + np.random.normal(
+                            0, original_err_hdu.data, original_err_hdu.data.shape
+                        ),
+                    )
 
-            for niter in range(self.niter):
-                print(niter)
-                count += 1
+                    err_hdu = copy.copy(original_err_hdu)
+                    count += 1
 
-                data_hdu = fits.PrimaryHDU(
-                    header=original_data_hdu.header,
-                    data=original_data_hdu.data
-                    + np.random.normal(
-                        0, original_err_hdu.data, original_err_hdu.data.shape
-                    ),
-                )
-
-                for task in self.file_mng.pipeline:
-                    data_hdu, _ = Interface[task["step"]](
-                        data_hdu,
-                        name,
-                        body,
-                        self.geom,
-                        self.instruments,
-                        False,
-                        **task["parameters"],
-                    ).run()
+                data_hdu, err_hdu, _ = Interface[task["step"]](
+                    data_hdu,
+                    err_hdu,
+                    name,
+                    body,
+                    self.geom,
+                    self.instruments,
+                    False,
+                    **task["parameters"],
+                ).run()
 
                 # Running sum
-                if niter == 0:
-                    data_result = data_hdu.data
-                else:
-                    data_result += data_hdu.data
+                if self.file_mng.repeat[idx] == -1:
+                    if data_result is None:
+                        data_result = data_hdu.data
+                    else:
+                        data_result += data_hdu.data
 
-                # Running variance
-                delta = data_hdu.data - mean
-                mean += delta / count
-                delta2 = data_hdu.data - mean
-                M2 += delta * delta2
+                    # Running variance
+                    delta = data_hdu.data - mean
+                    mean += delta / count
+                    delta2 = data_hdu.data - mean
+                    M2 += delta * delta2
 
             # Mean
             data_hdu.data = data_result / count
@@ -261,18 +259,6 @@ class MonteCarloPipeline(Pipeline):
             err_hdu = fits.PrimaryHDU(
                 header=data_hdu.header, data=np.sqrt(M2 / (count - 1))
             )
-
-            if hasattr(self.file_mng, "after"):
-                for task in self.file_mng.after:
-                    data_hdu, _ = Interface[task["step"]](
-                        data_hdu,
-                        name,
-                        body,
-                        self.geom,
-                        self.instruments,
-                        False,
-                        **task["parameters"],
-                    ).run()
 
         self.result.append((data_hdu, err_hdu))
         self.save_output()

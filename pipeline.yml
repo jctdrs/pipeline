@@ -6,7 +6,7 @@ meta:
 
 config:
     error: MC
-    iterations: 2
+    iterations: 1
 
 data:
     body: NGC4254

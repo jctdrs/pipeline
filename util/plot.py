@@ -10,6 +10,7 @@ class Plot:
     def __init__(
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
+        err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
         name: str,
         body: str,
         geom: dict,
@@ -17,6 +18,7 @@ class Plot:
         use_jax: bool,
     ):
         self.data_hdu = data_hdu
+        self.err_hdu = err_hdu
         self.name = name
         self.body = body
         self.geom = geom
@@ -35,4 +37,4 @@ class Plot:
         plt.colorbar()
         plt.show()
 
-        return self.data_hdu, None
+        return self.data_hdu, self.err_hdu, None

@@ -20,6 +20,7 @@ class Convolution:
     def __init__(
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
+        err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
         name: str,
         body: str,
         geom: dict,
@@ -28,6 +29,7 @@ class Convolution:
         kernel: str,
     ):
         self.data_hdu = data_hdu
+        self.err_hdu = err_hdu
         self.name = name
         self.body = body
         self.geom = geom
@@ -38,6 +40,7 @@ class Convolution:
     def run(
         self,
     ) -> typing.Tuple[
+        astropy.io.fits.hdu.image.PrimaryHDU,
         astropy.io.fits.hdu.image.PrimaryHDU,
         typing.Union[np.ndarray, typing.Any],
     ]:
@@ -56,14 +59,14 @@ class Convolution:
             self.data_hdu.data = np.array(data)
             self.convert_from_radiance_to_Jyperpx()
             del grad_call
-            return self.data_hdu, grad_res
+            return self.data_hdu, self.err_hdu, grad_res
 
         else:
             self.convolve()
             self.convert_from_radiance_to_Jyperpx()
             self.data_hdu.data[mask] = np.nan
 
-            return self.data_hdu, None
+            return self.data_hdu, self.err_hdu, None
 
     def load_kernel(self) -> typing.Any:
         hdu_kernel: astropy.io.image.PrimaryHDU = astropy.io.fits.open(self.kernel_path)

@@ -19,6 +19,7 @@ class Foreground:
     def __init__(
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
+        err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
         name: str,
         body: str,
         geom: dict,
@@ -29,6 +30,7 @@ class Foreground:
         decTrim: float,
     ):
         self.data_hdu = data_hdu
+        self.err_hdu = err_hdu
         self.name = name
         self.body = body
         self.geom = geom
@@ -84,8 +86,7 @@ class Foreground:
 
                         self.data_hdu.data[mask_fgs_reg] = np.nan
 
-
-        return self.data_hdu, None
+        return self.data_hdu, self.err_hdu, None
 
     def find_fgs(self) -> None:
         mag = ["<13.5", "<14.", "<15.5", "<16.", "<18.", "<40."]

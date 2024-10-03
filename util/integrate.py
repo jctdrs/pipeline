@@ -22,6 +22,7 @@ class Integrate:
     def __init__(
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
+        err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
         name: str,
         body: str,
         geom: dict,
@@ -30,6 +31,7 @@ class Integrate:
         radius: float,
     ):
         self.data_hdu = data_hdu
+        self.err_hdu = err_hdu
         self.name = name
         self.body = body
         self.geom = geom
@@ -150,4 +152,4 @@ class Integrate:
         plt.yticks([])
         plt.show()
 
-        return self.data_hdu, None
+        return self.data_hdu, self.err_hdu, None

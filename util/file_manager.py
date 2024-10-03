@@ -1,5 +1,6 @@
 import yaml
 import typing
+import itertools
 
 PIPELINE_STEP_CONFIG: dict = {
     "hip.convolution": {"kernel"},
@@ -158,25 +159,38 @@ class FileManager:
         # Check for pipeline keys
         self.pipeline: dict = self.spec["pipeline"]
         self.tasks: list = []
+        self.repeat: list = []
 
+        # Check for before steps
         if "before" in self.spec:
             self.before: dict = self.spec["before"]
             for item in self.before:
                 self.check_yaml_block("before", item, required_pipeline, "step")
                 self.check_step(item)
             self.tasks.extend(self.before)
+            self.repeat.extend([0] * len(self.before))
 
-        # Check for every step keys
+        # Check for pipeline steps
         for item in self.pipeline:
             self.check_yaml_block("pipeline", item, required_pipeline, "step")
             self.check_step(item)
-        self.tasks.extend(self.pipeline)
 
+        niter = self.spec["config"]["iterations"]
+        if niter > 1:
+            self.tasks.extend(
+                itertools.chain.from_iterable(itertools.repeat(self.pipeline, niter))
+            )
+            self.repeat.extend(([1] + [0] * (len(self.pipeline) - 2) + [-1]) * niter)
+        else:
+            self.tasks.extend(self.pipeline)
+
+        # Check for after steps
         if "after" in self.spec:
             self.after: dict = self.spec["after"]
             for item in self.after:
                 self.check_yaml_block("after", item, required_pipeline, "step")
                 self.check_step(item)
             self.tasks.extend(self.after)
+            self.repeat.extend([0] * len(self.after))
 
         return None
