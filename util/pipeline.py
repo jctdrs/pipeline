@@ -31,8 +31,6 @@ Interface: dict = {
 
 
 class Pipeline:
-    np.random.seed(123)
-
     def __init__(self, file_mng: file_manager.FileManager):
         self.file_mng = file_mng
         self.geom = file_mng.data["geometry"]
@@ -62,11 +60,12 @@ class Pipeline:
 
     def load_error(self, file_mng: file_manager.FileManager) -> None:
         if "error" not in file_mng.data["band"]:
-            return None
+            return
 
         err_path = f"{file_mng.data['band']['error']}"
         hdul = fits.open(err_path)
-        return hdul[0]
+        self.err_hdu = hdul[0]
+        return
 
     def save_output(self) -> typing.Any:
         band: dict = self.file_mng.data["band"]
@@ -109,13 +108,14 @@ class Pipeline:
             exit()
 
 
+# TODO: If error not define in YAML then abort
 class DifferentialPipeline(Pipeline):
     def __init__(self, file_mng: file_manager.FileManager):
         super().__init__(file_mng)
 
     def execute(self) -> typing.Any:
-        data_hdu = self.load_input(self.file_mng)
-        err_hdu = self.load_input(self.file_mng)
+        self.load_input(self.file_mng)
+        self.load_error(self.file_mng)
 
         first_step_with_grad: bool = True
         pipeline_grad = None
@@ -124,9 +124,10 @@ class DifferentialPipeline(Pipeline):
         name = self.file_mng.data["band"]["name"]
 
         # Loop over steps in pipeline
-        for task in self.file_mng.pipeline:
-            data_hdu, err_hdu, grad_arr = Interface[task["step"]](
-                data_hdu,
+        for task in self.file_mng.tasks:
+            self.data_hdu, self.err_hdu, grad_arr = Interface[task["step"]](
+                self.data_hdu,
+                self.err_hdu,
                 name,
                 body,
                 self.geom,
@@ -145,9 +146,10 @@ class DifferentialPipeline(Pipeline):
                         grad_arr, pipeline_grad, axes=([2, 3], [0, 1])
                     )
 
-        # TODO: Make sure err_hdu.data has the correct shape
         if pipeline_grad is not None:
-            final = np.sqrt(np.einsum("ijkl,kl->ij", pipeline_grad**2, err_hdu.data**2))  # noqa
+            self.err_hdu.data = np.sqrt(
+                np.einsum("ijkl,kl->ij", pipeline_grad**2, self.err_hdu.data**2)
+            )
 
         self.save_output()
         return None
@@ -205,8 +207,7 @@ class MonteCarloPipeline(Pipeline):
             self.err_hdu = fits.PrimaryHDU(
                 header=fits.Header(), data=np.full_like(self.data_hdu.data, std_data)
             )
-        
-        print(self.repeat)
+
         for idx, task in enumerate(self.file_mng.tasks):
             if self.repeat[idx] == 1 or self.repeat[idx] == 2:
                 if "original_data_hdu" not in locals():
@@ -252,10 +253,9 @@ class MonteCarloPipeline(Pipeline):
         self.data_hdu.data = data_result / count
 
         # Standard deviation
-        # cal_err = data_hdu.data * self.cal_err / 100
         self.err_hdu = fits.PrimaryHDU(
-            header=self.data_hdu.header, data=np.sqrt(M2 / (count - 1))
-        )  # + cal_err**2)
+            header=self.data_hdu.header, data=(np.sqrt(M2 / (count - 1)))
+        )
 
         self.save_output()
         return None

@@ -134,6 +134,7 @@ class Integrate:
         print(f"[DEBUG]\tIntegrated flux = {integrated_flux}")
         print(f"[DEBUG]\tIntegrated fluxL = {integrated_L}")
 
+        """
         reg = EllipsePixelRegion(
             PixCoord(position_px[0], position_px[1]),
             width=self.radius * rma,
@@ -146,11 +147,14 @@ class Integrate:
         if bound.any():
             ax.set_xlim(min(bound[:, 1]), max(bound[:, 1]))
             ax.set_ylim(min(bound[:, 0]), max(bound[:, 0]))
+
         plt.imshow(self.data_hdu.data, origin="lower")
         reg.plot(ax=ax, facecolor="none", edgecolor="red", lw=1)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
-        plt.show()
+
+        plt.savefig(f"outputs/{self.body}/flux_integration.png")
+        """
 
         return self.data_hdu, self.err_hdu, None

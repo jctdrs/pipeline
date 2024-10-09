@@ -46,8 +46,9 @@ class Convolution:
     ]:
         mask = ma.masked_invalid(self.data_hdu.data).mask
         self.data_hdu.data[mask] = 0.0
-        
+
         self.load_kernel()
+        self.crop_kernel()
         self.scale_kernel()
         self.normalize_kernel()
         self.convert_from_Jyperpx_to_radiance()
@@ -58,6 +59,7 @@ class Convolution:
             data = self.jax_convolve(jnp.array(self.data_hdu.data))
             self.data_hdu.data = np.array(data)
             self.convert_from_radiance_to_Jyperpx()
+            self.data_hdu.data[mask] = np.nan
             del grad_call
             return self.data_hdu, self.err_hdu, grad_res
 
@@ -65,12 +67,24 @@ class Convolution:
             self.convolve()
             self.convert_from_radiance_to_Jyperpx()
             self.data_hdu.data[mask] = np.nan
-
             return self.data_hdu, self.err_hdu, None
 
     def load_kernel(self) -> typing.Any:
         hdu_kernel: astropy.io.image.PrimaryHDU = astropy.io.fits.open(self.kernel_path)
         self.kernel_hdu = hdu_kernel[0]
+        return None
+
+    def crop_kernel(self) -> typing.Any:
+        xsize_d = self.data_hdu.data.shape[0]
+        ysize_d = self.data_hdu.data.shape[1]
+
+        xsize_k = self.kernel_hdu.data.shape[0]
+        ysize_k = self.kernel_hdu.data.shape[1]
+
+        self.kernel_hdu.data = self.kernel_hdu.data[
+            xsize_k // 2 - xsize_d // 2 : xsize_k // 2 + xsize_d // 2,
+            ysize_k // 2 - ysize_d // 2 : ysize_k // 2 + ysize_d // 2,
+        ]
         return None
 
     def scale_kernel(self) -> typing.Any:

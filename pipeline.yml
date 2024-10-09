@@ -6,7 +6,8 @@ meta:
 
 config:
     error: MC
-    iterations: 10
+    iterations: 1000
+    
 
 data:
     body: NGC4254
@@ -21,28 +22,28 @@ data:
 
     band:
         input: inputs/NGC4254/NGC4254_PACS1.fits
-        #error: inputs/NGC4254/NGC4254_SPIRE_350_Error.fits
+        error: inputs/NGC4254/NGC4254_PACS1_Error.fits
         calError: 5.4
         name: PACS1
 
 before:
     - step: hip.cutout
       parameters:
-        raTrim: 15
-        decTrim: 15
+        raTrim: 10
+        decTrim: 10
 
 pipeline:     
-    - step: hip.background
-      parameters:
-        cellSize: 4
+    #- step: hip.background
+    #  parameters:
+    #    cellSize: 4
 
     - step: hip.convolution
       parameters:
          kernel: kernels/Kernel_LowRes_PACS1_to_SPIRE3.fits
    
-    - step: hip.reproject
-      parameters:
-          target: inputs/NGC4254/NGC4254_SPIRE3.fits
+    #- step: hip.reproject
+    #  parameters:
+    #      target: inputs/NGC4254/NGC4254_SPIRE3.fits
     
 after:
     - step: util.integrate

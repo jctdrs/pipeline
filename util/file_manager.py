@@ -167,7 +167,11 @@ class FileManager:
             self.check_yaml_block("pipeline", item, required_pipeline, "step")
             self.check_step(item)
 
-        niter = self.spec["config"]["iterations"]
+        if "iterations" in self.spec["config"]:
+            niter = self.spec["config"]["iterations"]
+        else:
+            niter = 0
+
         if niter > 1:
             self.tasks.extend(
                 itertools.chain.from_iterable(itertools.repeat(self.pipeline, niter))

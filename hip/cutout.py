@@ -39,7 +39,7 @@ class Cutout:
         astropy.io.fits.hdu.image.PrimaryHDU,
         typing.Union[np.ndarray, typing.Any],
     ]:
-        wcs = WCS(self.data_hdu.header)
+        wcs_data = WCS(self.data_hdu.header)
         pos_center = SkyCoord(
             ra=self.geom["ra"] * au.deg,
             dec=self.geom["dec"] * au.deg,
@@ -48,14 +48,15 @@ class Cutout:
         sizeTrim = (self.dec_trim * au.arcmin, self.ra_trim * au.arcmin)
 
         data_cutout = Cutout2D(
-            self.data_hdu.data, position=pos_center, size=sizeTrim, wcs=wcs
+            self.data_hdu.data, position=pos_center, size=sizeTrim, wcs=wcs_data
         )
         self.data_hdu.data = data_cutout.data
         self.data_hdu.header.update(data_cutout.wcs.to_header())
 
         if self.err_hdu is not None:
+            wcs_err = WCS(self.err_hdu.header)
             err_cutout = Cutout2D(
-                self.err_hdu.data, position=pos_center, size=sizeTrim, wcs=wcs
+                self.err_hdu.data, position=pos_center, size=sizeTrim, wcs=wcs_err
             )
             self.err_hdu.data = err_cutout.data
             self.err_hdu.header.update(err_cutout.wcs.to_header())
