@@ -138,10 +138,11 @@ class Foreground:
 
         pos_ctr = np.vstack([(self.geom["ra"]), self.geom["dec"]]).T
         pos_center_px = wcs.all_world2pix(pos_ctr, 0)
-        rma_gal = self.geom["majorAxis"]
+        rma_gal = self.geom["semiMajorAxis"] / 2
         rmi_gal = rma_gal / self.geom["axialRatio"]
         rma_gal_px = math.ceil(rma_gal / px_size)
         rmi_gal_px = math.ceil(rmi_gal / px_size)
+
         region = """
                 image
                 ellipse({},{},{},{},{})
@@ -152,6 +153,7 @@ class Foreground:
             rmi_gal_px,
             self.geom["positionAngle"],
         )
+
         r = pyregion.parse(region)
         mask_reg = r.get_mask(hdu=self.data_hdu)
 

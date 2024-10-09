@@ -1,7 +1,11 @@
 import os
 import typing
+import csv
 
 from util import file_manager
+
+PHOTOMETRY_CONFIG = "config/DustPedia_Aperture_Photometry_2.2.csv"
+DISTANCES_CONFIG = "config/DustPedia_HyperLEDA_Herschel.csv"
 
 
 class SetupManager:
@@ -10,6 +14,7 @@ class SetupManager:
 
     def set(self):
         self.validate_files()
+        self.validate_body()
         self.validate_input_bands()
         self.validate_convolution()
 
@@ -31,6 +36,43 @@ class SetupManager:
         if not status:
             print(f"[ERROR]\tFile(s) not found{files_not_found}.")
             exit()
+        return None
+
+    def validate_body(self) -> typing.Any:
+        body = self.file_mng.data["body"]
+
+        required_photometry = {
+            "ra": "ra",
+            "dec": "dec",
+            "positionAngle": "pos_angle",
+            # "distance"
+            # "redshift",
+            "axialRatio": "axial_ratio",
+            "semiMajorAxis": "semimaj_arcsec",
+            # "inclination",
+            # "radius",
+        }
+
+        with open(PHOTOMETRY_CONFIG) as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if row["name"] == body:
+                    for key, value in required_photometry.items():
+                        if key not in self.file_mng.data["geometry"].keys():
+                            self.file_mng.data["geometry"][key] = float(row[value])
+                    break
+
+        required_distances = {"inclination": "incl", "radius": "d25"}
+
+        with open(DISTANCES_CONFIG) as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if row["objname"] == body:
+                    for key, value in required_distances.items():
+                        if key not in self.file_mng.data["geometry"].keys():
+                            self.file_mng.data["geometry"][key] = float(row[value])
+                    break
+
         return None
 
     def validate_input_bands(self) -> typing.Any:

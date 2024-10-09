@@ -49,7 +49,7 @@ class Integrate:
         px_size = read.pixel_size_arcsec(self.data_hdu.header)
         ra_ = self.geom["ra"]
         dec_ = self.geom["dec"]
-        rma_ = self.geom["majorAxis"]
+        rma_ = self.geom["semiMajorAxis"] / 2
         rmi_ = rma_ / self.geom["axialRatio"]
         position_px = wcs.all_world2pix(ra_, dec_, 0)
         rma = int(math.ceil(rma_ / px_size))

@@ -6,52 +6,38 @@ meta:
 
 config:
     error: MC
-    iterations: 1
+    iterations: 10
 
 data:
     body: NGC4254
     geometry:
-        ra: 184.70655
-        dec: 14.41641
         distance: 36
-        inclination: 20.1
-        positionAngle: -35.745
-        majorAxis: 210
-        axialRatio: 1.3471
-        radius: 5.01
         redshift: 0.00803
 
     #body: NGC6946
     #geometry:
-    #    ra: 308.71905
-    #    dec: 60.15361
     #    distance: 7
-    #    inclination: 18.3
-    #    positionAngle: 0
-    #    majorAxis: 207
-    #    axialRatio: 1.09205367645
-    #    radius: 11.4815347
     #    redshift: 0.000133
 
     bands:
-        - input: inputs/NGC4254/NGC4254_MIPS3.fits
-          error: inputs/NGC4254/NGC4254_MIPS3_Error.fits
+        - input: inputs/NGC4254/NGC4254_MIPS1.fits
+          #error: inputs/NGC4254/NGC4254_MIPS1_Error.fits
           calError: 5.4
-          name: MIPS3
+          name: MIPS1
 
 before:
-  - step: hip.cutout
+  - step: hip.foreground
     parameters:
-      raTrim: 10
-      decTrim: 10
-
-  #- step: hip.foreground
-  #  parameters:
-  #    factor: 3
-  #    raTrim: 10
-  #    decTrim: 10
+      factor: 3
+      raTrim: 5
+      decTrim: 5
 
 pipeline: 
+    - step: hip.cutout
+      parameters:
+        raTrim: 10
+        decTrim: 10
+
     - step: hip.background
       parameters:
         cellSize: 4
@@ -62,10 +48,9 @@ pipeline:
    
     - step: hip.reproject
       parameters:
-        target: inputs/NGC4254/NGC4254_SPIRE3.fits
+          target: inputs/NGC4254/NGC4254_SPIRE3.fits
     
 after:
     - step: util.integrate
       parameters:
           radius: 2
-  

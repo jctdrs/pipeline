@@ -109,20 +109,9 @@ class FileManager:
     def check_yaml_specification(self) -> typing.Any:
         required_top: typing.Set[str] = {"config", "data", "pipeline"}
         required_config: typing.Set[str] = {"error"}
-        required_data: typing.Set[str] = {"body", "bands", "geometry"}
+        required_data: typing.Set[str] = {"body", "bands"}
         required_band: typing.Set[str] = {"input", "name", "calError"}
         required_pipeline: typing.Set[str] = {"step"}
-        required_geom: typing.Set[str] = {
-            "ra",
-            "dec",
-            "distance",
-            "inclination",
-            "positionAngle",
-            "majorAxis",
-            "axialRatio",
-            "radius",
-            "redshift",
-        }
 
         # Check for top level keys
         self.check_yaml_block("specification file", self.spec, required_top)
@@ -140,6 +129,10 @@ class FileManager:
 
         # Check for data keys
         self.data: dict = self.spec["data"]
+
+        if "geometry" not in self.data:
+            self.data["geometry"] = {}
+
         if isinstance(self.data, list):
             print("[ERROR]\tElements in 'data' should not be in a list.")
             exit()
@@ -149,8 +142,6 @@ class FileManager:
         if isinstance(self.data["geometry"], list):
             print("[ERROR]\tElements in 'geometry' should not be in a list.")
             exit()
-
-        self.check_yaml_block("geometry", self.data["geometry"], required_geom)
 
         # Check for every band keys
         for item in self.data["bands"]:

@@ -48,8 +48,10 @@ class Background:
         wcs = WCS(self.data_hdu.header)
         pixel_size = read.pixel_size_arcsec(self.data_hdu.header)
         pos = wcs.all_world2pix(self.geom["ra"], self.geom["dec"], 0)
-        rma = math.ceil(self.geom["majorAxis"] / pixel_size)
-        rmi = math.ceil(self.geom["majorAxis"] / self.geom["axialRatio"] / pixel_size)
+        rma = math.ceil(self.geom["semiMajorAxis"] / 2 / pixel_size)
+        rmi = math.ceil(
+            self.geom["semiMajorAxis"] / 2 / self.geom["axialRatio"] / pixel_size
+        )
 
         region = """
                 image

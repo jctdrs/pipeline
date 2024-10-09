@@ -3,6 +3,7 @@ import yaml
 import copy
 
 from astropy.io import fits
+from astropy.stats import mad_std
 
 import numpy as np
 
@@ -194,12 +195,12 @@ class SinglePassPipeline(Pipeline):
 class MonteCarloPipeline(Pipeline):
     def __init__(self, file_mng: file_manager.FileManager):
         super().__init__(file_mng)
-        self.niter = file_mng.config["iterations"]
+        self.niter: int = file_mng.config["iterations"]
+        self.repeat: list = file_mng.repeat
 
     def _target(self, idx: int) -> typing.Any:
         # Loop over steps in pipeline
         data_result = None
-        first = True
         count = 0
         mean = 0
         M2 = 0
@@ -207,58 +208,65 @@ class MonteCarloPipeline(Pipeline):
         body = self.file_mng.data["body"]
         name = self.file_mng.data["bands"][idx]["name"]
 
+        data_hdu = self.load_input(self.file_mng, idx)
+
         if "error" in self.file_mng.data["bands"][idx]:
-            data_hdu = self.load_input(self.file_mng, idx)
             err_hdu = self.load_error(self.file_mng, idx)
-            for idx, task in enumerate(self.file_mng.tasks):
-                if self.file_mng.repeat[idx] == 1:
-                    if first:
-                        original_data_hdu = data_hdu
-                        original_err_hdu = err_hdu
-                        first = False
 
-                    data_hdu = fits.PrimaryHDU(
-                        header=original_data_hdu.header,
-                        data=original_data_hdu.data
-                        + np.random.normal(
-                            0, original_err_hdu.data, original_err_hdu.data.shape
-                        ),
-                    )
-
-                    err_hdu = copy.copy(original_err_hdu)
-                    count += 1
-
-                data_hdu, err_hdu, _ = Interface[task["step"]](
-                    data_hdu,
-                    err_hdu,
-                    name,
-                    body,
-                    self.geom,
-                    self.instruments,
-                    False,
-                    **task["parameters"],
-                ).run()
-
-                # Running sum
-                if self.file_mng.repeat[idx] == -1:
-                    if data_result is None:
-                        data_result = data_hdu.data
-                    else:
-                        data_result += data_hdu.data
-
-                    # Running variance
-                    delta = data_hdu.data - mean
-                    mean += delta / count
-                    delta2 = data_hdu.data - mean
-                    M2 += delta * delta2
-
-            # Mean
-            data_hdu.data = data_result / count
-
-            # Standard deviation
+        else:
+            std_data = mad_std(data_hdu.data, ignore_nan=True)
             err_hdu = fits.PrimaryHDU(
-                header=data_hdu.header, data=np.sqrt(M2 / (count - 1))
+                header=fits.Header(), data=np.full_like(data_hdu.data, std_data)
             )
+
+        for jdx, task in enumerate(self.file_mng.tasks):
+            if self.repeat[jdx] == 1:
+                if "original_data_hdu" not in locals():
+                    original_data_hdu = data_hdu
+                    original_err_hdu = err_hdu
+
+                data_hdu = fits.PrimaryHDU(
+                    header=original_data_hdu.header,
+                    data=original_data_hdu.data
+                    + np.random.normal(
+                        0, original_err_hdu.data, original_err_hdu.data.shape
+                    ),
+                )
+
+                err_hdu = copy.copy(original_err_hdu)
+                count += 1
+
+            data_hdu, err_hdu, _ = Interface[task["step"]](
+                data_hdu,
+                err_hdu,
+                name,
+                body,
+                self.geom,
+                self.instruments,
+                False,
+                **task["parameters"],
+            ).run()
+
+            # Running sum
+            if self.repeat[jdx] == -1:
+                if data_result is None:
+                    data_result = data_hdu.data
+                else:
+                    data_result += data_hdu.data
+
+                # Running variance
+                delta = data_hdu.data - mean
+                mean += delta / count
+                delta2 = data_hdu.data - mean
+                M2 += delta * delta2
+
+        # Mean
+        data_hdu.data = data_result / count
+
+        # Standard deviation
+        err_hdu = fits.PrimaryHDU(
+            header=data_hdu.header, data=np.sqrt(M2 / (count - 1))
+        )
 
         self.result.append((data_hdu, err_hdu))
         self.save_output()

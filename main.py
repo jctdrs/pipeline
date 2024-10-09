@@ -1,4 +1,5 @@
 import argparse
+import setproctitle
 
 from util import file_manager
 from util import pipeline
@@ -6,6 +7,8 @@ from util import setup_manager
 
 
 def main() -> pipeline.Pipeline:
+    setproctitle.setproctitle("pipeline")
+    
     # Parse the arguments
     parser = argparse.ArgumentParser()
     parser.add_argument(
