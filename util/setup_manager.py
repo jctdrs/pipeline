@@ -15,23 +15,22 @@ class SetupManager:
     def set(self):
         self.validate_files()
         self.validate_body()
-        self.validate_input_bands()
+        self.validate_input_band()
         self.validate_convolution()
 
     def validate_files(self) -> typing.Any:
         status: bool = True
         files_not_found: str = ""
-        bands: dict = self.file_mng.data["bands"]
+        band: dict = self.file_mng.data["band"]
 
         # Check that files in specification exist for all
-        # bodies, all bands, and all input and error files
-        for band in bands:
-            for key in band.keys():
-                if key == "input" or key == "error":
-                    filename: str = f"{band[key]}"
-                    if not os.path.exists(filename):
-                        files_not_found += f" '{filename}',"
-                        status = False
+        # bodies, all band, and all input and error files
+        for key in band:
+            if key == "input" or key == "error":
+                filename: str = f"{band[key]}"
+                if not os.path.exists(filename):
+                    files_not_found += f" '{filename}',"
+                    status = False
 
         if not status:
             print(f"[ERROR]\tFile(s) not found{files_not_found}.")
@@ -75,10 +74,9 @@ class SetupManager:
 
         return None
 
-    def validate_input_bands(self) -> typing.Any:
-        bands: dict = self.file_mng.data["bands"]
-        for band in bands:
-            self.validate_band(band["name"])
+    def validate_input_band(self) -> typing.Any:
+        band: dict = self.file_mng.data["band"]
+        self.validate_band(band["name"])
         return None
 
     def validate_band(self, band) -> typing.Any:

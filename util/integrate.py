@@ -43,6 +43,7 @@ class Integrate:
         self,
     ) -> typing.Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
+        astropy.io.fits.hdu.image.PrimaryHDU,
         typing.Union[np.ndarray, typing.Any],
     ]:
         wcs = WCS(self.data_hdu.header)

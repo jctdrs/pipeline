@@ -44,6 +44,7 @@ class Foreground:
         self,
     ) -> typing.Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
+        astropy.io.fits.hdu.image.PrimaryHDU,
         typing.Union[np.ndarray, typing.Any],
     ]:
         # generate copy to be masked
@@ -88,7 +89,7 @@ class Foreground:
 
         return self.data_hdu, self.err_hdu, None
 
-    def find_fgs(self) -> None:
+    def find_fgs(self):
         mag = ["<13.5", "<14.", "<15.5", "<16.", "<18.", "<40."]
         rad_fac = [4.6, 3.0, 2.1, 1.4, 1.15, 0.7]
         fgs1, fgs2, fgs3, fgs4, fgs5, fgs6 = [], [], [], [], [], []
@@ -131,7 +132,7 @@ class Foreground:
 
         return fgs_list, rad_fac
 
-    def get_mask_source(self) -> None:
+    def get_mask_source(self):
         px_size = read.pixel_size_arcsec(self.data_hdu.header)
 
         wcs = WCS(self.data_hdu.header)

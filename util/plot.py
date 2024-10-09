@@ -29,6 +29,7 @@ class Plot:
         self,
     ) -> typing.Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
+        astropy.io.fits.hdu.image.PrimaryHDU,
         typing.Union[np.ndarray, typing.Any],
     ]:
         plt.imshow(self.data_hdu.data, origin="lower")

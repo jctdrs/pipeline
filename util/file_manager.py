@@ -10,6 +10,7 @@ PIPELINE_STEP_CONFIG: dict = {
     "util.integrate": {"radius"},
     "util.plot": {},
     "hip.foreground": {"factor", "raTrim", "decTrim"},
+    "util.test": {},
 }
 
 
@@ -109,7 +110,7 @@ class FileManager:
     def check_yaml_specification(self) -> typing.Any:
         required_top: typing.Set[str] = {"config", "data", "pipeline"}
         required_config: typing.Set[str] = {"error"}
-        required_data: typing.Set[str] = {"body", "bands"}
+        required_data: typing.Set[str] = {"body", "band"}
         required_band: typing.Set[str] = {"input", "name", "calError"}
         required_pipeline: typing.Set[str] = {"step"}
 
@@ -144,8 +145,7 @@ class FileManager:
             exit()
 
         # Check for every band keys
-        for item in self.data["bands"]:
-            self.check_yaml_block("bands", item, required_band, "input")
+        self.check_yaml_block("band", self.data["band"], required_band, "input")
 
         # Check for pipeline keys
         self.pipeline: dict = self.spec["pipeline"]
@@ -158,6 +158,7 @@ class FileManager:
             for item in self.before:
                 self.check_yaml_block("before", item, required_pipeline, "step")
                 self.check_step(item)
+
             self.tasks.extend(self.before)
             self.repeat.extend([0] * len(self.before))
 
@@ -171,7 +172,12 @@ class FileManager:
             self.tasks.extend(
                 itertools.chain.from_iterable(itertools.repeat(self.pipeline, niter))
             )
-            self.repeat.extend(([1] + [0] * (len(self.pipeline) - 2) + [-1]) * niter)
+            if len(self.pipeline) == 1:
+                self.repeat.extend([2] * niter)
+            else:
+                self.repeat.extend(
+                    ([1] + [0] * (len(self.pipeline) - 2) + [-1]) * niter
+                )
         else:
             self.tasks.extend(self.pipeline)
 

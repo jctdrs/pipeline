@@ -16,6 +16,7 @@ from hip import foreground
 from util import file_manager
 from util import plot
 from util import integrate
+from util import test
 
 Interface: dict = {
     "hip.convolution": convolution.Convolution,
@@ -25,16 +26,16 @@ Interface: dict = {
     "util.integrate": integrate.Integrate,
     "util.plot": plot.Plot,
     "hip.foreground": foreground.Foreground,
+    "util.test": test.Test,
 }
 
 
 class Pipeline:
+    np.random.seed(123)
+
     def __init__(self, file_mng: file_manager.FileManager):
         self.file_mng = file_mng
         self.geom = file_mng.data["geometry"]
-        self.result: typing.List[
-            typing.Tuple[fits.hdu.image.PrimaryHDU, fits.hdu.image.PrimaryHDU]
-        ] = []
         self.load_instruments()
 
     @classmethod
@@ -53,52 +54,41 @@ class Pipeline:
             elif niter > 1:
                 return MonteCarloPipeline(file_mng)
 
-    @classmethod
-    def load_input(
-        cls, file_mng: file_manager.FileManager, idx: int
-    ) -> fits.hdu.image.PrimaryHDU:
-        inp_path = f"{file_mng.data['bands'][idx]['input']}"
+    def load_input(self, file_mng: file_manager.FileManager) -> None:
+        inp_path = f"{file_mng.data['band']['input']}"
         hdul = fits.open(inp_path)
-        hdu = hdul[0]
-        return hdu
+        self.data_hdu = hdul[0]
+        return
 
-    @classmethod
-    def load_error(
-        cls, file_mng: file_manager.FileManager, idx: int
-    ) -> typing.Union[typing.Any, np.ndarray]:
-        if "error" not in file_mng.data["bands"][idx]:
+    def load_error(self, file_mng: file_manager.FileManager) -> None:
+        if "error" not in file_mng.data["band"]:
             return None
 
-        err_path = f"{file_mng.data['bands'][idx]['error']}"
+        err_path = f"{file_mng.data['band']['error']}"
         hdul = fits.open(err_path)
-        hdu = hdul[0]
-        return hdu
+        return hdul[0]
 
     def save_output(self) -> typing.Any:
-        bands: dict = self.file_mng.data["bands"]
+        band: dict = self.file_mng.data["band"]
 
-        # Loop over bands
-        for idx, band in enumerate(bands):
+        # Loop over band
+        fits.writeto(
+            f"{band['name']}.fits",
+            self.data_hdu.data,
+            self.data_hdu.header,
+            overwrite=True,
+        )
+
+        if self.err_hdu is not None:
             fits.writeto(
-                f"{band['name']}.fits",
-                self.result[idx][0].data,
-                self.result[idx][0].header,
+                f"{band['name']}_Error.fits",
+                self.err_hdu.data,
+                self.err_hdu.header,
                 overwrite=True,
             )
-            if self.result[idx][1] is not None:
-                fits.writeto(
-                    f"{band['name']}_Error.fits",
-                    self.result[idx][1].data,
-                    self.result[idx][1].header,
-                    overwrite=True,
-                )
 
-    def execute(self) -> list:
-        bands: dict = self.file_mng.data["bands"]
-        # Loop over bands
-        for idx, _ in enumerate(bands):
-            self._target(idx)
-        return self.result
+    def execute(self):
+        pass
 
     def load_instruments(self) -> typing.Any:
         try:
@@ -123,15 +113,15 @@ class DifferentialPipeline(Pipeline):
     def __init__(self, file_mng: file_manager.FileManager):
         super().__init__(file_mng)
 
-    def _target(self, idx: int) -> typing.Any:
-        data_hdu = self.load_input(self.file_mng, idx)
-        err_hdu = self.load_input(self.file_mng, idx)
+    def execute(self) -> typing.Any:
+        data_hdu = self.load_input(self.file_mng)
+        err_hdu = self.load_input(self.file_mng)
 
         first_step_with_grad: bool = True
         pipeline_grad = None
 
         body = self.file_mng.data["body"]
-        name = self.file_mng.data["bands"][idx]["name"]
+        name = self.file_mng.data["band"]["name"]
 
         # Loop over steps in pipeline
         for task in self.file_mng.pipeline:
@@ -159,7 +149,6 @@ class DifferentialPipeline(Pipeline):
         if pipeline_grad is not None:
             final = np.sqrt(np.einsum("ijkl,kl->ij", pipeline_grad**2, err_hdu.data**2))  # noqa
 
-        self.result.append((data_hdu, err_hdu))
         self.save_output()
         return None
 
@@ -168,17 +157,17 @@ class SinglePassPipeline(Pipeline):
     def __init__(self, file_mng: file_manager.FileManager):
         super().__init__(file_mng)
 
-    def _target(self, idx: int) -> typing.Any:
+    def execute(self) -> typing.Any:
         body = self.file_mng.data["body"]
-        name = self.file_mng.data["bands"][idx]["name"]
+        name = self.file_mng.data["band"]["name"]
 
-        data_hdu = self.load_input(self.file_mng, idx)
-        err_hdu = None
+        self.load_input(self.file_mng)
+        self.err_hdu = None
 
         for task in self.file_mng.tasks:
-            data_hdu, err_hdu, _ = Interface[task["step"]](
-                data_hdu,
-                err_hdu,
+            self.data_hdu, self.err_hdu, _ = Interface[task["step"]](
+                self.data_hdu,
+                self.err_hdu,
                 name,
                 body,
                 self.geom,
@@ -187,7 +176,6 @@ class SinglePassPipeline(Pipeline):
                 **task["parameters"],
             ).run()
 
-        self.result.append((data_hdu, err_hdu))
         self.save_output()
         return None
 
@@ -198,7 +186,7 @@ class MonteCarloPipeline(Pipeline):
         self.niter: int = file_mng.config["iterations"]
         self.repeat: list = file_mng.repeat
 
-    def _target(self, idx: int) -> typing.Any:
+    def execute(self) -> typing.Any:
         # Loop over steps in pipeline
         data_result = None
         count = 0
@@ -206,26 +194,26 @@ class MonteCarloPipeline(Pipeline):
         M2 = 0
 
         body = self.file_mng.data["body"]
-        name = self.file_mng.data["bands"][idx]["name"]
+        name = self.file_mng.data["band"]["name"]
 
-        data_hdu = self.load_input(self.file_mng, idx)
+        self.load_input(self.file_mng)
 
-        if "error" in self.file_mng.data["bands"][idx]:
-            err_hdu = self.load_error(self.file_mng, idx)
-
+        if "error" in self.file_mng.data["band"]:
+            self.load_error(self.file_mng)
         else:
-            std_data = mad_std(data_hdu.data, ignore_nan=True)
-            err_hdu = fits.PrimaryHDU(
-                header=fits.Header(), data=np.full_like(data_hdu.data, std_data)
+            std_data = mad_std(self.data_hdu.data, ignore_nan=True)
+            self.err_hdu = fits.PrimaryHDU(
+                header=fits.Header(), data=np.full_like(self.data_hdu.data, std_data)
             )
-
-        for jdx, task in enumerate(self.file_mng.tasks):
-            if self.repeat[jdx] == 1:
+        
+        print(self.repeat)
+        for idx, task in enumerate(self.file_mng.tasks):
+            if self.repeat[idx] == 1 or self.repeat[idx] == 2:
                 if "original_data_hdu" not in locals():
-                    original_data_hdu = data_hdu
-                    original_err_hdu = err_hdu
+                    original_data_hdu = self.data_hdu
+                    original_err_hdu = self.err_hdu
 
-                data_hdu = fits.PrimaryHDU(
+                self.data_hdu = fits.PrimaryHDU(
                     header=original_data_hdu.header,
                     data=original_data_hdu.data
                     + np.random.normal(
@@ -233,12 +221,12 @@ class MonteCarloPipeline(Pipeline):
                     ),
                 )
 
-                err_hdu = copy.copy(original_err_hdu)
+                self.err_hdu = copy.copy(original_err_hdu)
                 count += 1
 
-            data_hdu, err_hdu, _ = Interface[task["step"]](
-                data_hdu,
-                err_hdu,
+            self.data_hdu, self.err_hdu, _ = Interface[task["step"]](
+                self.data_hdu,
+                self.err_hdu,
                 name,
                 body,
                 self.geom,
@@ -248,26 +236,26 @@ class MonteCarloPipeline(Pipeline):
             ).run()
 
             # Running sum
-            if self.repeat[jdx] == -1:
+            if self.repeat[idx] == -1 or self.repeat[idx] == 2:
                 if data_result is None:
-                    data_result = data_hdu.data
+                    data_result = self.data_hdu.data
                 else:
-                    data_result += data_hdu.data
+                    data_result += self.data_hdu.data
 
                 # Running variance
-                delta = data_hdu.data - mean
+                delta = self.data_hdu.data - mean
                 mean += delta / count
-                delta2 = data_hdu.data - mean
+                delta2 = self.data_hdu.data - mean
                 M2 += delta * delta2
 
         # Mean
-        data_hdu.data = data_result / count
+        self.data_hdu.data = data_result / count
 
         # Standard deviation
-        err_hdu = fits.PrimaryHDU(
-            header=data_hdu.header, data=np.sqrt(M2 / (count - 1))
-        )
+        # cal_err = data_hdu.data * self.cal_err / 100
+        self.err_hdu = fits.PrimaryHDU(
+            header=self.data_hdu.header, data=np.sqrt(M2 / (count - 1))
+        )  # + cal_err**2)
 
-        self.result.append((data_hdu, err_hdu))
         self.save_output()
         return None
