@@ -5,10 +5,8 @@ meta:
     description: This pipeline runs HIP 
 
 config:
-    error: MC
-    iterations: 1000
+    error: differr    
     
-
 data:
     body: NGC4254
     geometry:
@@ -29,23 +27,18 @@ data:
 before:
     - step: hip.cutout
       parameters:
-        raTrim: 10
-        decTrim: 10
+        raTrim: 5
+        decTrim: 5
 
 pipeline:     
-    #- step: hip.background
-    #  parameters:
-    #    cellSize: 4
+    - step: hip.background
+      parameters:
+        cellSize: 4
 
     - step: hip.convolution
       parameters:
-         kernel: kernels/Kernel_LowRes_PACS1_to_SPIRE3.fits
+        kernel: kernels/Kernel_LowRes_PACS1_to_SPIRE3.fits
    
-    #- step: hip.reproject
-    #  parameters:
-    #      target: inputs/NGC4254/NGC4254_SPIRE3.fits
-    
-after:
-    - step: util.integrate
+    - step: hip.reproject
       parameters:
-          radius: 2
+          target: inputs/NGC4254/NGC4254_SPIRE3.fits

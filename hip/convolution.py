@@ -10,10 +10,25 @@ from jax import jacfwd
 
 from scipy.signal import fftconvolve
 from scipy.ndimage import zoom
+from scipy.optimize import curve_fit
 
 import astropy
 
 from util import read
+
+
+def gaussian(x, amplitude, mean, sigma):
+    return amplitude * jnp.exp(-((x - mean) ** 2) / (2 * sigma**2))
+
+
+def crop_gaussian_kernel(kernel, sigma):
+    size = kernel.shape[0]
+    center = (size - 1) // 2
+    truncation_limit = int(jnp.ceil(9 * sigma))
+    start = int(center - truncation_limit)
+    end = int(center + truncation_limit) + 1
+    cropped_kernel = kernel[start:end, start:end]
+    return cropped_kernel
 
 
 class Convolution:
@@ -75,16 +90,16 @@ class Convolution:
         return None
 
     def crop_kernel(self) -> typing.Any:
-        xsize_d = self.data_hdu.data.shape[0]
-        ysize_d = self.data_hdu.data.shape[1]
-
-        xsize_k = self.kernel_hdu.data.shape[0]
-        ysize_k = self.kernel_hdu.data.shape[1]
-
-        self.kernel_hdu.data = self.kernel_hdu.data[
-            xsize_k // 2 - xsize_d // 2 : xsize_k // 2 + xsize_d // 2,
-            ysize_k // 2 - ysize_d // 2 : ysize_k // 2 + ysize_d // 2,
-        ]
+        size = self.kernel_hdu.data.shape
+        center = (size[0] - 1) // 2
+        cross_section = self.kernel_hdu.data[center, :]
+        x = jnp.arange(len(cross_section))
+        initial_guess = [cross_section.max(), center, 1.0]
+        popt, _ = curve_fit(gaussian, x, cross_section, p0=initial_guess)
+        estimated_sigma = popt[2]
+        self.kernel_hdu.data = crop_gaussian_kernel(
+            self.kernel_hdu.data, estimated_sigma
+        )
         return None
 
     def scale_kernel(self) -> typing.Any:

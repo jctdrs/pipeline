@@ -18,6 +18,7 @@ from util import plot
 from util import integrate
 from util import test
 
+
 Interface: dict = {
     "hip.convolution": convolution.Convolution,
     "hip.background": background.Background,
@@ -177,6 +178,7 @@ class SinglePassPipeline(Pipeline):
                 False,
                 **task["parameters"],
             ).run()
+            print(task["step"], self.data_hdu.data.shape)
 
         self.save_output()
         return None
