@@ -5,11 +5,11 @@ import itertools
 PIPELINE_STEP_CONFIG: dict = {
     "hip.convolution": {"kernel"},
     "hip.background": {"cellSize"},
-    "hip.cutout": {"raTrim", "decTrim"},
+    "util.cutout": {"raTrim", "decTrim"},
     "hip.reproject": {"target"},
     "util.integrate": {"radius"},
-    "util.plot": {},
     "hip.foreground": {"factor", "raTrim", "decTrim"},
+    "util.plot": {},
     "util.test": {},
 }
 
@@ -97,6 +97,13 @@ class FileManager:
             print(f"[ERROR]\t'Parameters' required in {name}")
             exit()
 
+        if "diagnosis" in step:
+            if type(step["diagnosis"]) is not bool:
+                print(f"[ERROR]\t'Diagnosis' in {name} should be of type bool.")
+                exit()
+        else:
+            step["diagnosis"] = False
+
         pars = step["parameters"]
         if not set(pars.keys()).issubset(PIPELINE_STEP_CONFIG[name]):
             excess_keys = set(pars.keys()).difference(PIPELINE_STEP_CONFIG[name])
@@ -176,6 +183,7 @@ class FileManager:
             self.tasks.extend(
                 itertools.chain.from_iterable(itertools.repeat(self.pipeline, niter))
             )
+            # TODO: Check the [2] again
             if len(self.pipeline) == 1:
                 self.repeat.extend([2] * niter)
             else:
@@ -192,6 +200,6 @@ class FileManager:
                 self.check_yaml_block("after", item, required_pipeline, "step")
                 self.check_step(item)
             self.tasks.extend(self.after)
-            self.repeat.extend([0] * len(self.after))
+            self.repeat.extend([3] + [0] * (len(self.after) - 1))
 
         return None

@@ -1,9 +1,9 @@
 import argparse
 import setproctitle
 
-from util import file_manager
-from util import pipeline
-from util import setup_manager
+from setup import file_manager
+from setup import pipeline
+from setup import setup_manager
 
 
 def main() -> pipeline.Pipeline:

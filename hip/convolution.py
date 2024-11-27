@@ -1,16 +1,15 @@
 import math
 import typing
 
-import numpy as np
-import numpy.ma as ma
+from scipy.optimize import curve_fit
+from scipy.ndimage import zoom
+
+from jax.scipy.signal import fftconvolve
 
 import jax.numpy as jnp
-from jax.scipy.signal import fftconvolve as jax_fftconvolve
 from jax import jacfwd
 
-from scipy.signal import fftconvolve
-from scipy.ndimage import zoom
-from scipy.optimize import curve_fit
+import numpy.ma as ma
 
 import astropy
 
@@ -40,7 +39,8 @@ class Convolution:
         body: str,
         geom: dict,
         instruments: dict,
-        use_jax: bool,
+        diagnosis: bool,
+        differentiate: bool,
         kernel: str,
     ):
         self.data_hdu = data_hdu
@@ -49,7 +49,8 @@ class Convolution:
         self.body = body
         self.geom = geom
         self.instruments = instruments
-        self.use_jax = use_jax
+        self.diagnosis = diagnosis
+        self.differentiate = differentiate
         self.kernel_path = kernel
 
     def run(
@@ -57,10 +58,10 @@ class Convolution:
     ) -> typing.Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         astropy.io.fits.hdu.image.PrimaryHDU,
-        typing.Union[np.ndarray, typing.Any],
+        typing.Union[jnp.array, typing.Any],
     ]:
-        mask = ma.masked_invalid(self.data_hdu.data).mask
-        self.data_hdu.data[mask] = 0.0
+        data_hdu_invalid = ma.masked_invalid(self.data_hdu.data)
+        self.data_hdu.data[data_hdu_invalid.mask] = 0.0
 
         self.load_kernel()
         self.crop_kernel()
@@ -68,20 +69,18 @@ class Convolution:
         self.normalize_kernel()
         self.convert_from_Jyperpx_to_radiance()
 
-        if self.use_jax:
-            grad_call = jacfwd(self.jax_convolve)
+        if self.differentiate:
+            grad_call = jacfwd(self.convolve)
             grad_res = grad_call(jnp.array(self.data_hdu.data, dtype="bfloat16"))
-            data = self.jax_convolve(jnp.array(self.data_hdu.data))
-            self.data_hdu.data = np.array(data)
+            self.data_hdu.data = self.convolve(jnp.array(self.data_hdu.data))
             self.convert_from_radiance_to_Jyperpx()
-            self.data_hdu.data[mask] = np.nan
-            del grad_call
+            self.data_hdu.data[data_hdu_invalid.mask] = jnp.nan
             return self.data_hdu, self.err_hdu, grad_res
 
         else:
-            self.convolve()
+            self.data_hdu.data = self.convolve(self.data_hdu.data)
             self.convert_from_radiance_to_Jyperpx()
-            self.data_hdu.data[mask] = np.nan
+            self.data_hdu.data[data_hdu_invalid.mask] = jnp.nan
             return self.data_hdu, self.err_hdu, None
 
     def load_kernel(self) -> typing.Any:
@@ -120,7 +119,7 @@ class Convolution:
         return None
 
     def normalize_kernel(self) -> typing.Any:
-        self.kernel_hdu.data /= np.sum(self.kernel_hdu.data)
+        self.kernel_hdu.data /= jnp.sum(self.kernel_hdu.data)
         return None
 
     def convert_from_Jyperpx_to_radiance(self) -> typing.Any:
@@ -128,8 +127,6 @@ class Convolution:
         px_x: float = pixel_size * 2 * math.pi / 360
         px_y: float = pixel_size * 2 * math.pi / 360
 
-        # divide by 3.846x10^26 (Lsun in Watt) to convert W/Hz/m2/sr in
-        # Lsun/Hz/m2/sr multiply by the galaxy distance in m2 to get Lsun/Hz/sr
         conversion_factor = (
             1e-26
             * pow((self.geom["distance"] * 3.086e22), 2)
@@ -141,16 +138,8 @@ class Convolution:
         self.data_hdu.data *= conversion_factor
         return None
 
-    def convolve(self) -> typing.Any:
-        self.data_hdu.data = fftconvolve(
-            self.data_hdu.data,
-            self.kernel_hdu.data,
-            mode="same",
-        )
-        return None
-
-    def jax_convolve(self, im) -> jnp.array:
-        data = jax_fftconvolve(im, self.kernel_hdu.data, mode="same")
+    def convolve(self, im) -> jnp.array:
+        data = fftconvolve(im, self.kernel_hdu.data, mode="same")
         return data
 
     def convert_from_radiance_to_Jyperpx(self) -> typing.Any:

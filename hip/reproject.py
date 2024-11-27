@@ -5,7 +5,7 @@ import numpy as np
 
 import jax.numpy as jnp
 from jax import jacfwd
-from jax.scipy.ndimage import map_coordinates as jax_map_coordinates
+from jax.scipy.ndimage import map_coordinates
 
 import astropy
 from astropy.wcs import WCS
@@ -26,7 +26,8 @@ class Reproject:
         body: str,
         geom: dict,
         instruments: dict,
-        use_jax: bool,
+        diagnosis: bool,
+        differentiate: bool,
         target: str,
     ):
         self.data_hdu = data_hdu
@@ -35,21 +36,23 @@ class Reproject:
         self.body = body
         self.geom = geom
         self.instruments = instruments
-        self.use_jax = use_jax
+        self.diagnosis = diagnosis
+        self.differentiate = differentiate
         self.target = target
 
     def pixel_to_pixel_with_roundtrip(self, wcs1, wcs2, *inputs):
+        inputs = np.array(inputs)
         outputs = pixel_to_pixel(wcs1, wcs2, *inputs)
 
         # Now convert back to check that coordinates round-trip, if not then set to NaN
         inputs_check = pixel_to_pixel(wcs2, wcs1, *outputs)
-        reset = np.zeros(inputs_check[0].shape, dtype=bool)
+        reset = jnp.zeros(inputs_check[0].shape, dtype=bool)
         for ipix in range(len(inputs_check)):
-            reset |= np.abs(inputs_check[ipix] - inputs[ipix]) > 1
-        if np.any(reset):
+            reset |= jnp.abs(inputs_check[ipix] - inputs[ipix]) > 1
+        if jnp.any(reset):
             for ipix in range(len(inputs_check)):
                 outputs[ipix] = outputs[ipix].copy()
-                outputs[ipix][reset] = np.nan
+                outputs[ipix][reset] = jnp.nan
 
         return outputs
 
@@ -63,18 +66,18 @@ class Reproject:
         shape_out = wcs_out.low_level_wcs.array_shape
 
         wcs_dims = shape_out[-wcs_in.low_level_wcs.pixel_n_dim :]
-        pixel_out = np.meshgrid(
-            *[np.arange(size, dtype=float) for size in wcs_dims],
+        pixel_out = jnp.meshgrid(
+            *[jnp.arange(size, dtype=float) for size in wcs_dims],
             indexing="ij",
             sparse=False,
-            copy=False,
+            copy=True,
         )
 
         pixel_out = [p.ravel() for p in pixel_out]
         pixel_in = self.pixel_to_pixel_with_roundtrip(
             wcs_out, wcs_in, *pixel_out[::-1]
         )[::-1]
-        pixel_in = np.array(pixel_in)
+        pixel_in = jnp.array(pixel_in)
 
         # Interpolate array on to the pixels coordinates in pixel_in
         pixel_in = jnp.array(pixel_in)
@@ -84,13 +87,14 @@ class Reproject:
         data = self.interpolate(
             jnp.array(self.data_hdu.data, dtype="bfloat16"), pixel_in
         )
-        self.data_hdu.data = np.array(data, dtype="float32")
-        del grad_call
+        self.data_hdu.data = jnp.array(data, dtype="float32")
+        self.data_hdu.header.update(wcs_out.to_header())
+
         return grad_res
 
     def interpolate(self, array_in, pixel_in):
-        array_out = jax_map_coordinates(
-            array_in, pixel_in, order=1, cval=np.nan, mode="constant"
+        array_out = map_coordinates(
+            array_in, pixel_in, order=1, cval=jnp.nan, mode="constant"
         )
         array_out = jnp.reshape(
             array_out,
@@ -103,11 +107,11 @@ class Reproject:
     ) -> typing.Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         astropy.io.fits.hdu.image.PrimaryHDU,
-        typing.Union[np.ndarray, typing.Any],
+        typing.Union[jnp.array, typing.Any],
     ]:
         self.convert_from_Jyperpx_to_radiance()
 
-        if self.use_jax:
+        if self.differentiate:
             grad_res = self.setup_interpolate()
             self.convert_from_radiance_to_Jyperpx()
             # TODO: need crop ?
@@ -163,7 +167,7 @@ class Reproject:
         return None
 
     def crop(self) -> typing.Any:
-        bound = np.argwhere(~np.isnan(self.data_hdu.data))
+        bound = jnp.argwhere(~jnp.isnan(self.data_hdu.data))
         if bound.any():
             self.data_hdu.data = self.data_hdu.data[
                 min(bound[:, 0]) : max(bound[:, 0]),

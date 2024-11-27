@@ -1,16 +1,21 @@
 import math
 import typing
 
-import numpy as np
-import numpy.ma as ma
 
 import astropy
-from astropy.wcs import WCS
 from astropy.stats import SigmaClip
+from astropy.wcs import WCS
 
 from photutils import background
 
+import jax.numpy as jnp
+
 import pyregion
+
+import copy
+
+import numpy.ma as ma
+import matplotlib.pyplot as plt
 
 from util import read
 
@@ -24,7 +29,8 @@ class Background:
         body: str,
         geom: dict,
         instruments: dict,
-        use_jax: bool,
+        diagnosis: bool,
+        differentiate: bool,
         cellSize: float,
     ):
         self.data_hdu = data_hdu
@@ -33,7 +39,8 @@ class Background:
         self.body = body
         self.geom = geom
         self.instruments = instruments
-        self.use_jax = use_jax
+        self.diagnosis = diagnosis
+        self.differentiate = differentiate
         self.cell_size = cellSize
 
     def run(
@@ -41,66 +48,84 @@ class Background:
     ) -> typing.Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         astropy.io.fits.hdu.image.PrimaryHDU,
-        typing.Union[np.ndarray, typing.Any],
+        typing.Union[jnp.array, typing.Any],
     ]:
-        mask = ma.masked_invalid(self.data_hdu.data).mask
-        self.data_hdu.data[mask] = 0.0
-        wcs = WCS(self.data_hdu.header)
+        # This masking is needed to tame the Warning from photutils
+        data_hdu_invalid = ma.masked_invalid(self.data_hdu.data)
+        self.data_hdu.data[data_hdu_invalid.mask] = 0.0
+
         pixel_size = read.pixel_size_arcsec(self.data_hdu.header)
+        xsize, ysize = read.shape(self.data_hdu.header)
+        lcell_px = math.ceil(
+            self.cell_size
+            * self.instruments[self.name]["RESOLUTION"]["VALUE"]
+            / pixel_size
+        )
+        ncells1 = math.ceil(xsize / lcell_px)
+        ncells2 = math.ceil(ysize / lcell_px)
+
+        wcs = WCS(self.data_hdu.header)
         pos = wcs.all_world2pix(self.geom["ra"], self.geom["dec"], 0)
         rma = math.ceil(self.geom["semiMajorAxis"] / 2 / pixel_size)
         rmi = math.ceil(
             self.geom["semiMajorAxis"] / 2 / self.geom["axialRatio"] / pixel_size
         )
 
-        region = """
+        region = pyregion.parse(
+            """
                 image
                 ellipse({},{},{},{},{})
                 """.format(pos[0], pos[1], rma, rmi, self.geom["positionAngle"])
+        )
 
-        r = pyregion.parse(region)
+        bkg_mask = region.get_mask(hdu=self.data_hdu)
 
-        bkg_mask = r.get_mask(hdu=self.data_hdu)
-        xsize, ysize = read.shape(self.data_hdu.header)
-
-        while True:
-            try:
-                lcell_arcsec = (
-                    self.cell_size * self.instruments[self.name]["RESOLUTION"]["VALUE"]
-                )
-                lcell_px = math.ceil(lcell_arcsec / pixel_size)
-                ncells1 = math.ceil(xsize / lcell_px)
-                ncells2 = math.ceil(ysize / lcell_px)
-
-                sigma_clip = SigmaClip(
-                    sigma=3.0,
-                    maxiters=None,
-                    cenfunc="median",
-                    stdfunc="std",
-                    grow=False,
-                )
-                interpolator = background.BkgZoomInterpolator(
-                    order=3, mode="reflect", grid_mode=True
-                )
-                bkg_estimator = background.SExtractorBackground()
-                bkgrms_estimator = background.StdBackgroundRMS()
-                bkg = background.Background2D(
-                    self.data_hdu.data,
-                    (ncells1, ncells2),
-                    edge_method="pad",
-                    sigma_clip=sigma_clip,
-                    interpolator=interpolator,
-                    mask=bkg_mask,
-                    exclude_percentile=10.0,
-                    bkg_estimator=bkg_estimator,
-                    bkgrms_estimator=bkgrms_estimator,
-                )
-                break
-            except ValueError:
-                self.cell_size += 0.5
-                continue
+        bkg = background.Background2D(
+            self.data_hdu.data,
+            (ncells1, ncells2),
+            edge_method="pad",
+            sigma_clip=SigmaClip(
+                sigma=3.0,
+                maxiters=None,
+                cenfunc="median",
+                stdfunc="std",
+                grow=False,
+            ),
+            interpolator=background.BkgZoomInterpolator(
+                order=3, mode="reflect", grid_mode=True
+            ),
+            mask=bkg_mask,
+            exclude_percentile=10.0,
+            bkg_estimator=background.SExtractorBackground(),
+            bkgrms_estimator=background.StdBackgroundRMS(),
+        )
 
         self.data_hdu.data = self.data_hdu.data - bkg.background
-        self.data_hdu.data[mask] = np.nan
+        self.data_hdu.data[data_hdu_invalid.mask] = jnp.nan
+
+        if self.diagnosis:
+            mask_bkg = copy.copy(bkg.background)
+            mask_bkg[data_hdu_invalid.mask] = jnp.nan
+
+            sourcemask = copy.deepcopy(mask_bkg)
+            sourcemask[bkg_mask] = jnp.nan
+
+            plt.imshow(mask_bkg, origin="lower")
+            plt.title(f"{self.body} {self.name} background map")
+            cbar = plt.colorbar()
+            cbar.ax.set_ylabel("Jy/px")
+            plt.yticks([])
+            plt.xticks([])
+            plt.savefig(f"BKGMAP_{self.body}_{self.name}.png")
+            plt.close()
+
+            plt.imshow(sourcemask, origin="lower")
+            plt.title(f"{self.body} {self.name} background map source masked")
+            cbar = plt.colorbar()
+            cbar.ax.set_ylabel("Jy/px")
+            plt.yticks([])
+            plt.xticks([])
+            plt.savefig(f"BKGMAP_SRCMASK_{self.body}_{self.name}.png")
+            plt.close()
 
         return self.data_hdu, self.err_hdu, None

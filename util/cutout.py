@@ -1,12 +1,14 @@
 import typing
 
-import numpy as np
+import jax.numpy as jnp
+
+import matplotlib.pyplot as plt
 
 import astropy
-import astropy.units as au
-from astropy.wcs import WCS
 from astropy.nddata.utils import Cutout2D
 from astropy.coordinates import SkyCoord, ICRS
+import astropy.units as au
+from astropy.wcs import WCS
 
 
 class Cutout:
@@ -18,7 +20,8 @@ class Cutout:
         body: str,
         geom: dict,
         instruments: dict,
-        use_jax: bool,
+        diagnosis: bool,
+        differentiate: bool,
         raTrim: float,
         decTrim: float,
     ):
@@ -28,7 +31,8 @@ class Cutout:
         self.body = body
         self.geom = geom
         self.instruments = instruments
-        self.use_jax = use_jax
+        self.diagnosis = diagnosis
+        self.differentiate = differentiate
         self.ra_trim = raTrim
         self.dec_trim = decTrim
 
@@ -37,7 +41,7 @@ class Cutout:
     ) -> typing.Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         astropy.io.fits.hdu.image.PrimaryHDU,
-        typing.Union[np.ndarray, typing.Any],
+        typing.Union[jnp.array, typing.Any],
     ]:
         wcs_data = WCS(self.data_hdu.header)
         pos_center = SkyCoord(
@@ -60,5 +64,14 @@ class Cutout:
             )
             self.err_hdu.data = err_cutout.data
             self.err_hdu.header.update(err_cutout.wcs.to_header())
+
+        if self.diagnosis:
+            plt.imshow(self.data_hdu.data, origin="lower")
+            plt.title(f"{self.body} {self.name} cutout")
+            plt.xticks([])
+            plt.yticks([])
+            cbar = plt.colorbar()
+            cbar.ax.set_ylabel("Jy/px")
+            plt.savefig(f"CUTOUT_{self.body}_{self.name}.png")
 
         return self.data_hdu, self.err_hdu, None

@@ -27,7 +27,8 @@ class Integrate:
         body: str,
         geom: dict,
         instruments: dict,
-        use_jax: bool,
+        diagnosis: bool,
+        differentiate: bool,
         radius: float,
     ):
         self.data_hdu = data_hdu
@@ -36,7 +37,8 @@ class Integrate:
         self.body = body
         self.geom = geom
         self.instruments = instruments
-        self.use_jax = use_jax
+        self.diagnosis = diagnosis
+        self.differentiate = differentiate
         self.radius = radius
 
     def run(
@@ -109,8 +111,8 @@ class Integrate:
         apertures = [
             EllipticalAperture(
                 position_px,
-                a=ai + 1e-3,
-                b=bi + 1e-3,
+                a=ai,
+                b=bi,
                 theta=self.geom["positionAngle"],
             )
             for (ai, bi) in zip(a, b)
@@ -121,40 +123,52 @@ class Integrate:
             phot_table[col].info.format = "%.8g"
 
         integrated_flux_list = [phot_table[f"aperture_sum_{i}"] for i in range(21)]
+
         integrated_flux = np.interp(
-            self.radius, np.arange(21), np.array(integrated_flux_list).reshape((-1,))
+            self.radius,
+            np.arange(21),
+            np.array(integrated_flux_list).reshape((-1,)),
         )
 
         integrated_L = (
             (integrated_flux * 1e-26)
             * pow((self.geom["distance"] * 3.086e22), 2)
+            * 4
+            * math.pi
             / (3.846e26)
         )
 
         print(f"[DEBUG]\tIntegrated flux = {integrated_flux}")
         print(f"[DEBUG]\tIntegrated fluxL = {integrated_L}")
 
-        """
-        reg = EllipsePixelRegion(
-            PixCoord(position_px[0], position_px[1]),
-            width=self.radius * rma,
-            height=self.radius * rmi,
-            angle=Angle(self.geom["positionAngle"], "deg"),
-        )
+        if self.diagnosis:
+            reg = EllipsePixelRegion(
+                PixCoord(position_px[0], position_px[1]),
+                width=self.radius * rma,
+                height=self.radius * rmi,
+                angle=Angle(self.geom["positionAngle"], "deg"),
+            )
 
-        fig, ax = plt.subplots(1, 1)
-        bound = np.argwhere(~np.isnan(self.data_hdu.data))
-        if bound.any():
-            ax.set_xlim(min(bound[:, 1]), max(bound[:, 1]))
-            ax.set_ylim(min(bound[:, 0]), max(bound[:, 0]))
+            fig, ax = plt.subplots(1, 1)
+            bound = np.argwhere(~np.isnan(self.data_hdu.data))
+            if bound.any():
+                ax.set_xlim(min(bound[:, 1]), max(bound[:, 1]))
+                ax.set_ylim(min(bound[:, 0]), max(bound[:, 0]))
 
-        plt.imshow(self.data_hdu.data, origin="lower")
-        reg.plot(ax=ax, facecolor="none", edgecolor="red", lw=1)
-        plt.colorbar()
-        plt.xticks([])
-        plt.yticks([])
-
-        plt.savefig(f"outputs/{self.body}/flux_integration.png")
-        """
+            plt.imshow(self.data_hdu.data, origin="lower")
+            reg.plot(
+                ax=ax,
+                facecolor="none",
+                edgecolor="red",
+                lw=1,
+                label=f"radius={self.radius}",
+            )
+            cbar = plt.colorbar()
+            cbar.ax.set_ylabel("Jy/px")
+            plt.xticks([])
+            plt.yticks([])
+            plt.legend()
+            plt.savefig(f"PHOT_{self.body}_{self.name}.png")
+            plt.close()
 
         return self.data_hdu, self.err_hdu, None

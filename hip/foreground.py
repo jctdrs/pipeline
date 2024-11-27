@@ -1,18 +1,21 @@
-from util import read
-
 import typing
 import math
 import copy
 
-import numpy as np
 
-import astropy
+from astroquery.vizier import Vizier
+
 from astropy.wcs import WCS
 import astropy.units as au
+import astropy
+
+# TODO: Remove numpy from here
+import numpy as jnp
 
 import pyregion
 
-from astroquery.vizier import Vizier
+
+from util import read
 
 
 class Foreground:
@@ -24,7 +27,8 @@ class Foreground:
         body: str,
         geom: dict,
         instruments: dict,
-        use_jax: bool,
+        diagnosis: bool,
+        differentiate: bool,
         factor: float,
         raTrim: float,
         decTrim: float,
@@ -35,7 +39,8 @@ class Foreground:
         self.body = body
         self.geom = geom
         self.instruments = instruments
-        self.use_jax = use_jax
+        self.diagnosis = diagnosis
+        self.differentiate = differentiate
         self.factor = factor
         self.raTrim = raTrim
         self.decTrim = decTrim
@@ -45,7 +50,7 @@ class Foreground:
     ) -> typing.Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         astropy.io.fits.hdu.image.PrimaryHDU,
-        typing.Union[np.ndarray, typing.Any],
+        typing.Union[jnp.array, typing.Any],
     ]:
         # generate copy to be masked
         px_size = read.pixel_size_arcsec(self.data_hdu.header)
@@ -69,15 +74,15 @@ class Foreground:
 
             # iterate over the indicidual points
             for i in range(len(fgs_pos_px)):
-                x = np.ceil(fgs_pos_px[i][0]).astype(int)
-                y = np.ceil(fgs_pos_px[i][1]).astype(int)
+                x = jnp.ceil(fgs_pos_px[i][0]).astype(int)
+                y = jnp.ceil(fgs_pos_px[i][1]).astype(int)
 
                 if (
                     x < self.data_hdu.header["NAXIS1"]
                     and y < self.data_hdu.header["NAXIS2"]
                 ):
                     if not mask_gal_reg[y, x]:
-                        r_circle = int(np.ceil(r_mask / px_size))
+                        r_circle = int(jnp.ceil(r_mask / px_size))
                         region = """
                              image
                              circle({},{},{})
@@ -85,7 +90,7 @@ class Foreground:
                         r = pyregion.parse(region)
                         mask_fgs_reg = r.get_mask(hdu=self.data_hdu)
 
-                        self.data_hdu.data[mask_fgs_reg] = np.nan
+                        self.data_hdu.data[mask_fgs_reg] = jnp.nan
 
         return self.data_hdu, self.err_hdu, None
 
@@ -108,26 +113,28 @@ class Foreground:
             # look for point sources over a 4 times area with respect the cutout
             # (2*sizeTrim)
             fgs_table = v.query_region(
-                self.body, width=np.maximum(sizeTrim[0] * 2, sizeTrim[1] * 2)
+                self.body, width=max(sizeTrim[0] * 2, sizeTrim[1] * 2)
             )
 
             fgs_sources = fgs_table[0]
             fgs_skycoord = [fgs_sources["RAJ2000"], fgs_sources["DEJ2000"]]
-            fgs_RA = np.asarray(fgs_skycoord[0:][0])
-            fgs_DEC = np.asarray(fgs_skycoord[1:][0])
-            fgs = np.vstack([fgs_RA, fgs_DEC]).T
+            fgs_RA = jnp.asarray(fgs_skycoord[0:][0])
+            fgs_DEC = jnp.asarray(fgs_skycoord[1:][0])
+            fgs = jnp.vstack([fgs_RA, fgs_DEC]).T
 
             if k == 0:
                 fgs_list[k] = copy.deepcopy(fgs)
 
             else:
-                fgs_temp = np.empty((0, 2))
+                fgs_temp = jnp.empty((0, 2))
                 for j in range(k):
-                    fgs_temp = np.append(fgs_temp, fgs_list[j], axis=0)
-                fgs_k = np.empty((0, 2))
+                    fgs_temp = jnp.append(fgs_temp, fgs_list[j], axis=0)
+                fgs_k = jnp.empty((0, 2))
                 for elem in fgs:
                     if elem not in fgs_temp:
-                        fgs_k = np.append(fgs_k, np.array([[elem[0], elem[1]]]), axis=0)
+                        fgs_k = jnp.append(
+                            fgs_k, jnp.array([[elem[0], elem[1]]]), axis=0
+                        )
                 fgs_list[k] = copy.deepcopy(fgs_k)
 
         return fgs_list, rad_fac
@@ -137,7 +144,7 @@ class Foreground:
 
         wcs = WCS(self.data_hdu.header)
 
-        pos_ctr = np.vstack([(self.geom["ra"]), self.geom["dec"]]).T
+        pos_ctr = jnp.vstack([(self.geom["ra"]), self.geom["dec"]]).T
         pos_center_px = wcs.all_world2pix(pos_ctr, 0)
         rma_gal = self.geom["semiMajorAxis"] / 2
         rmi_gal = rma_gal / self.geom["axialRatio"]

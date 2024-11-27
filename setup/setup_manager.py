@@ -2,7 +2,7 @@ import os
 import typing
 import csv
 
-from util import file_manager
+from setup import file_manager
 
 PHOTOMETRY_CONFIG = "config/DustPedia_Aperture_Photometry_2.2.csv"
 DISTANCES_CONFIG = "config/DustPedia_HyperLEDA_Herschel.csv"

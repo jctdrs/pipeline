@@ -1,6 +1,6 @@
 import typing
 
-import numpy as np
+import jax.numpy as jnp
 
 import astropy
 import matplotlib.pyplot as plt
@@ -15,7 +15,8 @@ class Plot:
         body: str,
         geom: dict,
         instruments: dict,
-        use_jax: bool,
+        diagnosis: bool,
+        differentiate: bool,
     ):
         self.data_hdu = data_hdu
         self.err_hdu = err_hdu
@@ -23,14 +24,15 @@ class Plot:
         self.body = body
         self.geom = geom
         self.instruments = instruments
-        self.use_jax = use_jax
+        self.diagnosis = diagnosis
+        self.differentiate = differentiate
 
     def run(
         self,
     ) -> typing.Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         astropy.io.fits.hdu.image.PrimaryHDU,
-        typing.Union[np.ndarray, typing.Any],
+        typing.Union[jnp.array, typing.Any],
     ]:
         plt.imshow(self.data_hdu.data, origin="lower")
         plt.xticks([])

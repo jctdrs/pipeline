@@ -5,14 +5,16 @@ import copy
 from astropy.io import fits
 from astropy.stats import mad_std
 
-import numpy as np
+import jax
+import jax.numpy as jnp
 
 from hip import convolution
 from hip import background
 from hip import reproject
 from hip import foreground
 
-from util import file_manager
+from setup import file_manager
+
 from util import plot
 from util import integrate
 from util import cutout
@@ -133,7 +135,7 @@ class DifferentialPipeline(Pipeline):
                 body,
                 self.geom,
                 self.instruments,
-                True,
+                task["diagnosis"],
                 True,
                 **task["parameters"],
             ).run()
@@ -144,13 +146,13 @@ class DifferentialPipeline(Pipeline):
                     pipeline_grad = grad_arr
                     first_step_with_grad = False
                 else:
-                    pipeline_grad = np.tensordot(
+                    pipeline_grad = jnp.tensordot(
                         grad_arr, pipeline_grad, axes=([2, 3], [0, 1])
                     )
 
         if pipeline_grad is not None:
-            self.err_hdu.data = np.sqrt(
-                np.einsum("ijkl,kl->ij", pipeline_grad**2, self.err_hdu.data**2)
+            self.err_hdu.data = jnp.sqrt(
+                jnp.einsum("ijkl,kl->ij", pipeline_grad**2, self.err_hdu.data**2)
             )
 
         self.save_output()
@@ -176,11 +178,10 @@ class SinglePassPipeline(Pipeline):
                 body,
                 self.geom,
                 self.instruments,
-                False,
+                task["diagnosis"],
                 False,
                 **task["parameters"],
             ).run()
-            print(task["step"], self.data_hdu.data.shape)
 
         self.save_output()
         return None
@@ -193,11 +194,14 @@ class MonteCarloPipeline(Pipeline):
         self.repeat: list = file_mng.repeat
 
     def execute(self) -> typing.Any:
+        doitagain = True
+
         # Loop over steps in pipeline
-        data_result = None
         count = 0
         mean = 0
         M2 = 0
+
+        key = jax.random.key(638)
 
         body = self.file_mng.data["body"]
         name = self.file_mng.data["band"]["name"]
@@ -209,25 +213,37 @@ class MonteCarloPipeline(Pipeline):
         else:
             std_data = mad_std(self.data_hdu.data, ignore_nan=True)
             self.err_hdu = fits.PrimaryHDU(
-                header=fits.Header(), data=np.full_like(self.data_hdu.data, std_data)
-            )
+                header=fits.Header(), data=jnp.full_like(self.data_hdu.data, std_data)
+            )[0]
 
         for idx, task in enumerate(self.file_mng.tasks):
             if self.repeat[idx] == 1 or self.repeat[idx] == 2:
+                key, subkey = jax.random.split(key)
+
                 if "original_data_hdu" not in locals():
                     original_data_hdu = self.data_hdu
                     original_err_hdu = self.err_hdu
 
                 self.data_hdu = fits.PrimaryHDU(
                     header=original_data_hdu.header,
-                    data=original_data_hdu.data
-                    + np.random.normal(
-                        0, original_err_hdu.data, original_err_hdu.data.shape
-                    ),
+                    data=jnp.array(original_data_hdu.data)
+                    + jnp.array(original_err_hdu.data)
+                    * jax.random.normal(subkey, original_err_hdu.data.shape),
                 )
 
                 self.err_hdu = copy.copy(original_err_hdu)
                 count += 1
+
+            elif self.repeat[idx] == 3:
+                # Mean
+                self.data_hdu.data = mean
+
+                # Standard deviation
+                self.err_hdu = fits.PrimaryHDU(
+                    header=self.data_hdu.header, data=jnp.sqrt(M2 / (count - 1))
+                )
+
+                doitagain = False
 
             self.data_hdu, self.err_hdu, _ = Interface[task["step"]](
                 self.data_hdu,
@@ -236,31 +252,27 @@ class MonteCarloPipeline(Pipeline):
                 body,
                 self.geom,
                 self.instruments,
-                False,
+                task["diagnosis"],
                 False,
                 **task["parameters"],
             ).run()
 
             # Running sum
             if self.repeat[idx] == -1 or self.repeat[idx] == 2:
-                if data_result is None:
-                    data_result = self.data_hdu.data
-                else:
-                    data_result += self.data_hdu.data
-
                 # Running variance
                 delta = self.data_hdu.data - mean
                 mean += delta / count
                 delta2 = self.data_hdu.data - mean
                 M2 += delta * delta2
 
-        # Mean
-        self.data_hdu.data = data_result / count
+        if doitagain:
+            # Mean
+            self.data_hdu.data = mean
 
-        # Standard deviation
-        self.err_hdu = fits.PrimaryHDU(
-            header=self.data_hdu.header, data=(np.sqrt(M2 / (count - 1)))
-        )
+            # Standard deviation
+            self.err_hdu = fits.PrimaryHDU(
+                header=self.data_hdu.header, data=(jnp.sqrt(M2 / (count - 1)))
+            )
 
         self.save_output()
         return None
