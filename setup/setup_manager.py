@@ -4,8 +4,8 @@ import csv
 
 from setup import file_manager
 
-PHOTOMETRY_CONFIG = "config/DustPedia_Aperture_Photometry_2.2.csv"
-DISTANCES_CONFIG = "config/DustPedia_HyperLEDA_Herschel.csv"
+PHOTOMETRY_CONFIG = "data/config/DustPedia_Aperture_Photometry_2.2.csv"
+DISTANCES_CONFIG = "data/config/DustPedia_HyperLEDA_Herschel.csv"
 
 
 class SetupManager:
@@ -16,6 +16,7 @@ class SetupManager:
         self.validate_files()
         self.validate_body()
         self.validate_input_band()
+        self.validate_MC_run()
         self.validate_convolution()
 
     def validate_files(self) -> typing.Any:
@@ -120,6 +121,10 @@ class SetupManager:
             print(f"[Error]\tBand '{band}' not valid")
             exit()
         return None
+
+    # TODO: if MC==0 exit
+    def validate_MC_run(self) -> typing.Any:
+        pass
 
     def validate_convolution(self) -> typing.Any:
         pipeline = self.file_mng.pipeline

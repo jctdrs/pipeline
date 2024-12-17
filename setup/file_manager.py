@@ -157,6 +157,7 @@ class FileManager:
         # Check for pipeline keys
         self.pipeline: dict = self.spec["pipeline"]
         self.tasks: list = []
+        self.single: list = []
         self.repeat: list = []
 
         # Check for before steps
@@ -167,12 +168,14 @@ class FileManager:
                 self.check_step(item)
 
             self.tasks.extend(self.before)
+            self.single.extend(self.before)
             self.repeat.extend([0] * len(self.before))
 
         # Check for pipeline steps
         for item in self.pipeline:
             self.check_yaml_block("pipeline", item, required_pipeline, "step")
             self.check_step(item)
+            self.single.append(item)
 
         if "iterations" in self.spec["config"]:
             niter = self.spec["config"]["iterations"]
@@ -192,14 +195,5 @@ class FileManager:
                 )
         else:
             self.tasks.extend(self.pipeline)
-
-        # Check for after steps
-        if "after" in self.spec:
-            self.after: dict = self.spec["after"]
-            for item in self.after:
-                self.check_yaml_block("after", item, required_pipeline, "step")
-                self.check_step(item)
-            self.tasks.extend(self.after)
-            self.repeat.extend([3] + [0] * (len(self.after) - 1))
 
         return None

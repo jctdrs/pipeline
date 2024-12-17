@@ -20,6 +20,7 @@ from util import integrate
 from util import cutout
 from util import test
 
+INSTRUMENTS_CONFIG = "data/config/instruments.yml"
 
 Interface: dict = {
     "hip.convolution": convolution.Convolution,
@@ -53,6 +54,7 @@ class Pipeline:
             if niter == 1:
                 return SinglePassPipeline(file_mng)
             elif niter > 1:
+                SinglePassPipeline(file_mng).execute()
                 return MonteCarloPipeline(file_mng)
 
     def load_input(self, file_mng: file_manager.FileManager) -> None:
@@ -70,16 +72,18 @@ class Pipeline:
         self.err_hdu = hdul[0]
         return
 
-    def save_output(self) -> typing.Any:
+    def save_data(self) -> typing.Any:
         band: dict = self.file_mng.data["band"]
 
-        # Loop over band
         fits.writeto(
             f"{band['name']}.fits",
             self.data_hdu.data,
             self.data_hdu.header,
             overwrite=True,
         )
+
+    def save_error(self) -> typing.Any:
+        band: dict = self.file_mng.data["band"]
 
         if self.err_hdu is not None:
             fits.writeto(
@@ -94,7 +98,7 @@ class Pipeline:
 
     def load_instruments(self) -> typing.Any:
         try:
-            f = open("config/instruments.yml", "r")
+            f = open(INSTRUMENTS_CONFIG, "r")
         except OSError:
             print("[ERROR]\tFile 'config/instruments.yml' not found.")
             exit()
@@ -155,7 +159,8 @@ class DifferentialPipeline(Pipeline):
                 jnp.einsum("ijkl,kl->ij", pipeline_grad**2, self.err_hdu.data**2)
             )
 
-        self.save_output()
+        self.save_data()
+        self.save_error()
         return None
 
 
@@ -169,8 +174,7 @@ class SinglePassPipeline(Pipeline):
 
         self.load_input(self.file_mng)
         self.err_hdu = None
-
-        for task in self.file_mng.tasks:
+        for task in self.file_mng.single:
             self.data_hdu, self.err_hdu, _ = Interface[task["step"]](
                 self.data_hdu,
                 self.err_hdu,
@@ -183,7 +187,7 @@ class SinglePassPipeline(Pipeline):
                 **task["parameters"],
             ).run()
 
-        self.save_output()
+        self.save_data()
         return None
 
 
@@ -194,9 +198,6 @@ class MonteCarloPipeline(Pipeline):
         self.repeat: list = file_mng.repeat
 
     def execute(self) -> typing.Any:
-        doitagain = True
-
-        # Loop over steps in pipeline
         count = 0
         mean = 0
         M2 = 0
@@ -234,17 +235,6 @@ class MonteCarloPipeline(Pipeline):
                 self.err_hdu = copy.copy(original_err_hdu)
                 count += 1
 
-            elif self.repeat[idx] == 3:
-                # Mean
-                self.data_hdu.data = mean
-
-                # Standard deviation
-                self.err_hdu = fits.PrimaryHDU(
-                    header=self.data_hdu.header, data=jnp.sqrt(M2 / (count - 1))
-                )
-
-                doitagain = False
-
             self.data_hdu, self.err_hdu, _ = Interface[task["step"]](
                 self.data_hdu,
                 self.err_hdu,
@@ -265,14 +255,10 @@ class MonteCarloPipeline(Pipeline):
                 delta2 = self.data_hdu.data - mean
                 M2 += delta * delta2
 
-        if doitagain:
-            # Mean
-            self.data_hdu.data = mean
+        # Standard deviation
+        self.err_hdu = fits.PrimaryHDU(
+            header=self.data_hdu.header, data=(jnp.sqrt(M2 / (count - 1)))
+        )
 
-            # Standard deviation
-            self.err_hdu = fits.PrimaryHDU(
-                header=self.data_hdu.header, data=(jnp.sqrt(M2 / (count - 1)))
-            )
-
-        self.save_output()
+        self.save_error()
         return None

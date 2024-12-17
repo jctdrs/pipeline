@@ -6,3 +6,6 @@ outputs/
 Kernels/
 kernels/
 */__pycache__/
+*.fits
+experiments/
+pipelines/
