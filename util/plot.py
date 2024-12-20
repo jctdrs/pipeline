@@ -6,7 +6,20 @@ import astropy
 import matplotlib.pyplot as plt
 
 
-class Plot:
+class PlotSingleton:
+    _instance = None
+    singleton_flux_list: list = []
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def run(self, *args, **kwargs):
+        pass
+
+
+class Plot(PlotSingleton):
     def __init__(
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,

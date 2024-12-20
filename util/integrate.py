@@ -44,7 +44,6 @@ class Integrate(IntegrateSingleton):
         differentiate: bool,
         radius: float,
     ):
-        super().__init__()
         self.data_hdu = data_hdu
         self.err_hdu = err_hdu
         self.name = name
@@ -145,6 +144,7 @@ class Integrate(IntegrateSingleton):
         )
 
         self.singleton_flux_list.append(integrated_flux)
+        print(self.singleton_flux_list)
 
         if self.diagnosis:
             integrated_L = (

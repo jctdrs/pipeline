@@ -7,5 +7,6 @@ Kernels/
 kernels/
 */__pycache__/
 *.fits
+*.png
 experiments/
 pipelines/

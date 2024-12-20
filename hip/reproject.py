@@ -16,8 +16,19 @@ from reproject import reproject_interp
 
 from util import read
 
+class ReprojectSingleton:
+    _instance = None
 
-class Reproject:
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def run(self, *args, **kwargs):
+        pass
+
+
+class Reproject(ReprojectSingleton):
     def __init__(
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,

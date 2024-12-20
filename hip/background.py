@@ -20,7 +20,19 @@ import matplotlib.pyplot as plt
 from util import read
 
 
-class Background:
+class BackgroundSingleton:
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def run(self, *args, **kwargs):
+        pass
+
+
+class Background(BackgroundSingleton):
     def __init__(
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
