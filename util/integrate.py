@@ -13,12 +13,25 @@ from photutils.aperture import aperture_photometry
 
 from regions import PixCoord, EllipsePixelRegion  # noqa
 
-from util import read
-
 import matplotlib.pyplot as plt  # noqa
 
+from util import read
 
-class Integrate:
+
+class IntegrateSingleton:
+    _instance = None
+    singleton_flux_list: list = []
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def run(self, *args, **kwargs):
+        pass
+
+
+class Integrate(IntegrateSingleton):
     def __init__(
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
@@ -31,6 +44,7 @@ class Integrate:
         differentiate: bool,
         radius: float,
     ):
+        super().__init__()
         self.data_hdu = data_hdu
         self.err_hdu = err_hdu
         self.name = name
@@ -130,15 +144,16 @@ class Integrate:
             np.array(integrated_flux_list).reshape((-1,)),
         )
 
-        integrated_L = (
-            (integrated_flux * 1e-26)
-            * pow((self.geom["distance"] * 3.086e22), 2)
-            * 4
-            * math.pi
-            / (3.846e26)
-        )
+        self.singleton_flux_list.append(integrated_flux)
 
         if self.diagnosis:
+            integrated_L = (
+                (integrated_flux * 1e-26)
+                * pow((self.geom["distance"] * 3.086e22), 2)
+                * 4
+                * math.pi
+                / (3.846e26)
+            )
             print(f"[DEBUG]\tIntegrated flux = {integrated_flux}")
             print(f"[DEBUG]\tIntegrated fluxL = {integrated_L}")
 

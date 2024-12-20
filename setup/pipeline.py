@@ -211,8 +211,8 @@ class MonteCarloPipeline(Pipeline):
 
         key = jax.random.key(638)
 
-        body = self.file_mng.data["body"]
-        name = self.file_mng.data["band"]["name"]
+        self.body = self.file_mng.data["body"]
+        self.name = self.file_mng.data["band"]["name"]
 
         self.load_input(self.file_mng)
 
@@ -245,8 +245,8 @@ class MonteCarloPipeline(Pipeline):
             self.data_hdu, self.err_hdu, _ = Interface[task["step"]](
                 self.data_hdu,
                 self.err_hdu,
-                name,
-                body,
+                self.name,
+                self.body,
                 self.geom,
                 self.instruments,
                 diagnosis=False,

@@ -53,6 +53,15 @@ class Convolution:
         self.differentiate = differentiate
         self.kernel_path = kernel
 
+    def set_hdus(
+        self,
+        data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
+        err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
+    ) -> None:
+        self.data_hdu = data_hdu
+        self.err_hdu = err_hdu
+        return
+
     def run(
         self,
     ) -> typing.Tuple[
