@@ -45,12 +45,10 @@ class SetupManager:
             "ra": "ra",
             "dec": "dec",
             "positionAngle": "pos_angle",
-            # "distance"
-            # "redshift",
             "axialRatio": "axial_ratio",
             "semiMajorAxis": "semimaj_arcsec",
-            # "inclination",
-            # "radius",
+            # "distance",
+            # "redshift",
         }
 
         with open(PHOTOMETRY_CONFIG) as f:
@@ -62,7 +60,10 @@ class SetupManager:
                             self.file_mng.data["geometry"][key] = float(row[value])
                     break
 
-        required_distances = {"inclination": "incl", "radius": "d25"}
+        required_distances = {
+            "inclination": "incl",
+            "radius": "d25",
+        }
 
         with open(DISTANCES_CONFIG) as f:
             reader = csv.DictReader(f)
@@ -119,7 +120,7 @@ class SetupManager:
             and band != "GALEX_NUV"
         ):
             print(f"[Error]\tBand '{band}' not valid")
-            exit()
+            ()
         return None
 
     # TODO: if MC==0 exit

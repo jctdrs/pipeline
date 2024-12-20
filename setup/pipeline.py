@@ -50,7 +50,7 @@ class Pipeline:
             return DifferentialPipeline(file_mng)
 
         elif file_mng.config["error"] == "MC":
-            niter = file_mng.config["iterations"]
+            niter = file_mng.config["niter"]
             if niter == 1:
                 return SinglePassPipeline(file_mng)
             elif niter > 1:
@@ -122,7 +122,14 @@ class DifferentialPipeline(Pipeline):
 
     def execute(self) -> typing.Any:
         self.load_input(self.file_mng)
-        self.load_error(self.file_mng)
+
+        if "error" in self.file_mng.data["band"]:
+            self.load_error(self.file_mng)
+        else:
+            std_data = mad_std(self.data_hdu.data, ignore_nan=True)
+            self.err_hdu = fits.PrimaryHDU(
+                header=fits.Header(), data=jnp.full_like(self.data_hdu.data, std_data)
+            )[0]
 
         first_step_with_grad: bool = True
         pipeline_grad = None
@@ -194,7 +201,7 @@ class SinglePassPipeline(Pipeline):
 class MonteCarloPipeline(Pipeline):
     def __init__(self, file_mng: file_manager.FileManager):
         super().__init__(file_mng)
-        self.niter: int = file_mng.config["iterations"]
+        self.niter: int = file_mng.config["niter"]
         self.repeat: list = file_mng.repeat
 
     def execute(self) -> typing.Any:
@@ -242,8 +249,8 @@ class MonteCarloPipeline(Pipeline):
                 body,
                 self.geom,
                 self.instruments,
-                task["diagnosis"],
-                False,
+                diagnosis=False,
+                differentiate=False,
                 **task["parameters"],
             ).run()
 

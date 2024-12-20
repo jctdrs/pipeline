@@ -138,10 +138,10 @@ class Integrate:
             / (3.846e26)
         )
 
-        print(f"[DEBUG]\tIntegrated flux = {integrated_flux}")
-        print(f"[DEBUG]\tIntegrated fluxL = {integrated_L}")
-
         if self.diagnosis:
+            print(f"[DEBUG]\tIntegrated flux = {integrated_flux}")
+            print(f"[DEBUG]\tIntegrated fluxL = {integrated_L}")
+
             reg = EllipsePixelRegion(
                 PixCoord(position_px[0], position_px[1]),
                 width=self.radius * rma,

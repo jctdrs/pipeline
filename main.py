@@ -1,5 +1,5 @@
+import time
 import argparse
-import setproctitle
 
 from setup import file_manager
 from setup import pipeline
@@ -7,12 +7,14 @@ from setup import setup_manager
 
 
 def main() -> pipeline.Pipeline:
-    setproctitle.setproctitle("pipeline")
-
     # Parse the arguments
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-f", "--file", type=str, help="Specification YAML file", required=True
+        "-f",
+        "--file",
+        type=str,
+        help="Specification YAML file",
+        required=True,
     )
     args = parser.parse_args()
     spec_path: str = args.file
@@ -27,4 +29,8 @@ def main() -> pipeline.Pipeline:
 
 
 if __name__ == "__main__":
+    start = time.time()
     main()
+    end = time.time()
+
+    print(f"[INFO]  Time spent {end-start:.02f} seconds.")
