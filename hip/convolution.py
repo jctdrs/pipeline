@@ -52,6 +52,7 @@ class Convolution(ConvolutionSingleton):
         geom: dict,
         instruments: dict,
         diagnosis: bool,
+        MC_diagnosis: bool, 
         differentiate: bool,
         kernel: str,
     ):
@@ -62,6 +63,7 @@ class Convolution(ConvolutionSingleton):
         self.geom = geom
         self.instruments = instruments
         self.diagnosis = diagnosis
+        self.MC_diagnosis = MC_diagnosis
         self.differentiate = differentiate
         self.kernel_path = kernel
 

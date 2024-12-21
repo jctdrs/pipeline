@@ -42,6 +42,7 @@ class Background(BackgroundSingleton):
         geom: dict,
         instruments: dict,
         diagnosis: bool,
+        MC_diagnosis: bool,
         differentiate: bool,
         cellSize: float,
     ):
@@ -52,6 +53,7 @@ class Background(BackgroundSingleton):
         self.geom = geom
         self.instruments = instruments
         self.diagnosis = diagnosis
+        self.MC_diagnosis = MC_diagnosis
         self.differentiate = differentiate
         self.cell_size = cellSize
 

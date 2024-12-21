@@ -55,6 +55,7 @@ class Integrate(IntegrateSingleton):
         geom: dict,
         instruments: dict,
         diagnosis: bool,
+        MC_diagnosis: bool,
         differentiate: bool,
         radius: float,
     ):
@@ -65,6 +66,7 @@ class Integrate(IntegrateSingleton):
         self.geom = geom
         self.instruments = instruments
         self.diagnosis = diagnosis
+        self.MC_diagnosis = MC_diagnosis
         self.differentiate = differentiate
         self.radius = radius
 
@@ -167,8 +169,8 @@ class Integrate(IntegrateSingleton):
                 * math.pi
                 / (3.846e26)
             )
-            print(f"[DEBUG]\tIntegrated flux = {integrated_flux}")
-            print(f"[DEBUG]\tIntegrated fluxL = {integrated_L}")
+            print(f"[DEBUG] Integrated flux = {integrated_flux:.03f}")
+            print(f"[DEBUG] Integrated fluxL = {integrated_L:.03f}")
 
             reg = EllipsePixelRegion(
                 PixCoord(position_px[0], position_px[1]),
@@ -198,5 +200,8 @@ class Integrate(IntegrateSingleton):
             plt.legend()
             plt.savefig(f"PHOT_{self.body}_{self.name}.png")
             plt.close()
+
+        if self.MC_diagnosis:
+            print(f"[DEBUG] Integrated flux error = {self.flux_error:.03f}")
 
         return self.data_hdu, self.err_hdu, None

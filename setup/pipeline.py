@@ -146,8 +146,9 @@ class DifferentialPipeline(Pipeline):
                 body,
                 self.geom,
                 self.instruments,
-                task["diagnosis"],
-                True,
+                diagnosis=task["diagnosis"],
+                MC_diagnosis=False,
+                differentiate=True,
                 **task["parameters"],
             ).run()
 
@@ -189,8 +190,9 @@ class SinglePassPipeline(Pipeline):
                 body,
                 self.geom,
                 self.instruments,
-                task["diagnosis"],
-                False,
+                diagnosis=task["diagnosis"],
+                MC_diagnosis=False,
+                differentiate=False,
                 **task["parameters"],
             ).run()
 
@@ -205,9 +207,11 @@ class MonteCarloPipeline(Pipeline):
         self.repeat: list = file_mng.repeat
 
     def execute(self) -> typing.Any:
-        count = 0
-        mean = 0
-        M2 = 0
+        count: float = 0
+        mean: float = 0
+        M2: float = 0
+
+        MC_diagnosis: bool = False
 
         key = jax.random.key(638)
 
@@ -225,6 +229,10 @@ class MonteCarloPipeline(Pipeline):
             )[0]
 
         for idx, task in enumerate(self.file_mng.tasks):
+            # TODO: This only works if the task is at the very end. Should do for entire MC tasks
+            if idx == len(self.file_mng.tasks) - 1:
+                MC_diagnosis = True
+
             if self.repeat[idx] == 1 or self.repeat[idx] == 2:
                 key, subkey = jax.random.split(key)
 
@@ -250,6 +258,7 @@ class MonteCarloPipeline(Pipeline):
                 self.geom,
                 self.instruments,
                 diagnosis=False,
+                MC_diagnosis=MC_diagnosis,
                 differentiate=False,
                 **task["parameters"],
             ).run()

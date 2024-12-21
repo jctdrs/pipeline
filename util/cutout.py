@@ -34,6 +34,7 @@ class Cutout(CutoutSingleton):
         geom: dict,
         instruments: dict,
         diagnosis: bool,
+        MC_diagnosis: bool,
         differentiate: bool,
         raTrim: float,
         decTrim: float,
@@ -45,6 +46,7 @@ class Cutout(CutoutSingleton):
         self.geom = geom
         self.instruments = instruments
         self.diagnosis = diagnosis
+        self.MC_diagnosis = MC_diagnosis
         self.differentiate = differentiate
         self.ra_trim = raTrim
         self.dec_trim = decTrim

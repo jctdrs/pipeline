@@ -38,6 +38,7 @@ class Reproject(ReprojectSingleton):
         geom: dict,
         instruments: dict,
         diagnosis: bool,
+        MC_diagnosis: bool,
         differentiate: bool,
         target: str,
     ):
@@ -48,6 +49,7 @@ class Reproject(ReprojectSingleton):
         self.geom = geom
         self.instruments = instruments
         self.diagnosis = diagnosis
+        self.MC_diagnosis = MC_diagnosis
         self.differentiate = differentiate
         self.target = target
 

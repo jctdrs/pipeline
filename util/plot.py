@@ -29,6 +29,7 @@ class Plot(PlotSingleton):
         geom: dict,
         instruments: dict,
         diagnosis: bool,
+        MC_diagnosis: bool,
         differentiate: bool,
     ):
         self.data_hdu = data_hdu
@@ -38,6 +39,7 @@ class Plot(PlotSingleton):
         self.geom = geom
         self.instruments = instruments
         self.diagnosis = diagnosis
+        self.MC_diagnosis = MC_diagnosis
         self.differentiate = differentiate
 
     def run(

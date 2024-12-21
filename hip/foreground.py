@@ -40,6 +40,7 @@ class Foreground(ForegroundSingleton):
         geom: dict,
         instruments: dict,
         diagnosis: bool,
+        MC_diagnosis: bool,
         differentiate: bool,
         factor: float,
         raTrim: float,
@@ -52,6 +53,7 @@ class Foreground(ForegroundSingleton):
         self.geom = geom
         self.instruments = instruments
         self.diagnosis = diagnosis
+        self.MC_diagnosis = MC_diagnosis
         self.differentiate = differentiate
         self.factor = factor
         self.raTrim = raTrim
