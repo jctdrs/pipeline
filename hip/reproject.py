@@ -16,6 +16,7 @@ from reproject import reproject_interp
 
 from util import read
 
+
 class ReprojectSingleton:
     _instance = None
 
@@ -33,6 +34,7 @@ class Reproject(ReprojectSingleton):
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
         err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
+        output_path: str,
         name: str,
         body: str,
         geom: dict,
@@ -44,6 +46,7 @@ class Reproject(ReprojectSingleton):
     ):
         self.data_hdu = data_hdu
         self.err_hdu = err_hdu
+        self.output_path = output_path
         self.name = name
         self.body = body
         self.geom = geom

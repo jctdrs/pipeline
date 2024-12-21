@@ -29,6 +29,7 @@ class Cutout(CutoutSingleton):
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
         err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
+        output_path: str,
         name: str,
         body: str,
         geom: dict,
@@ -41,6 +42,7 @@ class Cutout(CutoutSingleton):
     ):
         self.data_hdu = data_hdu
         self.err_hdu = err_hdu
+        self.output_path = output_path
         self.name = name
         self.body = body
         self.geom = geom
@@ -87,6 +89,6 @@ class Cutout(CutoutSingleton):
             plt.yticks([])
             cbar = plt.colorbar()
             cbar.ax.set_ylabel("Jy/px")
-            plt.savefig(f"CUTOUT_{self.body}_{self.name}.png")
+            plt.savefig(f"{self.outpu_path}/CUTOUT_{self.body}_{self.name}.png")
 
         return self.data_hdu, self.err_hdu, None

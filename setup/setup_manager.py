@@ -33,6 +33,12 @@ class SetupManager:
                     files_not_found += f" '{filename}',"
                     status = False
 
+            elif key == "output":
+                dirname: str = f"{band[key]}"
+                if not os.path.exists(filename):
+                    print(f"[ERROR] Output directory {dirname} not fonud.")
+                    exit()
+
         if not status:
             print(f"[ERROR]\tFile(s) not found{files_not_found}.")
             exit()

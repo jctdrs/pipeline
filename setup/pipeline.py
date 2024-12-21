@@ -15,7 +15,6 @@ from hip import foreground
 
 from setup import file_manager
 
-from util import plot
 from util import integrate
 from util import cutout
 from util import test
@@ -28,7 +27,6 @@ Interface: dict = {
     "hip.reproject": reproject.Reproject,
     "util.cutout": cutout.Cutout,
     "util.integrate": integrate.Integrate,
-    "util.plot": plot.Plot,
     "hip.foreground": foreground.Foreground,
     "util.test": test.Test,
 }
@@ -76,7 +74,7 @@ class Pipeline:
         band: dict = self.file_mng.data["band"]
 
         fits.writeto(
-            f"{band['name']}.fits",
+            f"{band['output']}/{band['name']}.fits",
             self.data_hdu.data,
             self.data_hdu.header,
             overwrite=True,
@@ -87,7 +85,7 @@ class Pipeline:
 
         if self.err_hdu is not None:
             fits.writeto(
-                f"{band['name']}_Error.fits",
+                f"{band['output']}/{band['name']}_Error.fits",
                 self.err_hdu.data,
                 self.err_hdu.header,
                 overwrite=True,
@@ -142,6 +140,7 @@ class DifferentialPipeline(Pipeline):
             self.data_hdu, self.err_hdu, grad_arr = Interface[task["step"]](
                 self.data_hdu,
                 self.err_hdu,
+                self.file_mng.data["band"]["output"],
                 name,
                 body,
                 self.geom,
@@ -186,6 +185,7 @@ class SinglePassPipeline(Pipeline):
             self.data_hdu, self.err_hdu, _ = Interface[task["step"]](
                 self.data_hdu,
                 self.err_hdu,
+                self.file_mng.data["band"]["output"],
                 name,
                 body,
                 self.geom,
@@ -253,6 +253,7 @@ class MonteCarloPipeline(Pipeline):
             self.data_hdu, self.err_hdu, _ = Interface[task["step"]](
                 self.data_hdu,
                 self.err_hdu,
+                self.file_mng.data["band"]["output"],
                 self.name,
                 self.body,
                 self.geom,

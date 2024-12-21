@@ -1,3 +1,4 @@
+import os
 import yaml
 import typing
 import itertools
@@ -9,7 +10,6 @@ PIPELINE_STEP_CONFIG: dict = {
     "hip.reproject": {"target"},
     "util.integrate": {"radius", "calError"},
     "hip.foreground": {"factor", "raTrim", "decTrim"},
-    "util.plot": {},
     "util.test": {},
 }
 
@@ -99,6 +99,9 @@ class FileManager:
 
         # Check for band keys
         self.check_yaml_block("band", self.data["band"], required_band, "input")
+        if "output" not in self.data["band"]:
+            self.data["band"]["output"] = os.getcwd()
+            print(f"[WARNING] Output path not defined, default to {os.getcwd()}")
 
         # Check for pipeline keys
         self.pipeline: dict = self.spec["pipeline"]

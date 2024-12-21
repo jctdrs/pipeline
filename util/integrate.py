@@ -50,6 +50,7 @@ class Integrate(IntegrateSingleton):
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
         err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
+        output_path: str,
         name: str,
         body: str,
         geom: dict,
@@ -62,6 +63,7 @@ class Integrate(IntegrateSingleton):
     ):
         self.data_hdu = data_hdu
         self.err_hdu = err_hdu
+        self.output_path = output_path
         self.name = name
         self.body = body
         self.geom = geom
@@ -164,7 +166,8 @@ class Integrate(IntegrateSingleton):
         self.update(integrated_flux)
 
         if self.diagnosis:
-            integrated_L = (
+            # TODO: Use the integrated_L
+            integrated_L = (  # noqa
                 (integrated_flux * 1e-26)
                 * pow((self.geom["distance"] * 3.086e22), 2)
                 * 4
@@ -199,7 +202,7 @@ class Integrate(IntegrateSingleton):
             plt.xticks([])
             plt.yticks([])
             plt.legend()
-            plt.savefig(f"PHOT_{self.body}_{self.name}.png")
+            plt.savefig(f"{self.output_path}/PHOT_{self.body}_{self.name}.png")
             plt.close()
 
         if self.MC_diagnosis:

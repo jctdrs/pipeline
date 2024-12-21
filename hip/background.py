@@ -37,6 +37,7 @@ class Background(BackgroundSingleton):
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
         err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
+        output_path: str,
         name: str,
         body: str,
         geom: dict,
@@ -48,6 +49,7 @@ class Background(BackgroundSingleton):
     ):
         self.data_hdu = data_hdu
         self.err_hdu = err_hdu
+        self.output_path = output_path
         self.name = name
         self.body = body
         self.geom = geom
@@ -130,16 +132,20 @@ class Background(BackgroundSingleton):
             cbar.ax.set_ylabel("Jy/px")
             plt.yticks([])
             plt.xticks([])
-            plt.savefig(f"BKGMAP_{self.body}_{self.name}.png")
+            plt.savefig(f"{self.output_path}/BKGMAP_{self.body}_{self.name}.png")
             plt.close()
 
             plt.imshow(sourcemask, origin="lower")
-            plt.title(f"{self.body} {self.name} background map source masked")
+            plt.title(
+                f"{self.output_path}/{self.body} {self.name} background map source masked"
+            )
             cbar = plt.colorbar()
             cbar.ax.set_ylabel("Jy/px")
             plt.yticks([])
             plt.xticks([])
-            plt.savefig(f"BKGMAP_SRCMASK_{self.body}_{self.name}.png")
+            plt.savefig(
+                f"{self.output_path}/BKGMAP_SRCMASK_{self.body}_{self.name}.png"
+            )
             plt.close()
 
         return self.data_hdu, self.err_hdu, None
