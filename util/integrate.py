@@ -20,12 +20,26 @@ from util import read
 
 class IntegrateSingleton:
     _instance = None
-    singleton_flux_list: list = []
+    flux_error: float = 0
+    mean: float = 0
+    count: float = 1
+    M2: float = 0
+
+    check = []
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
+
+    def update(cls, value):
+        cls.check.append(value)
+        delta = value - cls.mean
+        cls.mean += delta / cls.count
+        delta2 = value - cls.mean
+        cls.M2 += delta * delta2
+        cls.flux_error = np.sqrt(cls.M2 / cls.count)
+        cls.count += 1
 
     def run(self, *args, **kwargs):
         pass
@@ -143,8 +157,7 @@ class Integrate(IntegrateSingleton):
             np.array(integrated_flux_list).reshape((-1,)),
         )
 
-        self.singleton_flux_list.append(integrated_flux)
-        print(self.singleton_flux_list)
+        self.update(integrated_flux)
 
         if self.diagnosis:
             integrated_L = (
