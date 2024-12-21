@@ -58,6 +58,7 @@ class Integrate(IntegrateSingleton):
         MC_diagnosis: bool,
         differentiate: bool,
         radius: float,
+        calError: float,
     ):
         self.data_hdu = data_hdu
         self.err_hdu = err_hdu
@@ -69,6 +70,7 @@ class Integrate(IntegrateSingleton):
         self.MC_diagnosis = MC_diagnosis
         self.differentiate = differentiate
         self.radius = radius
+        self.cal_error = calError
 
     def run(
         self,
@@ -169,8 +171,7 @@ class Integrate(IntegrateSingleton):
                 * math.pi
                 / (3.846e26)
             )
-            print(f"[DEBUG] Integrated flux = {integrated_flux:.03f}")
-            print(f"[DEBUG] Integrated fluxL = {integrated_L:.03f}")
+            print(f"[INFO]  Integrated flux = {integrated_flux:.03f}")
 
             reg = EllipsePixelRegion(
                 PixCoord(position_px[0], position_px[1]),
@@ -202,6 +203,9 @@ class Integrate(IntegrateSingleton):
             plt.close()
 
         if self.MC_diagnosis:
-            print(f"[DEBUG] Integrated flux error = {self.flux_error:.03f}")
+            cal_error = integrated_flux * self.cal_error / 100
+            print(
+                f"[INFO]  Integrated flux error = {self.flux_error:.03f}_stat {cal_error:.03f}_inst {np.sqrt(self.flux_error**2 + cal_error**2):0.3f}_tot"
+            )
 
         return self.data_hdu, self.err_hdu, None

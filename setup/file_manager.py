@@ -7,7 +7,7 @@ PIPELINE_STEP_CONFIG: dict = {
     "hip.background": {"cellSize"},
     "util.cutout": {"raTrim", "decTrim"},
     "hip.reproject": {"target"},
-    "util.integrate": {"radius"},
+    "util.integrate": {"radius", "calError"},
     "hip.foreground": {"factor", "raTrim", "decTrim"},
     "util.plot": {},
     "util.test": {},
@@ -99,11 +99,6 @@ class FileManager:
 
         # Check for band keys
         self.check_yaml_block("band", self.data["band"], required_band, "input")
-        if "calError" not in self.data["band"]:
-            print(
-                f"[WARNING] Calibration error for {self.data['band']['name']} not defined, considered zero."
-            )
-            self.data["band"]["calError"]: float = 0.0
 
         # Check for pipeline keys
         self.pipeline: dict = self.spec["pipeline"]

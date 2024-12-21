@@ -33,4 +33,4 @@ if __name__ == "__main__":
     main()
     end = time.time()
 
-    print(f"[INFO]  Time spent {end-start:.02f} seconds.")
+    print(f"[DEBUG] Time spent {end-start:.02f} seconds.")
