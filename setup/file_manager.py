@@ -100,7 +100,7 @@ class FileManager:
         # Check for band keys
         self.check_yaml_block("band", self.data["band"], required_band, "input")
         if "output" not in self.data["band"]:
-            self.data["band"]["output"] = os.getcwd()
+            self.data["band"]["output"] = "."
             print(f"[WARNING] Output path not defined, default to {os.getcwd()}")
 
         # Check for pipeline keys

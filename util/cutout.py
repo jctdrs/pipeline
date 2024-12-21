@@ -89,6 +89,6 @@ class Cutout(CutoutSingleton):
             plt.yticks([])
             cbar = plt.colorbar()
             cbar.ax.set_ylabel("Jy/px")
-            plt.savefig(f"{self.outpu_path}/CUTOUT_{self.body}_{self.name}.png")
+            plt.savefig(f"{self.output_path}/CUTOUT_{self.body}_{self.name}.png")
 
         return self.data_hdu, self.err_hdu, None
