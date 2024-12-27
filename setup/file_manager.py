@@ -108,6 +108,7 @@ class FileManager:
         self.tasks: list = []
         self.single: list = []
         self.repeat: list = []
+        self.MC_diagnosis: list = []
 
         # Check for before steps
         if "before" in self.spec:
@@ -119,6 +120,7 @@ class FileManager:
             self.tasks.extend(self.before)
             self.single.extend(self.before)
             self.repeat.extend([0] * len(self.before))
+            self.MC_diagnosis.extend([False] * len(self.before))
 
         # Check for pipeline steps
         for item in self.pipeline:
@@ -142,13 +144,16 @@ class FileManager:
             self.tasks.extend(
                 itertools.chain.from_iterable(itertools.repeat(self.pipeline, niter))
             )
-            # TODO: Check the [2] again
             if len(self.pipeline) == 1:
                 self.repeat.extend([2] * niter)
+                self.MC_diagnosis.extend([False] * (niter - 1))
+                self.MC_diagnosis.extend([True])
             else:
                 self.repeat.extend(
                     ([1] + [0] * (len(self.pipeline) - 2) + [-1]) * niter
                 )
+                self.MC_diagnosis.extend([False] * len(self.pipeline) * (niter - 1))
+                self.MC_diagnosis.extend([True] * len(self.pipeline))
         else:
             self.tasks.extend(self.pipeline)
 

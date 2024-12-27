@@ -204,7 +204,9 @@ class MonteCarloPipeline(Pipeline):
     def __init__(self, file_mng: file_manager.FileManager):
         super().__init__(file_mng)
         self.niter: int = file_mng.config["niter"]
+        self.tasks: list = file_mng.tasks
         self.repeat: list = file_mng.repeat
+        self.MC_diagnosis: list = file_mng.MC_diagnosis
 
     def execute(self) -> typing.Any:
         count: float = 0
@@ -228,11 +230,7 @@ class MonteCarloPipeline(Pipeline):
                 header=fits.Header(), data=jnp.full_like(self.data_hdu.data, std_data)
             )[0]
 
-        for idx, task in enumerate(self.file_mng.tasks):
-            # TODO: This only works if the task is at the very end. Should do for entire MC tasks
-            if idx == len(self.file_mng.tasks) - 1:
-                MC_diagnosis = True
-
+        for idx, task in enumerate(self.tasks):
             if self.repeat[idx] == 1 or self.repeat[idx] == 2:
                 key, subkey = jax.random.split(key)
 
@@ -259,7 +257,7 @@ class MonteCarloPipeline(Pipeline):
                 self.geom,
                 self.instruments,
                 diagnosis=False,
-                MC_diagnosis=MC_diagnosis,
+                MC_diagnosis=self.MC_diagnosis[idx],
                 differentiate=False,
                 **task["parameters"],
             ).run()
