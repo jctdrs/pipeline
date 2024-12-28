@@ -1,3 +1,6 @@
+from setup import pipeline_validation
+from setup import data_validation
+
 import typing
 
 import jax.numpy as jnp
@@ -29,29 +32,21 @@ class Cutout(CutoutSingleton):
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
         err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
-        output_path: str,
-        name: str,
-        body: str,
-        geom: dict,
+        data: data_validation.Data,
+        task: pipeline_validation.PipelineStep,
+        idx: int,
         instruments: dict,
-        diagnosis: bool,
         MC_diagnosis: bool,
         differentiate: bool,
-        raTrim: float,
-        decTrim: float,
     ):
         self.data_hdu = data_hdu
         self.err_hdu = err_hdu
-        self.output_path = output_path
-        self.name = name
-        self.body = body
-        self.geom = geom
+        self.task = task
+        self.data = data
+        self.band = self.data.bands[idx]
         self.instruments = instruments
-        self.diagnosis = diagnosis
         self.MC_diagnosis = MC_diagnosis
         self.differentiate = differentiate
-        self.ra_trim = raTrim
-        self.dec_trim = decTrim
 
     def run(
         self,
@@ -62,11 +57,14 @@ class Cutout(CutoutSingleton):
     ]:
         wcs_data = WCS(self.data_hdu.header)
         pos_center = SkyCoord(
-            ra=self.geom["ra"] * au.deg,
-            dec=self.geom["dec"] * au.deg,
+            ra=self.data.geometry.ra * au.deg,
+            dec=self.data.geometry.dec * au.deg,
             frame=ICRS,
         )
-        sizeTrim = (self.dec_trim * au.arcmin, self.ra_trim * au.arcmin)
+        sizeTrim = (
+            self.task.parameters.decTrim * au.arcmin,
+            self.task.parameters.raTrim * au.arcmin,
+        )
 
         data_cutout = Cutout2D(
             self.data_hdu.data, position=pos_center, size=sizeTrim, wcs=wcs_data
@@ -82,13 +80,15 @@ class Cutout(CutoutSingleton):
             self.err_hdu.data = err_cutout.data
             self.err_hdu.header.update(err_cutout.wcs.to_header())
 
-        if self.diagnosis:
+        if self.task.diagnosis:
             plt.imshow(self.data_hdu.data, origin="lower")
-            plt.title(f"{self.body} {self.name} cutout")
+            plt.title(f"{self.data.body} {self.band.name} cutout")
             plt.xticks([])
             plt.yticks([])
             cbar = plt.colorbar()
             cbar.ax.set_ylabel("Jy/px")
-            plt.savefig(f"{self.output_path}/CUTOUT_{self.body}_{self.name}.png")
+            plt.savefig(
+                f"{self.band.output}/CUTOUT_{self.data.body}_{self.band.name}.png"
+            )
 
         return self.data_hdu, self.err_hdu, None

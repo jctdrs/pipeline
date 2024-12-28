@@ -8,7 +8,7 @@ from setup import bands_validation
 class Data(BaseModel):
     body: str
     geometry: geometry_validation.Geometry
-    bands: List[bands_validation.Bands]
+    bands: List[bands_validation.Band]
 
     # We need to use the 'before' mode in this case because the 'body'
     # attribute in 'Geometry' is not defined by the user from the specification

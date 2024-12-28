@@ -3,6 +3,9 @@ import typing
 
 import numpy as np
 
+from setup import pipeline_validation
+from setup import data_validation
+
 import jax.numpy as jnp
 from jax import jacfwd
 from jax.scipy.ndimage import map_coordinates
@@ -34,27 +37,21 @@ class Reproject(ReprojectSingleton):
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
         err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
-        output_path: str,
-        name: str,
-        body: str,
-        geom: dict,
+        data: data_validation.Data,
+        task: pipeline_validation.PipelineStep,
+        idx: int,
         instruments: dict,
-        diagnosis: bool,
         MC_diagnosis: bool,
         differentiate: bool,
-        target: str,
     ):
         self.data_hdu = data_hdu
         self.err_hdu = err_hdu
-        self.output_path = output_path
-        self.name = name
-        self.body = body
-        self.geom = geom
+        self.task = task
+        self.data = data
+        self.band = self.data.bands[idx]
         self.instruments = instruments
-        self.diagnosis = diagnosis
         self.MC_diagnosis = MC_diagnosis
         self.differentiate = differentiate
-        self.target = target
 
     def pixel_to_pixel_with_roundtrip(self, wcs1, wcs2, *inputs):
         inputs = np.array(inputs)
@@ -148,7 +145,7 @@ class Reproject(ReprojectSingleton):
         # Lsun/Hz/m2/sr multiply by the galaxy distance in m2 to get Lsun/Hz/sr
         conversion_factor = (
             1e-26
-            * pow((self.geom["distance"] * 3.086e22), 2)
+            * pow((self.data.geometry.distance * 3.086e22), 2)
             * 4
             * math.pi
             / (px_x * px_y * 3.846e26)
@@ -158,7 +155,7 @@ class Reproject(ReprojectSingleton):
         return None
 
     def reproject(self) -> typing.Any:
-        with fits.open(self.target) as hdul:
+        with fits.open(self.task.parameters.target) as hdul:
             hdr_target = hdul[0].header
 
         wcs = WCS(hdr_target)
@@ -176,7 +173,7 @@ class Reproject(ReprojectSingleton):
         px_y: float = pixel_size * 2 * math.pi / 360
 
         conversion_factor = (px_x * px_y * 3.846e26) / (
-            1e-26 * pow((self.geom["distance"] * 3.086e22), 2) * 4 * math.pi
+            1e-26 * pow((self.data.geometry.distance * 3.086e22), 2) * 4 * math.pi
         )
 
         self.data_hdu.data *= conversion_factor

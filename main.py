@@ -1,12 +1,10 @@
-import time
 import argparse
 
-from setup import file_manager
+from setup import spec_validation
 from setup import pipeline
-from setup import setup_manager
 
 
-def main() -> pipeline.Pipeline:
+def main():
     # Parse the arguments
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -19,18 +17,13 @@ def main() -> pipeline.Pipeline:
     args = parser.parse_args()
     spec_path: str = args.file
 
-    file_mng = file_manager.FileManager(spec_path)
-    setup_manager.SetupManager(file_mng).set()
+    spec = spec_validation.Specification(spec_path).validate()
 
-    pipe = pipeline.Pipeline.create(file_mng)
+    pipe = pipeline.Pipeline.create(spec)
     pipe.execute()
 
-    return pipe
+    return
 
 
 if __name__ == "__main__":
-    start = time.time()
     main()
-    end = time.time()
-
-    print(f"[DEBUG] Time spent {end-start:.02f} seconds.")

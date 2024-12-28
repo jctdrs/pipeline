@@ -1,6 +1,7 @@
-import math
 import typing
 
+from setup import pipeline_validation
+from setup import data_validation
 
 import astropy
 from astropy.stats import SigmaClip
@@ -20,7 +21,7 @@ import matplotlib.pyplot as plt
 from util import read
 
 
-class BackgroundSingleton:
+class SkySubtractSingleton:
     _instance = None
 
     def __new__(cls, *args, **kwargs):
@@ -32,32 +33,26 @@ class BackgroundSingleton:
         pass
 
 
-class Background(BackgroundSingleton):
+class SkySubtract(SkySubtractSingleton):
     def __init__(
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
         err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
-        output_path: str,
-        name: str,
-        body: str,
-        geom: dict,
+        data: data_validation.Data,
+        task: pipeline_validation.PipelineStep,
+        idx: int,
         instruments: dict,
-        diagnosis: bool,
         MC_diagnosis: bool,
         differentiate: bool,
-        cellSize: float,
     ):
         self.data_hdu = data_hdu
         self.err_hdu = err_hdu
-        self.output_path = output_path
-        self.name = name
-        self.body = body
-        self.geom = geom
+        self.task = task
+        self.data = data
+        self.band = self.data.bands[idx]
         self.instruments = instruments
-        self.diagnosis = diagnosis
         self.MC_diagnosis = MC_diagnosis
         self.differentiate = differentiate
-        self.cell_size = cellSize
 
     def run(
         self,
@@ -72,26 +67,29 @@ class Background(BackgroundSingleton):
 
         pixel_size = read.pixel_size_arcsec(self.data_hdu.header)
         xsize, ysize = read.shape(self.data_hdu.header)
-        lcell_px = math.ceil(
-            self.cell_size
-            * self.instruments[self.name]["RESOLUTION"]["VALUE"]
+        lcell_px = jnp.ceil(
+            self.task.parameters.cellSize
+            * self.instruments[self.band.name]["RESOLUTION"]["VALUE"]
             / pixel_size
         )
-        ncells1 = math.ceil(xsize / lcell_px)
-        ncells2 = math.ceil(ysize / lcell_px)
+        ncells1 = int(jnp.ceil(xsize / lcell_px))
+        ncells2 = int(jnp.ceil(ysize / lcell_px))
 
         wcs = WCS(self.data_hdu.header)
-        pos = wcs.all_world2pix(self.geom["ra"], self.geom["dec"], 0)
-        rma = math.ceil(self.geom["semiMajorAxis"] / 2 / pixel_size)
-        rmi = math.ceil(
-            self.geom["semiMajorAxis"] / 2 / self.geom["axialRatio"] / pixel_size
+        pos = wcs.all_world2pix(self.data.geometry.ra, self.data.geometry.dec, 0)
+        rma = jnp.ceil(self.data.geometry.semiMajorAxis / 2 / pixel_size)
+        rmi = jnp.ceil(
+            self.data.geometry.semiMajorAxis
+            / 2
+            / self.data.geometry.axialRatio
+            / pixel_size
         )
 
         region = pyregion.parse(
             """
                 image
                 ellipse({},{},{},{},{})
-                """.format(pos[0], pos[1], rma, rmi, self.geom["positionAngle"])
+                """.format(pos[0], pos[1], rma, rmi, self.data.geometry.positionAngle)
         )
 
         bkg_mask = region.get_mask(hdu=self.data_hdu)
@@ -119,7 +117,7 @@ class Background(BackgroundSingleton):
         self.data_hdu.data = self.data_hdu.data - bkg.background
         self.data_hdu.data[data_hdu_invalid.mask] = jnp.nan
 
-        if self.diagnosis:
+        if self.task.diagnosis:
             mask_bkg = copy.copy(bkg.background)
             mask_bkg[data_hdu_invalid.mask] = jnp.nan
 
@@ -127,24 +125,26 @@ class Background(BackgroundSingleton):
             sourcemask[bkg_mask] = jnp.nan
 
             plt.imshow(mask_bkg, origin="lower")
-            plt.title(f"{self.body} {self.name} background map")
+            plt.title(f"{self.data.body} {self.band.name} background map")
             cbar = plt.colorbar()
             cbar.ax.set_ylabel("Jy/px")
             plt.yticks([])
             plt.xticks([])
-            plt.savefig(f"{self.output_path}/BKGMAP_{self.body}_{self.name}.png")
+            plt.savefig(
+                f"{self.band.output}/BKGMAP_{self.data.body}_{self.band.name}.png"
+            )
             plt.close()
 
             plt.imshow(sourcemask, origin="lower")
             plt.title(
-                f"{self.output_path}/{self.body} {self.name} background map source masked"
+                f"{self.band.output}/{self.data.body} {self.band.name} background map source masked"
             )
             cbar = plt.colorbar()
             cbar.ax.set_ylabel("Jy/px")
             plt.yticks([])
             plt.xticks([])
             plt.savefig(
-                f"{self.output_path}/BKGMAP_SRCMASK_{self.body}_{self.name}.png"
+                f"{self.band.output}/BKGMAP_SRCMASK_{self.data.body}_{self.band.name}.png"
             )
             plt.close()
 

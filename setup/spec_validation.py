@@ -5,16 +5,6 @@ import typing
 
 from setup import pipeline_validation
 
-PIPELINE_STEP_CONFIG: dict = {
-    "hip.convolution": {"kernel"},
-    "hip.background": {"cellSize"},
-    "util.cutout": {"raTrim", "decTrim"},
-    "hip.reproject": {"target"},
-    "util.integrate": {"radius", "calError"},
-    "hip.foreground": {"factor", "raTrim", "decTrim"},
-    "util.test": {},
-}
-
 
 class DuplicateKeyError(Exception):
     def __init__(self, key):
@@ -32,12 +22,11 @@ class UniqueKeyLoader(yaml.SafeLoader):
         return super().construct_mapping(node, deep)
 
 
-class SpecificationValidation:
+class Specification:
     def __init__(self, spec_path: str):
         self.spec_path = spec_path
-        self._parse()
 
-    def _parse(self) -> typing.Any:
+    def validate(self) -> typing.Any:
         # Check if specification exists
         try:
             f = open(self.spec_path, "r")
@@ -48,7 +37,7 @@ class SpecificationValidation:
         # Check if specification is valid YAML
         # In case of failure, capture line/col for debug
         try:
-            self.spec = yaml.load(f, UniqueKeyLoader)
+            schema = yaml.load(f, UniqueKeyLoader)
             f.close()
         except (yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
             line = e.problem_mark.line + 1  # type: ignore
@@ -59,6 +48,6 @@ class SpecificationValidation:
             print(f"[ERROR] Duplicate definition of '{e.key}'.")
             exit()
 
-        pipeline_validation.PipelineValidation.model_validate(self.spec)
+        spec = pipeline_validation.Pipeline.model_validate(schema)
 
-        return None
+        return spec

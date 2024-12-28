@@ -4,7 +4,7 @@ from pydantic import BaseModel, PositiveFloat, model_validator
 from typing import Optional
 
 
-class Bands(BaseModel):
+class Band(BaseModel):
     input: str
     output: str
     name: str

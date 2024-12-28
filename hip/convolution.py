@@ -1,11 +1,12 @@
-import math
 import typing
+
+from setup import pipeline_validation
+from setup import data_validation
 
 from scipy.optimize import curve_fit
 from scipy.ndimage import zoom
 
 from jax.scipy.signal import fftconvolve
-
 import jax.numpy as jnp
 from jax import jacfwd
 
@@ -47,27 +48,21 @@ class Convolution(ConvolutionSingleton):
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
         err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
-        output_path: str,
-        name: str,
-        body: str,
-        geom: dict,
+        data: data_validation.Data,
+        task: pipeline_validation.PipelineStep,
+        idx: int,
         instruments: dict,
-        diagnosis: bool,
         MC_diagnosis: bool,
         differentiate: bool,
-        kernel: str,
     ):
         self.data_hdu = data_hdu
         self.err_hdu = err_hdu
-        self.output_path = output_path
-        self.name = name
-        self.body = body
-        self.geom = geom
+        self.task = task
+        self.data = data
+        self.band = self.data.bands[idx]
         self.instruments = instruments
-        self.diagnosis = diagnosis
         self.MC_diagnosis = MC_diagnosis
         self.differentiate = differentiate
-        self.kernel_path = kernel
 
     def set_hdus(
         self,
@@ -87,6 +82,7 @@ class Convolution(ConvolutionSingleton):
     ]:
         data_hdu_invalid = ma.masked_invalid(self.data_hdu.data)
         self.data_hdu.data[data_hdu_invalid.mask] = 0.0
+        self.data_hdu.data = jnp.array(self.data_hdu.data)
 
         self.load_kernel()
         self.crop_kernel()
@@ -109,7 +105,9 @@ class Convolution(ConvolutionSingleton):
             return self.data_hdu, self.err_hdu, None
 
     def load_kernel(self) -> typing.Any:
-        hdu_kernel: astropy.io.image.PrimaryHDU = astropy.io.fits.open(self.kernel_path)
+        hdu_kernel: astropy.io.image.PrimaryHDU = astropy.io.fits.open(
+            self.task.parameters.kernel
+        )
         self.kernel_hdu = hdu_kernel[0]
         return None
 
@@ -149,14 +147,14 @@ class Convolution(ConvolutionSingleton):
 
     def convert_from_Jyperpx_to_radiance(self) -> typing.Any:
         pixel_size = read.pixel_size_arcsec(self.data_hdu.header)
-        px_x: float = pixel_size * 2 * math.pi / 360
-        px_y: float = pixel_size * 2 * math.pi / 360
+        px_x: float = pixel_size * 2 * jnp.pi / 360
+        px_y: float = pixel_size * 2 * jnp.pi / 360
 
         conversion_factor = (
             1e-26
-            * pow((self.geom["distance"] * 3.086e22), 2)
+            * pow((self.data.geometry.distance * 3.086e22), 2)
             * 4
-            * math.pi
+            * jnp.pi
             / (px_x * px_y * 3.846e26)
         )
 
@@ -169,11 +167,11 @@ class Convolution(ConvolutionSingleton):
 
     def convert_from_radiance_to_Jyperpx(self) -> typing.Any:
         pixel_size = read.pixel_size_arcsec(self.data_hdu.header)
-        px_x: float = pixel_size * 2 * math.pi / 360
-        px_y: float = pixel_size * 2 * math.pi / 360
+        px_x: float = pixel_size * 2 * jnp.pi / 360
+        px_y: float = pixel_size * 2 * jnp.pi / 360
 
         conversion_factor = (px_x * px_y * 3.846e26) / (
-            1e-26 * pow((self.geom["distance"] * 3.086e22), 2) * 4 * math.pi
+            1e-26 * pow((self.data.geometry.distance * 3.086e22), 2) * 4 * jnp.pi
         )
 
         self.data_hdu.data *= conversion_factor

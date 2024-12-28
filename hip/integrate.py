@@ -1,6 +1,9 @@
 import math
 import typing
 
+from setup import pipeline_validation
+from setup import data_validation
+
 import numpy as np
 import numpy.ma as ma
 
@@ -50,29 +53,21 @@ class Integrate(IntegrateSingleton):
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
         err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
-        output_path: str,
-        name: str,
-        body: str,
-        geom: dict,
+        data: data_validation.Data,
+        task: pipeline_validation.PipelineStep,
+        idx: int,
         instruments: dict,
-        diagnosis: bool,
         MC_diagnosis: bool,
         differentiate: bool,
-        radius: float,
-        calError: float,
     ):
         self.data_hdu = data_hdu
         self.err_hdu = err_hdu
-        self.output_path = output_path
-        self.name = name
-        self.body = body
-        self.geom = geom
+        self.task = task
+        self.data = data
+        self.band = self.data.bands[idx]
         self.instruments = instruments
-        self.diagnosis = diagnosis
         self.MC_diagnosis = MC_diagnosis
         self.differentiate = differentiate
-        self.radius = radius
-        self.cal_error = calError
 
     def run(
         self,
@@ -83,10 +78,10 @@ class Integrate(IntegrateSingleton):
     ]:
         wcs = WCS(self.data_hdu.header)
         px_size = read.pixel_size_arcsec(self.data_hdu.header)
-        ra_ = self.geom["ra"]
-        dec_ = self.geom["dec"]
-        rma_ = self.geom["semiMajorAxis"] / 2
-        rmi_ = rma_ / self.geom["axialRatio"]
+        ra_ = self.data.geometry.ra
+        dec_ = self.data.geometry.dec
+        rma_ = self.data.geometry.semiMajorAxis / 2
+        rmi_ = rma_ / self.data.geometry.axialRatio
         position_px = wcs.all_world2pix(ra_, dec_, 0)
         rma = int(math.ceil(rma_ / px_size))
         rmi = int(math.ceil(rmi_ / px_size))
@@ -146,7 +141,7 @@ class Integrate(IntegrateSingleton):
                 position_px,
                 a=ai,
                 b=bi,
-                theta=self.geom["positionAngle"],
+                theta=self.data.geometry.positionAngle,
             )
             for (ai, bi) in zip(a, b)
         ]
@@ -158,29 +153,29 @@ class Integrate(IntegrateSingleton):
         integrated_flux_list = [phot_table[f"aperture_sum_{i}"] for i in range(21)]
 
         integrated_flux = np.interp(
-            self.radius,
+            self.task.parameters.radius,
             np.arange(21),
             np.array(integrated_flux_list).reshape((-1,)),
         )
 
         self.update(integrated_flux)
 
-        if self.diagnosis:
+        if self.task.diagnosis:
             # TODO: Use the integrated_L
             integrated_L = (  # noqa
                 (integrated_flux * 1e-26)
-                * pow((self.geom["distance"] * 3.086e22), 2)
+                * pow((self.data.geometry.distance * 3.086e22), 2)
                 * 4
-                * math.pi
+                * np.pi
                 / (3.846e26)
             )
             print(f"[INFO]  Integrated flux = {integrated_flux:.03f}")
 
             reg = EllipsePixelRegion(
                 PixCoord(position_px[0], position_px[1]),
-                width=self.radius * rma,
-                height=self.radius * rmi,
-                angle=Angle(self.geom["positionAngle"], "deg"),
+                width=self.task.parameters.radius * rma,
+                height=self.task.parameters.radius * rmi,
+                angle=Angle(self.data.geometry.positionAngle, "deg"),
             )
 
             fig, ax = plt.subplots(1, 1)
@@ -195,14 +190,16 @@ class Integrate(IntegrateSingleton):
                 facecolor="none",
                 edgecolor="red",
                 lw=1,
-                label=f"radius={self.radius}",
+                label=f"radius={self.task.parameters.radius}",
             )
             cbar = plt.colorbar()
             cbar.ax.set_ylabel("Jy/px")
             plt.xticks([])
             plt.yticks([])
             plt.legend()
-            plt.savefig(f"{self.output_path}/PHOT_{self.body}_{self.name}.png")
+            plt.savefig(
+                f"{self.band.output}/PHOT_{self.data.body}_{self.band.name}.png"
+            )
             plt.close()
 
         if self.MC_diagnosis:

@@ -12,7 +12,7 @@ def factory_method(pipeline_step: str, **parameters):
     return pipeline_step_class(**parameters)
 
 
-class HIPConvolutionValidation(BaseModel):
+class HIPConvolution(BaseModel):
     kernel: str
 
     @model_validator(mode="after")
@@ -23,11 +23,11 @@ class HIPConvolutionValidation(BaseModel):
         return self
 
 
-class HIPSkySubtractionValidation(BaseModel):
+class HIPSkySubtract(BaseModel):
     cellSize: Optional[PositiveInt] = 1
 
 
-class HIPReprojectValidation(BaseModel):
+class HIPReproject(BaseModel):
     target: str
 
     @model_validator(mode="after")
@@ -38,31 +38,31 @@ class HIPReprojectValidation(BaseModel):
         return self
 
 
-class HIPCutoutValidation(BaseModel):
+class HIPCutout(BaseModel):
     raTrim: PositiveFloat
     decTrim: PositiveFloat
 
 
-class HIPPhotometryValidation(BaseModel):
+class HIPPhotometry(BaseModel):
     radius: PositiveFloat
 
 
-class HIPForegroundMaskingValidation(BaseModel):
+class HIPForegroundMasking(BaseModel):
     factor: PositiveFloat
     raTrim: PositiveFloat
     decTrim: PositiveFloat
 
 
-class HIPTestValidation(BaseModel):
+class HIPTest(BaseModel):
     pass
 
 
 Interface = {
-    "hip.convolution": HIPConvolutionValidation,
-    "hip.skySubtraction": HIPSkySubtractionValidation,
-    "hip.reproject": HIPReprojectValidation,
-    "hip.cutout": HIPCutoutValidation,
-    "hip.photometry": HIPPhotometryValidation,
-    "hip.foregounrdMasking": HIPForegroundMaskingValidation,
-    "hip.test": HIPTestValidation,
+    "hip.convolution": HIPConvolution,
+    "hip.skySubtract": HIPSkySubtract,
+    "hip.reproject": HIPReproject,
+    "hip.cutout": HIPCutout,
+    "hip.integrate": HIPPhotometry,
+    "hip.foregounrdMasking": HIPForegroundMasking,
+    "hip.test": HIPTest,
 }

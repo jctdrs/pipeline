@@ -22,10 +22,10 @@ class PipelineStep(BaseModel):
     def validate_pipeline_steps(self):
         hip_possible_steps = {
             "hip.convolution",
-            "hip.skySubtraction",
+            "hip.skySubtract",
             "hip.cutout",
             "hip.reproject",
-            "hip.photometry",
+            "hip.integrate",
             "hip.foregroundMasking",
             "hip.test",
         }
@@ -45,11 +45,14 @@ class Meta(BaseModel):
     description: str = "Default"
 
 
-class PipelineValidation(BaseModel):
+class Pipeline(BaseModel):
     # The whole 'meta' section is not mandatory to define. In case it is not
     # defined by the user, then it is manually filled with all default values.
     meta: Optional[Meta] = Meta(
-        name="Default", author="Default", version="Default", description="Default"
+        name="Default",
+        author="Default",
+        version="Default",
+        description="Default",
     )
     config: config_validation.Config
     data: data_validation.Data
@@ -81,7 +84,7 @@ def test():
             "bands": [
                 {
                     "input": "/home/jtedros/Repo/pipeline/data/inputs/NGC4254/NGC4254_PACS1.fits",
-                    "error": "/home/jtedros/Repo/pipeline/data/inputs/NGC4254/NGC4254_PACS1.fits",
+                    # "error": "/home/jtedros/Repo/pipeline/data/inputs/NGC4254/NGC4254_PACS1.fits",
                     "output": "/home/jtedros/Repo/pipeline/data/inputs/NGC4254/NGC4254_PACS1.fits",
                     "name": "PACS1",
                     "calError": 5.3,
@@ -90,7 +93,7 @@ def test():
         },
         "pipeline": [
             {
-                "step": "hip.skySubtraction",
+                "step": "hip.skySubtract",
                 "diagnosis": True,
                 "parameters": {"cellSize": 13},
             },
@@ -116,4 +119,5 @@ def test():
         ],
     }
 
-    print(PipelineValidation.model_validate(pipeline))
+    a = Pipeline.model_validate(pipeline)
+    print(a.data.bands[0].error)
