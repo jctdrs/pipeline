@@ -1,0 +1,19 @@
+from pydantic import BaseModel, model_validator
+from typing import List
+
+from setup import geometry_validation
+from setup import bands_validation
+
+
+class Data(BaseModel):
+    body: str
+    geometry: geometry_validation.Geometry
+    bands: List[bands_validation.Bands]
+
+    # We need to use the 'before' mode in this case because the 'body'
+    # attribute in 'Geometry' is not defined by the user from the specification
+    # but manually in the following method.
+    @model_validator(mode="before")
+    def pass_body_to_geometry(self):
+        self["geometry"]["body"] = self["body"]
+        return self

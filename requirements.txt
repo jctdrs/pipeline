@@ -10,3 +10,4 @@ regions==0.9
 reproject==0.13.1
 scipy==1.13.0
 astroquery==0.4.7
+pydantic==2.10.4
