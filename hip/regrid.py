@@ -20,7 +20,7 @@ from reproject import reproject_interp
 from util import read
 
 
-class ReprojectSingleton:
+class RegridSingleton:
     _instance = None
 
     def __new__(cls, *args, **kwargs):
@@ -32,7 +32,7 @@ class ReprojectSingleton:
         pass
 
 
-class Reproject(ReprojectSingleton):
+class Regrid(RegridSingleton):
     def __init__(
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,

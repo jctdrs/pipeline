@@ -1,7 +1,8 @@
 import csv
-
-from pydantic import BaseModel, model_validator
 from typing import Optional
+
+from pydantic import BaseModel
+from pydantic import model_validator
 
 
 DUSTPEDIA_APERTURE_PHOTOMETRY = (

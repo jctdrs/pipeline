@@ -1,9 +1,12 @@
+from typing_extensions import Optional
+from typing_extensions import List
+
 from setup import config_validation
 from setup import data_validation
 from setup import parameters_validation
 
-from pydantic import BaseModel, model_validator
-from typing_extensions import Optional, List
+from pydantic import BaseModel
+from pydantic import model_validator
 
 
 class PipelineStep(BaseModel):
@@ -21,12 +24,12 @@ class PipelineStep(BaseModel):
     @model_validator(mode="after")
     def validate_pipeline_steps(self):
         hip_possible_steps = {
-            "hip.convolution",
+            "hip.degrade",
             "hip.skySubtract",
             "hip.cutout",
-            "hip.reproject",
+            "hip.regrid",
             "hip.integrate",
-            "hip.foregroundMasking",
+            "hip.foregroundMask",
             "hip.test",
         }
 
@@ -103,14 +106,14 @@ def test():
                 "parameters": {"raTrim": 10, "decTrim": 10},
             },
             {
-                "step": "hip.convolution",
+                "step": "hip.degrade",
                 "diagnosis": True,
                 "parameters": {
                     "kernel": "/home/jtedros/Repo/pipeline/data/kernels/Kernel_LowRes_PACS1_to_SPIRE3.fits"
                 },
             },
             {
-                "step": "hip.reproject",
+                "step": "hip.regrid",
                 "diagnosis": False,
                 "parameters": {
                     "target": "/home/jtedros/Repo/pipeline/data/inputs/NGC4254/NGC4254_SPIRE3.fits"

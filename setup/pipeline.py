@@ -9,10 +9,10 @@ from astropy.stats import mad_std
 import jax
 import jax.numpy as jnp
 
-from hip import convolution
-from hip import skysubtract
-from hip import reproject
-from hip import foreground
+from hip import degrade
+from hip import sky_subtract
+from hip import regrid
+from hip import foreground_mask
 from hip import cutout
 from hip import integrate
 
@@ -23,12 +23,12 @@ from util import test
 INSTRUMENTS_CONFIG = "/home/jtedros/Repo/pipeline/data/config/instruments.yml"
 
 Interface: dict = {
-    "hip.convolution": convolution.Convolution,
-    "hip.skySubtract": skysubtract.SkySubtract,
-    "hip.reproject": reproject.Reproject,
+    "hip.degrade": degrade.Degrade,
+    "hip.skySubtract": sky_subtract.SkySubtract,
+    "hip.regrid": regrid.Regrid,
     "hip.cutout": cutout.Cutout,
     "hip.integrate": integrate.Integrate,
-    "hip.foreground": foreground.Foreground,
+    "hip.foregroundMask": foreground_mask.ForegroundMask,
     "util.test": test.Test,
 }
 
@@ -250,8 +250,6 @@ class MonteCarloPipeline(Pipeline):
             mean: float = 0
             M2: float = 0
 
-            MC_diagnosis: bool = False
-
             self.load_input(jdx)
             err_path = band.error
             if err_path is not None:
@@ -288,7 +286,7 @@ class MonteCarloPipeline(Pipeline):
                     task,
                     jdx,
                     self.instruments,
-                    MC_diagnosis=False,
+                    MC_diagnosis=self.MC_diagnosis[idx],
                     differentiate=False,
                 ).run()
 

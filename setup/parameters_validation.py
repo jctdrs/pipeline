@@ -1,7 +1,10 @@
 import os
-
-from pydantic import BaseModel, PositiveFloat, PositiveInt, model_validator  # noqa
 from typing_extensions import Optional
+
+from pydantic import BaseModel
+from pydantic import PositiveFloat
+from pydantic import PositiveInt
+from pydantic import model_validator
 
 
 def factory_method(pipeline_step: str, **parameters):
@@ -12,7 +15,7 @@ def factory_method(pipeline_step: str, **parameters):
     return pipeline_step_class(**parameters)
 
 
-class HIPConvolution(BaseModel):
+class HIPDegrade(BaseModel):
     kernel: str
 
     @model_validator(mode="after")
@@ -27,7 +30,7 @@ class HIPSkySubtract(BaseModel):
     cellSize: Optional[PositiveInt] = 1
 
 
-class HIPReproject(BaseModel):
+class HIPRegrid(BaseModel):
     target: str
 
     @model_validator(mode="after")
@@ -43,11 +46,11 @@ class HIPCutout(BaseModel):
     decTrim: PositiveFloat
 
 
-class HIPPhotometry(BaseModel):
+class HIPIntegrate(BaseModel):
     radius: PositiveFloat
 
 
-class HIPForegroundMasking(BaseModel):
+class HIPForegroundMask(BaseModel):
     factor: PositiveFloat
     raTrim: PositiveFloat
     decTrim: PositiveFloat
@@ -58,11 +61,11 @@ class HIPTest(BaseModel):
 
 
 Interface = {
-    "hip.convolution": HIPConvolution,
+    "hip.degrade": HIPDegrade,
     "hip.skySubtract": HIPSkySubtract,
-    "hip.reproject": HIPReproject,
+    "hip.regrid": HIPRegrid,
     "hip.cutout": HIPCutout,
-    "hip.integrate": HIPPhotometry,
-    "hip.foregounrdMasking": HIPForegroundMasking,
+    "hip.integrate": HIPIntegrate,
+    "hip.foregroundMask": HIPForegroundMask,
     "hip.test": HIPTest,
 }

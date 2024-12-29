@@ -1,7 +1,9 @@
+from setup import pipeline_validation
+from setup import data_validation
+
 import typing
 import math
 import copy
-
 
 from astroquery.vizier import Vizier
 
@@ -18,7 +20,7 @@ import pyregion
 from util import read
 
 
-class ForegroundSingleton:
+class ForegroundMaskSingleton:
     _instance = None
 
     def __new__(cls, *args, **kwargs):
@@ -30,36 +32,26 @@ class ForegroundSingleton:
         pass
 
 
-class Foreground(ForegroundSingleton):
+class ForegroundMask(ForegroundMaskSingleton):
     def __init__(
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
         err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
-        output_path: str,
-        name: str,
-        body: str,
-        geom: dict,
+        data: data_validation.Data,
+        task: pipeline_validation.PipelineStep,
+        idx: int,
         instruments: dict,
-        diagnosis: bool,
         MC_diagnosis: bool,
         differentiate: bool,
-        factor: float,
-        raTrim: float,
-        decTrim: float,
     ):
         self.data_hdu = data_hdu
         self.err_hdu = err_hdu
-        self.output_path = output_path
-        self.name = name
-        self.body = body
-        self.geom = geom
+        self.task = task
+        self.data = data
+        self.band = self.data.bands[idx]
         self.instruments = instruments
-        self.diagnosis = diagnosis
         self.MC_diagnosis = MC_diagnosis
         self.differentiate = differentiate
-        self.factor = factor
-        self.raTrim = raTrim
-        self.decTrim = decTrim
 
     def run(
         self,
@@ -84,8 +76,8 @@ class Foreground(ForegroundSingleton):
             fgs_pos_px = wcs.all_world2pix(fgs_list[k], 0)
             r_mask = (
                 rad_fac[k]
-                * self.factor
-                * self.instruments[self.name]["RESOLUTION"]["VALUE"]
+                * self.task.parameters.factor
+                * self.instruments[self.band.name]["RESOLUTION"]["VALUE"]
             ) // 2
 
             # iterate over the indicidual points
@@ -116,7 +108,10 @@ class Foreground(ForegroundSingleton):
         fgs1, fgs2, fgs3, fgs4, fgs5, fgs6 = [], [], [], [], [], []
         fgs_list = [fgs1, fgs2, fgs3, fgs4, fgs5, fgs6]
 
-        sizeTrim = (self.decTrim * au.arcmin, self.raTrim * au.arcmin)
+        sizeTrim = (
+            self.task.parameters.decTrim * au.arcmin,
+            self.task.parameters.raTrim * au.arcmin,
+        )
 
         for k in range(len(fgs_list)):
             # Vizier query for point sources (Gaia Data Release 3 catalog)
@@ -129,7 +124,7 @@ class Foreground(ForegroundSingleton):
             # look for point sources over a 4 times area with respect the cutout
             # (2*sizeTrim)
             fgs_table = v.query_region(
-                self.body, width=max(sizeTrim[0] * 2, sizeTrim[1] * 2)
+                self.data.body, width=max(sizeTrim[0] * 2, sizeTrim[1] * 2)
             )
 
             fgs_sources = fgs_table[0]
@@ -160,10 +155,10 @@ class Foreground(ForegroundSingleton):
 
         wcs = WCS(self.data_hdu.header)
 
-        pos_ctr = jnp.vstack([(self.geom["ra"]), self.geom["dec"]]).T
+        pos_ctr = jnp.vstack([(self.data.geometry.ra), self.data.geometry.dec]).T
         pos_center_px = wcs.all_world2pix(pos_ctr, 0)
-        rma_gal = self.geom["semiMajorAxis"] / 2
-        rmi_gal = rma_gal / self.geom["axialRatio"]
+        rma_gal = self.data.geometry.semiMajorAxis / 2
+        rmi_gal = rma_gal / self.data.geometry.axialRatio
         rma_gal_px = math.ceil(rma_gal / px_size)
         rmi_gal_px = math.ceil(rmi_gal / px_size)
 
@@ -175,7 +170,7 @@ class Foreground(ForegroundSingleton):
             pos_center_px[0][1],
             rma_gal_px,
             rmi_gal_px,
-            self.geom["positionAngle"],
+            self.data.geometry.positionAngle,
         )
 
         r = pyregion.parse(region)

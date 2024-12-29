@@ -31,7 +31,7 @@ def crop_gaussian_kernel(kernel, sigma):
     return cropped_kernel
 
 
-class ConvolutionSingleton:
+class DegradeSingleton:
     _instance = None
 
     def __new__(cls, *args, **kwargs):
@@ -43,7 +43,7 @@ class ConvolutionSingleton:
         pass
 
 
-class Convolution(ConvolutionSingleton):
+class Degrade(DegradeSingleton):
     def __init__(
         self,
         data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,

@@ -1,7 +1,9 @@
 import os
-
-from pydantic import BaseModel, PositiveFloat, model_validator
 from typing import Optional
+
+from pydantic import BaseModel
+from pydantic import PositiveFloat
+from pydantic import model_validator
 
 
 class Band(BaseModel):

@@ -1,8 +1,10 @@
-from pydantic import BaseModel, model_validator
 from typing import List
 
 from setup import geometry_validation
 from setup import bands_validation
+
+from pydantic import BaseModel
+from pydantic import model_validator
 
 
 class Data(BaseModel):
