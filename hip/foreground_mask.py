@@ -1,6 +1,3 @@
-from setup import pipeline_validation
-from setup import data_validation
-
 import typing
 import math
 import copy
@@ -22,10 +19,13 @@ from util import read
 
 class ForegroundMaskSingleton:
     _instance = None
+    _mode = None
 
     def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
+        mode = kwargs["mode"]
+        if cls._instance is None and (mode is None or mode != cls._mode):
             cls._instance = super().__new__(cls)
+            cls._mode = mode
         return cls._instance
 
     def run(self, *args, **kwargs):
@@ -33,25 +33,22 @@ class ForegroundMaskSingleton:
 
 
 class ForegroundMask(ForegroundMaskSingleton):
-    def __init__(
-        self,
-        data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
-        err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
-        data: data_validation.Data,
-        task: pipeline_validation.PipelineStep,
-        idx: int,
-        instruments: dict,
-        MC_diagnosis: bool,
-        differentiate: bool,
-    ):
-        self.data_hdu = data_hdu
-        self.err_hdu = err_hdu
-        self.task = task
-        self.data = data
-        self.band = self.data.bands[idx]
-        self.instruments = instruments
-        self.MC_diagnosis = MC_diagnosis
-        self.differentiate = differentiate
+    def __init__(self, *args, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    @classmethod
+    def create(cls, *args, **kwargs):
+        mode = kwargs["mode"]
+        if mode == "Single Pass":
+            return ForegroundMaskSinglePass(*args, **kwargs)
+        elif mode == "Monte-Carlo":
+            return ForegroundMaskMonteCarlo(*args, **kwargs)
+        elif mode == "Automatic Differentiation":
+            return ForegroundMaskAutomaticDifferentiation(*args, **kwargs)
+        else:
+            msg = f"[ERROR] Mode '{mode}' not recognized."
+            raise ValueError(msg)
 
     def run(
         self,
@@ -177,3 +174,15 @@ class ForegroundMask(ForegroundMaskSingleton):
         mask_reg = r.get_mask(hdu=self.data_hdu)
 
         return mask_reg
+
+
+class ForegroundMaskSinglePass(ForegroundMask):
+    pass
+
+
+class ForegroundMaskMonteCarlo(ForegroundMask):
+    pass
+
+
+class ForegroundMaskAutomaticDifferentiation(ForegroundMask):
+    pass

@@ -1,8 +1,5 @@
 import typing
 
-from setup import pipeline_validation
-from setup import data_validation
-
 from scipy.optimize import curve_fit
 from scipy.ndimage import zoom
 
@@ -33,10 +30,13 @@ def crop_gaussian_kernel(kernel, sigma):
 
 class DegradeSingleton:
     _instance = None
+    _mode = None
 
     def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
+        mode = kwargs["mode"]
+        if cls._instance is None and (mode is None or mode != cls._mode):
             cls._instance = super().__new__(cls)
+            cls._mode = mode
         return cls._instance
 
     def run(self, *args, **kwargs):
@@ -44,34 +44,22 @@ class DegradeSingleton:
 
 
 class Degrade(DegradeSingleton):
-    def __init__(
-        self,
-        data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
-        err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
-        data: data_validation.Data,
-        task: pipeline_validation.PipelineStep,
-        idx: int,
-        instruments: dict,
-        MC_diagnosis: bool,
-        differentiate: bool,
-    ):
-        self.data_hdu = data_hdu
-        self.err_hdu = err_hdu
-        self.task = task
-        self.data = data
-        self.band = self.data.bands[idx]
-        self.instruments = instruments
-        self.MC_diagnosis = MC_diagnosis
-        self.differentiate = differentiate
+    def __init__(self, *args, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
-    def set_hdus(
-        self,
-        data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
-        err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
-    ) -> None:
-        self.data_hdu = data_hdu
-        self.err_hdu = err_hdu
-        return
+    @classmethod
+    def create(cls, *args, **kwargs):
+        mode = kwargs["mode"]
+        if mode == "Single Pass":
+            return DegradeSinglePass(*args, **kwargs)
+        elif mode == "Monte-Carlo":
+            return DegradeMonteCarlo(*args, **kwargs)
+        elif mode == "Automatic Differentiation":
+            return DegradeAutomaticDifferentiation(*args, **kwargs)
+        else:
+            msg = f"[ERROR] Mode '{mode}' not recognized."
+            raise ValueError(msg)
 
     def run(
         self,
@@ -90,7 +78,8 @@ class Degrade(DegradeSingleton):
         self.normalize_kernel()
         self.convert_from_Jyperpx_to_radiance()
 
-        if self.differentiate:
+        # TODO: Move this to DegradeAutomaticDifferentiation
+        if False:  # self.differentiate:
             grad_call = jacfwd(self.convolve)
             grad_res = grad_call(jnp.array(self.data_hdu.data, dtype="bfloat16"))
             self.data_hdu.data = self.convolve(jnp.array(self.data_hdu.data))
@@ -176,3 +165,15 @@ class Degrade(DegradeSingleton):
 
         self.data_hdu.data *= conversion_factor
         return None
+
+
+class DegradeSinglePass(Degrade):
+    pass
+
+
+class DegradeMonteCarlo(Degrade):
+    pass
+
+
+class DegradeAutomaticDifferentiation(Degrade):
+    pass

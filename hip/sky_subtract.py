@@ -1,8 +1,5 @@
 import typing
 
-from setup import pipeline_validation
-from setup import data_validation
-
 import astropy
 from astropy.stats import SigmaClip
 from astropy.wcs import WCS
@@ -34,25 +31,22 @@ class SkySubtractSingleton:
 
 
 class SkySubtract(SkySubtractSingleton):
-    def __init__(
-        self,
-        data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
-        err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
-        data: data_validation.Data,
-        task: pipeline_validation.PipelineStep,
-        idx: int,
-        instruments: dict,
-        MC_diagnosis: bool,
-        differentiate: bool,
-    ):
-        self.data_hdu = data_hdu
-        self.err_hdu = err_hdu
-        self.task = task
-        self.data = data
-        self.band = self.data.bands[idx]
-        self.instruments = instruments
-        self.MC_diagnosis = MC_diagnosis
-        self.differentiate = differentiate
+    def __init__(self, *args, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    @classmethod
+    def create(cls, *args, **kwargs):
+        mode = kwargs["mode"]
+        if mode == "Single Pass":
+            return SkySubtractSinglePass(*args, **kwargs)
+        elif mode == "Monte-Carlo":
+            return SkySubtractMonteCarlo(*args, **kwargs)
+        elif mode == "Automatic Differentiation":
+            return SkySubtractAutomaticDifferentiation(*args, **kwargs)
+        else:
+            msg = f"[ERROR] Mode '{mode}' not recognized."
+            raise ValueError(msg)
 
     def run(
         self,
@@ -62,8 +56,8 @@ class SkySubtract(SkySubtractSingleton):
         typing.Union[jnp.array, typing.Any],
     ]:
         # This masking is needed to tame the Warning from photutils
-        data_hdu_invalid = ma.masked_invalid(self.data_hdu.data)
-        self.data_hdu.data[data_hdu_invalid.mask] = 0.0
+        self.data_hdu_invalid = ma.masked_invalid(self.data_hdu.data)
+        self.data_hdu.data[self.data_hdu_invalid.mask] = 0.0
 
         pixel_size = read.pixel_size_arcsec(self.data_hdu.header)
         xsize, ysize = read.shape(self.data_hdu.header)
@@ -92,9 +86,9 @@ class SkySubtract(SkySubtractSingleton):
                 """.format(pos[0], pos[1], rma, rmi, self.data.geometry.positionAngle)
         )
 
-        bkg_mask = region.get_mask(hdu=self.data_hdu)
+        self.bkg_mask = region.get_mask(hdu=self.data_hdu)
 
-        bkg = background.Background2D(
+        self.bkg = background.Background2D(
             self.data_hdu.data,
             (ncells1, ncells2),
             edge_method="pad",
@@ -108,21 +102,41 @@ class SkySubtract(SkySubtractSingleton):
             interpolator=background.BkgZoomInterpolator(
                 order=3, mode="reflect", grid_mode=True
             ),
-            mask=bkg_mask,
+            mask=self.bkg_mask,
             exclude_percentile=10.0,
             bkg_estimator=background.SExtractorBackground(),
             bkgrms_estimator=background.StdBackgroundRMS(),
         )
 
-        self.data_hdu.data = self.data_hdu.data - bkg.background
-        self.data_hdu.data[data_hdu_invalid.mask] = jnp.nan
+        self.data_hdu.data = self.data_hdu.data - self.bkg.background
+        self.data_hdu.data[self.data_hdu_invalid.mask] = jnp.nan
 
+        return self.data_hdu, self.err_hdu, None
+
+
+class SkySubtractMonteCarlo(SkySubtract):
+    pass
+
+
+class SkySubtractAutomaticDifferentiation(SkySubtract):
+    pass
+
+
+class SkySubtractSinglePass(SkySubtract):
+    def run(
+        self,
+    ) -> typing.Tuple[
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        typing.Union[jnp.ndarray, typing.Any],
+    ]:
+        super().run()
         if self.task.diagnosis:
-            mask_bkg = copy.copy(bkg.background)
-            mask_bkg[data_hdu_invalid.mask] = jnp.nan
+            mask_bkg = copy.copy(self.bkg.background)
+            mask_bkg[self.data_hdu_invalid.mask] = jnp.nan
 
             sourcemask = copy.deepcopy(mask_bkg)
-            sourcemask[bkg_mask] = jnp.nan
+            sourcemask[self.bkg_mask] = jnp.nan
 
             plt.imshow(mask_bkg, origin="lower")
             plt.title(f"{self.data.body} {self.band.name} background map")

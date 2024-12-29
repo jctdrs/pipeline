@@ -3,6 +3,8 @@ import typing
 import yaml
 import copy
 
+from setup import bands_validation
+
 from astropy.io import fits
 from astropy.stats import mad_std
 
@@ -23,13 +25,12 @@ from util import test
 INSTRUMENTS_CONFIG = "/home/jtedros/Repo/pipeline/data/config/instruments.yml"
 
 Interface: dict = {
-    "hip.degrade": degrade.Degrade,
-    "hip.skySubtract": sky_subtract.SkySubtract,
-    "hip.regrid": regrid.Regrid,
-    "hip.cutout": cutout.Cutout,
-    "hip.integrate": integrate.Integrate,
-    "hip.foregroundMask": foreground_mask.ForegroundMask,
-    "util.test": test.Test,
+    "hip.degrade": degrade.Degrade.create,
+    "hip.skySubtract": sky_subtract.SkySubtract.create,
+    "hip.regrid": regrid.Regrid.create,
+    "hip.cutout": cutout.Cutout.create,
+    "hip.integrate": integrate.Integrate.create,
+    "hip.foregroundMask": foreground_mask.ForegroundMask.create,
 }
 
 
@@ -37,7 +38,6 @@ class Pipeline:
     def __init__(self, spec):
         self.spec = spec
         self._load_instruments()
-        self._set_tasks()
 
     @classmethod
     def create(
@@ -55,14 +55,18 @@ class Pipeline:
             SinglePassPipeline(spec).execute()
             return MonteCarloPipeline(spec)
 
-    def load_input(self, idx: int) -> None:
-        inp_path: str = self.spec.data.bands[idx].input
+        else:
+            msg = f"[ERROR] Mode '{spec.config.mode}' not recognized"
+            raise ValueError(msg)
+
+    def load_input(self, band: bands_validation.Band) -> None:
+        inp_path: str = band.input
         hdul = fits.open(inp_path)
         self.data_hdu = hdul[0]
         return
 
-    def load_error(self, idx: int) -> None:
-        err_path: str = self.spec.data.bands[idx].error
+    def load_error(self, band: bands_validation.Band) -> None:
+        err_path: str = band.error
         if err_path is None:
             return
 
@@ -70,9 +74,9 @@ class Pipeline:
         self.err_hdu = hdul[0]
         return
 
-    def save_data(self, idx) -> None:
-        name: str = self.spec.data.bands[idx].name
-        out_path: str = self.spec.data.bands[idx].output
+    def save_data(self, band: bands_validation.Band) -> None:
+        name: str = band.name
+        out_path: str = band.output
 
         fits.writeto(
             f"{out_path}/{name}.fits",
@@ -80,18 +84,19 @@ class Pipeline:
             self.data_hdu.header,
             overwrite=True,
         )
+        return
 
-    def save_error(self, idx) -> None:
-        name: str = self.spec.data.bands[idx].name
-        out_path: str = self.spec.data.bands[idx].output
+    def save_error(self, band: bands_validation.Band) -> None:
+        name: str = band.name
+        out_path: str = band.output
 
-        if self.err_hdu is not None:
-            fits.writeto(
-                f"{out_path}/{name}_Error.fits",
-                self.err_hdu.data,
-                self.err_hdu.header,
-                overwrite=True,
-            )
+        fits.writeto(
+            f"{out_path}/{name}_Error.fits",
+            self.err_hdu.data,
+            self.err_hdu.header,
+            overwrite=True,
+        )
+        return
 
     def execute(self):
         pass
@@ -113,45 +118,20 @@ class Pipeline:
             column = e.problem_mark.column + 1  # type: ignore
             msg = f"[ERROR] YAML parsing error at line {line}, column {column}."
             raise ValueError(msg)
+        return
 
     def _set_tasks(self) -> None:
-        self.single: list = []
-        self.repeat: list = []
-        self.tasks: list = []
-        self.MC_diagnosis: list = []
-
-        # Check for pipeline steps
-        for item in self.spec.pipeline:
-            self.single.append(item)
-
-        niter = self.spec.config.niter
-        if niter > 1:
-            self.tasks.extend(
-                itertools.chain.from_iterable(
-                    itertools.repeat(self.spec.pipeline, niter)
-                )
-            )
-            if len(self.spec.pipeline) == 1:
-                self.repeat.extend([2] * niter)
-                self.MC_diagnosis.extend([False] * (niter - 1))
-                self.MC_diagnosis.extend([True])
-            else:
-                self.repeat.extend(
-                    ([1] + [0] * (len(self.spec.pipeline) - 2) + [-1]) * niter
-                )
-                self.MC_diagnosis.extend(
-                    [False] * len(self.spec.pipeline) * (niter - 1)
-                )
-                self.MC_diagnosis.extend([True] * len(self.spec.pipeline))
-        else:
-            self.tasks.extend(self.spec.pipeline)
-        return
+        pass
 
 
 # TODO: If error not define in YAML then abort or add error from std
 class DifferentialPipeline(Pipeline):
     def __init__(self, spec: spec_validation.Specification):
         super().__init__(spec)
+        self._set_tasks()
+
+    def _set_tasks(self) -> None:
+        pass
 
     def execute(self) -> None:
         self.load_input()
@@ -214,46 +194,70 @@ class DifferentialPipeline(Pipeline):
 class SinglePassPipeline(Pipeline):
     def __init__(self, spec: spec_validation.Specification):
         super().__init__(spec)
+        print("[INFO] Starting Single Pass Pipeline")
+        self._set_tasks()
+
+    def _set_tasks(self) -> None:
+        self.tasks: list = [task for task in self.spec.pipeline]
+        return
 
     def execute(self) -> None:
         bands: list = self.spec.data.bands
-        for idx, band in enumerate(bands):
+        for band in bands:
             # TODO: These need to be like each other
-            self.load_input(idx)
+            self.load_input(band)
             self.err_hdu = None
 
-            for task in self.single:
+            for task in self.tasks:
                 self.data_hdu, self.err_hdu, _ = Interface[task.step](
-                    self.data_hdu,
-                    self.err_hdu,
-                    self.spec.data,
-                    task,
-                    idx,
-                    self.instruments,
-                    MC_diagnosis=False,
-                    differentiate=False,
+                    mode="Single Pass",
+                    data_hdu=self.data_hdu,
+                    err_hdu=self.err_hdu,
+                    data=self.spec.data,
+                    task=task,
+                    band=band,
+                    instruments=self.instruments,
                 ).run()
 
-            self.save_data(idx)
+            self.save_data(band)
         return None
 
 
 class MonteCarloPipeline(Pipeline):
     def __init__(self, spec: spec_validation.Specification):
         super().__init__(spec)
+        print("[INFO] Starting Monte-Carlo Pipeline")
+        self._set_tasks()
+
+    def _set_tasks(self) -> None:
+        self.tasks: list = []
+        self.repeat: list = []
+
+        niter = self.spec.config.niter
+        self.tasks.extend(
+            itertools.chain.from_iterable(itertools.repeat(self.spec.pipeline, niter))
+        )
+        if len(self.spec.pipeline) == 1:
+            self.repeat.extend([2] * niter)
+        else:
+            self.repeat.extend(
+                ([1] + [0] * (len(self.spec.pipeline) - 2) + [-1]) * niter
+            )
+        return
 
     def execute(self) -> None:
         key = jax.random.key(638)
         bands: list = self.spec.data.bands
-        for jdx, band in enumerate(bands):
+
+        for band in bands:
             count: float = 0
             mean: float = 0
             M2: float = 0
 
-            self.load_input(jdx)
+            self.load_input(band)
             err_path = band.error
             if err_path is not None:
-                self.load_error(jdx)
+                self.load_error(band)
             else:
                 std_data = mad_std(self.data_hdu.data, ignore_nan=True)
                 self.err_hdu = fits.PrimaryHDU(
@@ -280,14 +284,13 @@ class MonteCarloPipeline(Pipeline):
                     count += 1
 
                 self.data_hdu, self.err_hdu, _ = Interface[task.step](
-                    self.data_hdu,
-                    self.err_hdu,
-                    self.spec.data,
-                    task,
-                    jdx,
-                    self.instruments,
-                    MC_diagnosis=self.MC_diagnosis[idx],
-                    differentiate=False,
+                    mode="Monte-Carlo",
+                    data_hdu=self.data_hdu,
+                    err_hdu=self.err_hdu,
+                    data=self.spec.data,
+                    task=task,
+                    band=band,
+                    instruments=self.instruments,
                 ).run()
 
                 # Running sum
@@ -303,5 +306,5 @@ class MonteCarloPipeline(Pipeline):
                 header=self.data_hdu.header, data=(jnp.sqrt(M2 / (count - 1)))
             )
 
-            self.save_error(jdx)
+            self.save_error(band)
         return None

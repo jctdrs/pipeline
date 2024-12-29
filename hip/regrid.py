@@ -3,9 +3,6 @@ import typing
 
 import numpy as np
 
-from setup import pipeline_validation
-from setup import data_validation
-
 import jax.numpy as jnp
 from jax import jacfwd
 from jax.scipy.ndimage import map_coordinates
@@ -22,10 +19,13 @@ from util import read
 
 class RegridSingleton:
     _instance = None
+    _mode = None
 
     def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
+        mode = kwargs["mode"]
+        if cls._instance is None and (mode is None or mode != cls._mode):
             cls._instance = super().__new__(cls)
+            cls._mode = mode
         return cls._instance
 
     def run(self, *args, **kwargs):
@@ -33,25 +33,22 @@ class RegridSingleton:
 
 
 class Regrid(RegridSingleton):
-    def __init__(
-        self,
-        data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
-        err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
-        data: data_validation.Data,
-        task: pipeline_validation.PipelineStep,
-        idx: int,
-        instruments: dict,
-        MC_diagnosis: bool,
-        differentiate: bool,
-    ):
-        self.data_hdu = data_hdu
-        self.err_hdu = err_hdu
-        self.task = task
-        self.data = data
-        self.band = self.data.bands[idx]
-        self.instruments = instruments
-        self.MC_diagnosis = MC_diagnosis
-        self.differentiate = differentiate
+    def __init__(self, *args, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    @classmethod
+    def create(cls, *args, **kwargs):
+        mode = kwargs["mode"]
+        if mode == "Single Pass":
+            return RegridSinglePass(*args, **kwargs)
+        elif mode == "Monte-Carlo":
+            return RegridMonteCarlo(*args, **kwargs)
+        elif mode == "Automatic Differentiation":
+            return RegridAutomaticDifferentiation(*args, **kwargs)
+        else:
+            msg = f"[ERROR] Mode '{mode}' not recognized."
+            raise ValueError(msg)
 
     def pixel_to_pixel_with_roundtrip(self, wcs1, wcs2, *inputs):
         inputs = np.array(inputs)
@@ -124,7 +121,8 @@ class Regrid(RegridSingleton):
     ]:
         self.convert_from_Jyperpx_to_radiance()
 
-        if self.differentiate:
+        # TODO: Move this to RegridAutomaticDifferentiation
+        if False:  # self.differentiate:
             grad_res = self.setup_interpolate()
             self.convert_from_radiance_to_Jyperpx()
             # TODO: need crop ?
@@ -187,3 +185,15 @@ class Regrid(RegridSingleton):
                 min(bound[:, 1]) : max(bound[:, 1]),
             ]
         return None
+
+
+class RegridSinglePass(Regrid):
+    pass
+
+
+class RegridMonteCarlo(Regrid):
+    pass
+
+
+class RegridAutomaticDifferentiation(Regrid):
+    pass

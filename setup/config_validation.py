@@ -25,3 +25,14 @@ class Config(BaseModel):
             print(f"[WARNING] Ignoring 'niter' field for '{mode}' mode.")
             self.niter = 1
         return self
+
+    @model_validator(mode="after")
+    def error_based_on_niter(self):
+        mode = self.mode
+        niter = self.niter
+
+        # In case 'niter=1' in 'Monte-Carlo'
+        if niter == 1 and mode == "Monte-Carlo":
+            print("[WARNING] Ignoring 'mode' field for 'niter=1'.")
+            self.mode = "Single Pass"
+        return self

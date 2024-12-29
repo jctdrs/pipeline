@@ -1,6 +1,3 @@
-from setup import pipeline_validation
-from setup import data_validation
-
 import typing
 
 import jax.numpy as jnp
@@ -16,11 +13,13 @@ from astropy.wcs import WCS
 
 class CutoutSingleton:
     _instance = None
-    singleton_flux_list: list = []
+    _mode = None
 
     def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
+        mode = kwargs["mode"]
+        if cls._instance is None and (mode is None or mode != cls._mode):
             cls._instance = super().__new__(cls)
+            cls._mode = mode
         return cls._instance
 
     def run(self, *args, **kwargs):
@@ -28,25 +27,22 @@ class CutoutSingleton:
 
 
 class Cutout(CutoutSingleton):
-    def __init__(
-        self,
-        data_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
-        err_hdu: astropy.io.fits.hdu.image.PrimaryHDU,
-        data: data_validation.Data,
-        task: pipeline_validation.PipelineStep,
-        idx: int,
-        instruments: dict,
-        MC_diagnosis: bool,
-        differentiate: bool,
-    ):
-        self.data_hdu = data_hdu
-        self.err_hdu = err_hdu
-        self.task = task
-        self.data = data
-        self.band = self.data.bands[idx]
-        self.instruments = instruments
-        self.MC_diagnosis = MC_diagnosis
-        self.differentiate = differentiate
+    def __init__(self, *args, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    @classmethod
+    def create(cls, *args, **kwargs):
+        mode = kwargs["mode"]
+        if mode == "Single Pass":
+            return CutoutSinglePass(*args, **kwargs)
+        elif mode == "Monte-Carlo":
+            return CutoutMonteCarlo(*args, **kwargs)
+        elif mode == "Automatic Differentiation":
+            return CutoutAutomaticDifferentiation(*args, **kwargs)
+        else:
+            msg = f"[ERROR] Mode '{mode}' not recognized."
+            raise ValueError(msg)
 
     def run(
         self,
@@ -79,6 +75,27 @@ class Cutout(CutoutSingleton):
             )
             self.err_hdu.data = err_cutout.data
             self.err_hdu.header.update(err_cutout.wcs.to_header())
+
+        return self.data_hdu, self.err_hdu, None
+
+
+class CutoutMonteCarlo(Cutout):
+    pass
+
+
+class CutoutAutomaticDifferentiation(Cutout):
+    pass
+
+
+class CutoutSinglePass(Cutout):
+    def run(
+        self,
+    ) -> typing.Tuple[
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        typing.Union[jnp.ndarray, typing.Any],
+    ]:
+        super().run()
 
         if self.task.diagnosis:
             plt.imshow(self.data_hdu.data, origin="lower")
