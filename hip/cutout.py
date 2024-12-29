@@ -16,7 +16,7 @@ class CutoutSingleton:
     _mode = None
 
     def __new__(cls, *args, **kwargs):
-        mode = kwargs["mode"]
+        mode = kwargs["task_control"]["mode"]
         if cls._instance is None and (mode is None or mode != cls._mode):
             cls._instance = super().__new__(cls)
             cls._mode = mode
@@ -33,7 +33,7 @@ class Cutout(CutoutSingleton):
 
     @classmethod
     def create(cls, *args, **kwargs):
-        mode = kwargs["mode"]
+        mode = kwargs["task_control"]["mode"]
         if mode == "Single Pass":
             return CutoutSinglePass(*args, **kwargs)
         elif mode == "Monte-Carlo":
@@ -107,5 +107,6 @@ class CutoutSinglePass(Cutout):
             plt.savefig(
                 f"{self.band.output}/CUTOUT_{self.data.body}_{self.band.name}.png"
             )
+            plt.close()
 
         return self.data_hdu, self.err_hdu, None

@@ -20,10 +20,13 @@ from util import read
 
 class SkySubtractSingleton:
     _instance = None
+    _mode = None
 
     def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
+        mode = kwargs["task_control"]["mode"]
+        if cls._instance is None and (mode is None or mode != cls._mode):
             cls._instance = super().__new__(cls)
+            cls._mode = mode
         return cls._instance
 
     def run(self, *args, **kwargs):
@@ -37,7 +40,7 @@ class SkySubtract(SkySubtractSingleton):
 
     @classmethod
     def create(cls, *args, **kwargs):
-        mode = kwargs["mode"]
+        mode = kwargs["task_control"]["mode"]
         if mode == "Single Pass":
             return SkySubtractSinglePass(*args, **kwargs)
         elif mode == "Monte-Carlo":

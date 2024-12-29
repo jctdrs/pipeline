@@ -4,12 +4,7 @@ import yaml
 import copy
 
 from setup import bands_validation
-
-from astropy.io import fits
-from astropy.stats import mad_std
-
-import jax
-import jax.numpy as jnp
+from setup import spec_validation
 
 from hip import degrade
 from hip import sky_subtract
@@ -18,9 +13,12 @@ from hip import foreground_mask
 from hip import cutout
 from hip import integrate
 
-from setup import spec_validation
+from astropy.io import fits
+from astropy.stats import mad_std
 
-from util import test
+import jax
+import jax.numpy as jnp
+
 
 INSTRUMENTS_CONFIG = "/home/jtedros/Repo/pipeline/data/config/instruments.yml"
 
@@ -120,18 +118,19 @@ class Pipeline:
             raise ValueError(msg)
         return
 
-    def _set_tasks(self) -> None:
-        pass
+    def _set_task_control(self) -> None:
+        return
 
 
 # TODO: If error not define in YAML then abort or add error from std
 class DifferentialPipeline(Pipeline):
     def __init__(self, spec: spec_validation.Specification):
         super().__init__(spec)
-        self._set_tasks()
+        self._set_task_control()
 
-    def _set_tasks(self) -> None:
-        pass
+    # TODO: Add this method
+    def _set_task_control(self) -> None:
+        return
 
     def execute(self) -> None:
         self.load_input()
@@ -195,10 +194,14 @@ class SinglePassPipeline(Pipeline):
     def __init__(self, spec: spec_validation.Specification):
         super().__init__(spec)
         print("[INFO] Starting Single Pass Pipeline")
-        self._set_tasks()
+        self._set_task_control()
 
-    def _set_tasks(self) -> None:
-        self.tasks: list = [task for task in self.spec.pipeline]
+    def _set_task_control(self) -> None:
+        self.task_control = {
+            "mode": "Single Pass",
+            "tasks": [task for task in self.spec.pipeline],
+            "idx": 0,
+        }
         return
 
     def execute(self) -> None:
@@ -208,9 +211,10 @@ class SinglePassPipeline(Pipeline):
             self.load_input(band)
             self.err_hdu = None
 
-            for task in self.tasks:
+            for idx, task in enumerate(self.task_control["tasks"]):
+                self.task_control["idx"] = idx
                 self.data_hdu, self.err_hdu, _ = Interface[task.step](
-                    mode="Single Pass",
+                    task_control=self.task_control,
                     data_hdu=self.data_hdu,
                     err_hdu=self.err_hdu,
                     data=self.spec.data,
@@ -227,22 +231,34 @@ class MonteCarloPipeline(Pipeline):
     def __init__(self, spec: spec_validation.Specification):
         super().__init__(spec)
         print("[INFO] Starting Monte-Carlo Pipeline")
-        self._set_tasks()
+        self._set_task_control()
 
-    def _set_tasks(self) -> None:
-        self.tasks: list = []
-        self.repeat: list = []
+    def _set_task_control(self) -> None:
+        niter: int = self.spec.config.niter
+        MC_diagnosis: list = []
+        repeat: list = []
+        tasks: list = []
 
-        niter = self.spec.config.niter
-        self.tasks.extend(
+        tasks.extend(
             itertools.chain.from_iterable(itertools.repeat(self.spec.pipeline, niter))
         )
         if len(self.spec.pipeline) == 1:
-            self.repeat.extend([2] * niter)
+            repeat.extend([2] * niter)
+            MC_diagnosis.extend([False] * (niter - 1) + [True])
         else:
-            self.repeat.extend(
-                ([1] + [0] * (len(self.spec.pipeline) - 2) + [-1]) * niter
+            repeat.extend(([1] + [0] * (len(self.spec.pipeline) - 2) + [-1]) * niter)
+            MC_diagnosis.extend(
+                [False] * len(self.spec.pipeline) * (niter - 1)
+                + [True] * len(self.spec.pipeline)
             )
+
+        self.task_control = {
+            "mode": "Monte-Carlo",
+            "tasks": tasks,
+            "repeat": repeat,
+            "MC_diagnosis": MC_diagnosis,
+            "idx": 0,
+        }
         return
 
     def execute(self) -> None:
@@ -265,8 +281,12 @@ class MonteCarloPipeline(Pipeline):
                     data=jnp.full_like(self.data_hdu.data, std_data),
                 )[0]
 
-            for idx, task in enumerate(self.tasks):
-                if self.repeat[idx] == 1 or self.repeat[idx] == 2:
+            for idx, task in enumerate(self.task_control["tasks"]):
+                self.task_control["idx"] = idx
+                if (
+                    self.task_control["repeat"][idx] == 1
+                    or self.task_control["repeat"][idx] == 2
+                ):
                     key, subkey = jax.random.split(key)
 
                     if "original_data_hdu" not in locals():
@@ -284,7 +304,7 @@ class MonteCarloPipeline(Pipeline):
                     count += 1
 
                 self.data_hdu, self.err_hdu, _ = Interface[task.step](
-                    mode="Monte-Carlo",
+                    task_control=self.task_control,
                     data_hdu=self.data_hdu,
                     err_hdu=self.err_hdu,
                     data=self.spec.data,
@@ -294,7 +314,10 @@ class MonteCarloPipeline(Pipeline):
                 ).run()
 
                 # Running sum
-                if self.repeat[idx] == -1 or self.repeat[idx] == 2:
+                if (
+                    self.task_control["repeat"][idx] == -1
+                    or self.task_control["repeat"][idx] == 2
+                ):
                     # Running variance
                     delta = self.data_hdu.data - mean
                     mean += delta / count

@@ -33,7 +33,7 @@ class DegradeSingleton:
     _mode = None
 
     def __new__(cls, *args, **kwargs):
-        mode = kwargs["mode"]
+        mode = kwargs["task_control"]["mode"]
         if cls._instance is None and (mode is None or mode != cls._mode):
             cls._instance = super().__new__(cls)
             cls._mode = mode
@@ -50,7 +50,7 @@ class Degrade(DegradeSingleton):
 
     @classmethod
     def create(cls, *args, **kwargs):
-        mode = kwargs["mode"]
+        mode = kwargs["task_control"]["mode"]
         if mode == "Single Pass":
             return DegradeSinglePass(*args, **kwargs)
         elif mode == "Monte-Carlo":

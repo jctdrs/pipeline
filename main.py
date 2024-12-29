@@ -4,7 +4,7 @@ from setup import spec_validation
 from setup import pipeline
 
 
-def main():
+def main() -> None:
     # Parse the arguments
     parser = argparse.ArgumentParser()
     parser.add_argument(

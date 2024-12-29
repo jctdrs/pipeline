@@ -22,7 +22,7 @@ class IntegrateSingleton:
     _mode = None
 
     def __new__(cls, *args, **kwargs):
-        mode = kwargs["mode"]
+        mode = kwargs["task_control"]["mode"]
         if cls._instance is None and (mode is None or mode != cls._mode):
             cls._instance = super().__new__(cls)
             cls._mode = mode
@@ -39,7 +39,7 @@ class Integrate(IntegrateSingleton):
 
     @classmethod
     def create(cls, *args, **kwargs):
-        mode = kwargs["mode"]
+        mode = kwargs["task_control"]["mode"]
         if mode == "Single Pass":
             return IntegrateSinglePass(*args, **kwargs)
         elif mode == "Monte-Carlo":
@@ -147,7 +147,6 @@ class IntegrateAutomaticDifferentiation(Integrate):
 
 
 class IntegrateMonteCarlo(Integrate):
-    flux_error: float = 0
     mean: float = 0
     count: float = 0
     M2: float = 0
@@ -159,7 +158,6 @@ class IntegrateMonteCarlo(Integrate):
         cls.mean += delta / cls.count
         delta2 = value - cls.mean
         cls.M2 += delta * delta2
-        cls.flux_error = np.sqrt(cls.M2 / (cls.count - 1))
 
     def run(
         self,
@@ -170,11 +168,14 @@ class IntegrateMonteCarlo(Integrate):
     ]:
         super().run()
         self.update(self.integrated_flux)
-        cal_error = self.integrated_flux * self.band.calError / 100
 
-        print(
-            f"[INFO] Integrated flux error = {self.flux_error:.03f}_stat {cal_error:.03f}_inst {np.sqrt(self.flux_error**2 + cal_error**2):0.3f}_tot"
-        )
+        idx = self.task_control["idx"]
+        if self.task_control["MC_diagnosis"][idx]:
+            flux_error = np.sqrt(self.M2 / (self.count - 1))
+            cal_error = self.integrated_flux * self.band.calError / 100
+            print(
+                f"[INFO] Integrated flux error = {flux_error:.03f}_stat {cal_error:.03f}_inst {np.sqrt(flux_error**2 + cal_error**2):.03f}_tot"
+            )
         return self.data_hdu, self.err_hdu, None
 
 
