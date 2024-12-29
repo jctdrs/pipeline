@@ -14,6 +14,8 @@ class PipelineStep(BaseModel):
     parameters: BaseModel
     diagnosis: Optional[bool] = False
 
+    # All possible pipeline steps have their own validator. One way of creating
+    # that would be to use factory method design.
     @model_validator(mode="before")
     def pass_step_to_parameters(self):
         self["parameters"] = parameters_validation.factory_method(
@@ -34,7 +36,7 @@ class PipelineStep(BaseModel):
         }
 
         if self.step not in hip_possible_steps:
-            msg = f"[ERROR] Step '{self.step}' incorrect."
+            msg = f"[ERROR] Step '{self.step}' not available."
             raise ValueError(msg)
         return self
 

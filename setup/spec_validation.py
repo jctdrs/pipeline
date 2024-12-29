@@ -48,6 +48,8 @@ class Specification:
             print(f"[ERROR] Duplicate definition of '{e.key}'.")
             exit()
 
+        # JSON is a super-set of YAML therefore we can use a JSON schema
+        # validator to validate.
         spec = pipeline_validation.Pipeline.model_validate(schema)
 
         return spec
