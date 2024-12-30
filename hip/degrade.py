@@ -44,9 +44,23 @@ class DegradeSingleton:
 
 
 class Degrade(DegradeSingleton):
-    def __init__(self, *args, **kwargs):
-        for key, value in kwargs.items():
-            setattr(self, key, value)
+    def __init__(
+        self,
+        task_control,
+        data_hdu,
+        err_hdu,
+        data,
+        task,
+        band,
+        instruments,
+    ):
+        self.task_control = task_control
+        self.data_hdu = data_hdu
+        self.err_hdu = err_hdu
+        self.data = data
+        self.task = task
+        self.band = band
+        self.instruments = instruments
 
     @classmethod
     def create(cls, *args, **kwargs):
