@@ -92,25 +92,7 @@ class Cutout(CutoutSingleton):
 
         return self.data_hdu, self.err_hdu, None
 
-
-class CutoutMonteCarlo(Cutout):
-    pass
-
-
-class CutoutAutomaticDifferentiation(Cutout):
-    pass
-
-
-class CutoutSinglePass(Cutout):
-    def run(
-        self,
-    ) -> typing.Tuple[
-        astropy.io.fits.hdu.image.PrimaryHDU,
-        astropy.io.fits.hdu.image.PrimaryHDU,
-        typing.Union[jnp.ndarray, typing.Any],
-    ]:
-        super().run()
-
+    def diagnosis(self) -> None:
         if self.task.diagnosis:
             plt.imshow(self.data_hdu.data, origin="lower")
             plt.title(f"{self.data.body} {self.band.name} cutout")
@@ -122,5 +104,34 @@ class CutoutSinglePass(Cutout):
                 f"{self.band.output}/CUTOUT_{self.data.body}_{self.band.name}.png"
             )
             plt.close()
+        return
 
+
+class CutoutMonteCarlo(Cutout):
+    pass
+
+
+class CutoutAutomaticDifferentiation(Cutout):
+    def run(
+        self,
+    ) -> typing.Tuple[
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        typing.Union[jnp.ndarray, typing.Any],
+    ]:
+        super().run()
+        super().diagnosis()
+        return self.data_hdu, self.err_hdu, None
+
+
+class CutoutSinglePass(Cutout):
+    def run(
+        self,
+    ) -> typing.Tuple[
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        typing.Union[jnp.ndarray, typing.Any],
+    ]:
+        super().run()
+        super().diagnosis()
         return self.data_hdu, self.err_hdu, None

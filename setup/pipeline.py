@@ -41,13 +41,13 @@ class Pipeline:
     def create(
         cls, spec: spec_validation.Specification
     ) -> typing.Union[
-        "DifferentialPipeline", "MonteCarloPipeline", "SinglePassPipeline"
+        "AutomaticDifferentiationPipeline", "MonteCarloPipeline", "SinglePassPipeline"
     ]:
         if spec.config.mode == "Single Pass":
             return SinglePassPipeline(spec)
 
         elif spec.config.mode == "Automatic Differentiation":
-            return DifferentialPipeline(spec)
+            return AutomaticDifferentiationPipeline(spec)
 
         elif spec.config.mode == "Monte-Carlo":
             SinglePassPipeline(spec).execute()
@@ -122,71 +122,69 @@ class Pipeline:
         return
 
 
-# TODO: If error not define in YAML then abort or add error from std
-class DifferentialPipeline(Pipeline):
+class AutomaticDifferentiationPipeline(Pipeline):
     def __init__(self, spec: spec_validation.Specification):
         super().__init__(spec)
+        print("[INFO] Starting Automatic Differentiation Pipeline")
         self._set_task_control()
 
-    # TODO: Add this method
     def _set_task_control(self) -> None:
+        self.task_control = {
+            "mode": "Automatic Differentiation",
+            "tasks": [task for task in self.spec.pipeline],
+            "idx": 0,
+        }
         return
 
     def execute(self) -> None:
-        self.load_input()
+        bands: list = self.spec.data.bands
+        for band in bands:
+            self.load_input(band)
+            err_path = band.error
+            if err_path is not None:
+                self.load_error(band)
+            else:
+                std_data = mad_std(self.data_hdu.data, ignore_nan=True)
+                self.err_hdu = fits.PrimaryHDU(
+                    header=fits.Header(),
+                    data=jnp.full_like(self.data_hdu.data, std_data),
+                )[0]
 
-        # TODO: bands is a list
-        error: str = self.spec.data.bands.error
+            for idx, task in enumerate(self.task_control["tasks"]):
+                self.task_control["idx"] = idx
 
-        if error is None:
-            self.load_error()
-        else:
-            std_data = mad_std(self.data_hdu.data, ignore_nan=True)
-            self.err_hdu = fits.PrimaryHDU(
-                header=fits.Header(), data=jnp.full_like(self.data_hdu.data, std_data)
-            )[0]
+                first_step_with_grad: bool = True
+                pipeline_grad = None
+                self.data_hdu, self.err_hdu, grad_arr = Interface[task.step](
+                    task_control=self.task_control,
+                    data_hdu=self.data_hdu,
+                    err_hdu=self.err_hdu,
+                    data=self.spec.data,
+                    task=task,
+                    band=band,
+                    instruments=self.instruments,
+                ).run()
 
-        first_step_with_grad: bool = True
-        pipeline_grad = None
+                # Accumulate gradient
+                if grad_arr is not None:
+                    if first_step_with_grad:
+                        pipeline_grad = grad_arr
+                        first_step_with_grad = False
+                    else:
+                        pipeline_grad = jnp.tensordot(
+                            grad_arr, pipeline_grad, axes=([2, 3], [0, 1])
+                        )
 
-        body: str = self.spec.data.body
-        # TODO: bands is a list
-        name: str = self.spec.data.bands.name
-        out_path: str = self.spec.data.bands.output
-
-        # Loop over steps in pipeline
-        for task in self.file_mng.tasks:
-            self.data_hdu, self.err_hdu, grad_arr = Interface[task["step"]](
-                self.data_hdu,
-                self.err_hdu,
-                out_path,
-                name,
-                body,
-                self.geom,
-                self.instruments,
-                diagnosis=task["diagnosis"],
-                MC_diagnosis=False,
-                differentiate=True,
-                **task["parameters"],
-            ).run()
-
-            # Accumulate gradient
-            if grad_arr is not None:
-                if first_step_with_grad:
-                    pipeline_grad = grad_arr
-                    first_step_with_grad = False
-                else:
-                    pipeline_grad = jnp.tensordot(
-                        grad_arr, pipeline_grad, axes=([2, 3], [0, 1])
+                if pipeline_grad is not None:
+                    self.err_hdu.data = jnp.sqrt(
+                        jnp.einsum(
+                            "ijkl,kl->ij", pipeline_grad**2, self.err_hdu.data**2
+                        )
                     )
 
-        if pipeline_grad is not None:
-            self.err_hdu.data = jnp.sqrt(
-                jnp.einsum("ijkl,kl->ij", pipeline_grad**2, self.err_hdu.data**2)
-            )
+            self.save_data(band)
+            self.save_error(band)
 
-        self.save_data()
-        self.save_error()
         return None
 
 

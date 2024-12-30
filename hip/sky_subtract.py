@@ -130,24 +130,7 @@ class SkySubtract(SkySubtractSingleton):
 
         return self.data_hdu, self.err_hdu, None
 
-
-class SkySubtractMonteCarlo(SkySubtract):
-    pass
-
-
-class SkySubtractAutomaticDifferentiation(SkySubtract):
-    pass
-
-
-class SkySubtractSinglePass(SkySubtract):
-    def run(
-        self,
-    ) -> typing.Tuple[
-        astropy.io.fits.hdu.image.PrimaryHDU,
-        astropy.io.fits.hdu.image.PrimaryHDU,
-        typing.Union[jnp.ndarray, typing.Any],
-    ]:
-        super().run()
+    def diagnosis(self) -> None:
         if self.task.diagnosis:
             mask_bkg = copy.copy(self.bkg.background)
             mask_bkg[self.data_hdu_invalid.mask] = jnp.nan
@@ -178,5 +161,34 @@ class SkySubtractSinglePass(SkySubtract):
                 f"{self.band.output}/BKGMAP_SRCMASK_{self.data.body}_{self.band.name}.png"
             )
             plt.close()
+        return
 
+
+class SkySubtractMonteCarlo(SkySubtract):
+    pass
+
+
+class SkySubtractAutomaticDifferentiation(SkySubtract):
+    def run(
+        self,
+    ) -> typing.Tuple[
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        typing.Union[jnp.ndarray, typing.Any],
+    ]:
+        super().run()
+        super().diagnosis()
+        return self.data_hdu, self.err_hdu, None
+
+
+class SkySubtractSinglePass(SkySubtract):
+    def run(
+        self,
+    ) -> typing.Tuple[
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        typing.Union[jnp.ndarray, typing.Any],
+    ]:
+        super().run()
+        super().diagnosis()
         return self.data_hdu, self.err_hdu, None

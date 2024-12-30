@@ -155,9 +155,62 @@ class Integrate(IntegrateSingleton):
 
         return self.data_hdu, self.err_hdu, None
 
+    def diagnosis(self) -> None:
+        if self.task.diagnosis:
+            # TODO: Use the integrated_L
+            integrated_L = (  # noqa
+                (self.integrated_flux * 1e-26)
+                * pow((self.data.geometry.distance * 3.086e22), 2)
+                * 4
+                * np.pi
+                / (3.846e26)
+            )
+            print(f"[INFO] Integrated flux = {self.integrated_flux:.03f}")
+
+            reg = EllipsePixelRegion(
+                PixCoord(self.position_px[0], self.position_px[1]),
+                width=self.task.parameters.radius * self.rma,
+                height=self.task.parameters.radius * self.rmi,
+                angle=Angle(self.data.geometry.positionAngle, "deg"),
+            )
+
+            fig, ax = plt.subplots(1, 1)
+            bound = np.argwhere(~np.isnan(self.data_hdu.data))
+            if bound.any():
+                ax.set_xlim(min(bound[:, 1]), max(bound[:, 1]))
+                ax.set_ylim(min(bound[:, 0]), max(bound[:, 0]))
+
+            plt.imshow(self.data_hdu.data, origin="lower")
+            reg.plot(
+                ax=ax,
+                facecolor="none",
+                edgecolor="red",
+                lw=1,
+                label=f"radius={self.task.parameters.radius}",
+            )
+            cbar = plt.colorbar()
+            cbar.ax.set_ylabel("Jy/px")
+            plt.xticks([])
+            plt.yticks([])
+            plt.legend()
+            plt.savefig(
+                f"{self.band.output}/PHOT_{self.data.body}_{self.band.name}.png"
+            )
+            plt.close()
+        return
+
 
 class IntegrateAutomaticDifferentiation(Integrate):
-    pass
+    def run(
+        self,
+    ) -> typing.Tuple[
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        typing.Union[np.ndarray, typing.Any],
+    ]:
+        super().run()
+        super().diagnosis()
+        return self.data_hdu, self.err_hdu, None
 
 
 class IntegrateMonteCarlo(Integrate):
@@ -202,47 +255,5 @@ class IntegrateSinglePass(Integrate):
         typing.Union[np.ndarray, typing.Any],
     ]:
         super().run()
-
-        if self.task.diagnosis:
-            # TODO: Use the integrated_L
-            integrated_L = (  # noqa
-                (self.integrated_flux * 1e-26)
-                * pow((self.data.geometry.distance * 3.086e22), 2)
-                * 4
-                * np.pi
-                / (3.846e26)
-            )
-            print(f"[INFO] Integrated flux = {self.integrated_flux:.03f}")
-
-            reg = EllipsePixelRegion(
-                PixCoord(self.position_px[0], self.position_px[1]),
-                width=self.task.parameters.radius * self.rma,
-                height=self.task.parameters.radius * self.rmi,
-                angle=Angle(self.data.geometry.positionAngle, "deg"),
-            )
-
-            fig, ax = plt.subplots(1, 1)
-            bound = np.argwhere(~np.isnan(self.data_hdu.data))
-            if bound.any():
-                ax.set_xlim(min(bound[:, 1]), max(bound[:, 1]))
-                ax.set_ylim(min(bound[:, 0]), max(bound[:, 0]))
-
-            plt.imshow(self.data_hdu.data, origin="lower")
-            reg.plot(
-                ax=ax,
-                facecolor="none",
-                edgecolor="red",
-                lw=1,
-                label=f"radius={self.task.parameters.radius}",
-            )
-            cbar = plt.colorbar()
-            cbar.ax.set_ylabel("Jy/px")
-            plt.xticks([])
-            plt.yticks([])
-            plt.legend()
-            plt.savefig(
-                f"{self.band.output}/PHOT_{self.data.body}_{self.band.name}.png"
-            )
-            plt.close()
-
+        super().diagnosis()
         return self.data_hdu, self.err_hdu, None
