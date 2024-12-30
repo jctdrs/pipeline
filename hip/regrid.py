@@ -83,7 +83,7 @@ class Regrid(RegridSingleton):
     def setup_interpolate(self):
         wcs_in = WCS(self.data_hdu.header)
 
-        with fits.open(self.target) as hdul:
+        with fits.open(self.task.parameters.target) as hdul:
             hdr_target = hdul[0].header
 
         wcs_out = WCS(hdr_target)

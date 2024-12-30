@@ -57,19 +57,18 @@ class Pipeline:
             msg = f"[ERROR] Mode '{spec.config.mode}' not recognized"
             raise ValueError(msg)
 
-    def load_input(self, band: bands_validation.Band) -> None:
+    def load_data(self, band: bands_validation.Band) -> None:
         inp_path: str = band.input
         hdul = fits.open(inp_path)
         self.data_hdu = hdul[0]
-        return
 
     def load_error(self, band: bands_validation.Band) -> None:
         err_path: str = band.error
         if err_path is None:
-            return
-
-        hdul = fits.open(err_path)
-        self.err_hdu = hdul[0]
+            self.err_hdu = None
+        else:
+            hdul = fits.open(err_path)
+            self.err_hdu = hdul[0]
         return
 
     def save_data(self, band: bands_validation.Band) -> None:
@@ -97,7 +96,7 @@ class Pipeline:
         return
 
     def execute(self):
-        pass
+        return
 
     def _load_instruments(self) -> None:
         try:
@@ -139,22 +138,19 @@ class AutomaticDifferentiationPipeline(Pipeline):
     def execute(self) -> None:
         bands: list = self.spec.data.bands
         for band in bands:
-            self.load_input(band)
-            err_path = band.error
-            if err_path is not None:
-                self.load_error(band)
-            else:
+            self.load_data(band)
+            self.load_error(band)
+            if self.err_hdu is None:
                 std_data = mad_std(self.data_hdu.data, ignore_nan=True)
                 self.err_hdu = fits.PrimaryHDU(
                     header=fits.Header(),
                     data=jnp.full_like(self.data_hdu.data, std_data),
                 )[0]
 
+            first_step_with_grad: bool = True
+            pipeline_grad = None
             for idx, task in enumerate(self.task_control["tasks"]):
                 self.task_control["idx"] = idx
-
-                first_step_with_grad: bool = True
-                pipeline_grad = None
                 self.data_hdu, self.err_hdu, grad_arr = Interface[task.step](
                     task_control=self.task_control,
                     data_hdu=self.data_hdu,
@@ -185,7 +181,7 @@ class AutomaticDifferentiationPipeline(Pipeline):
             self.save_data(band)
             self.save_error(band)
 
-        return None
+        return 
 
 
 class SinglePassPipeline(Pipeline):
@@ -205,8 +201,7 @@ class SinglePassPipeline(Pipeline):
     def execute(self) -> None:
         bands: list = self.spec.data.bands
         for band in bands:
-            # TODO: These need to be like each other
-            self.load_input(band)
+            self.load_data(band)
             self.err_hdu = None
 
             for idx, task in enumerate(self.task_control["tasks"]):
@@ -222,7 +217,7 @@ class SinglePassPipeline(Pipeline):
                 ).run()
 
             self.save_data(band)
-        return None
+        return 
 
 
 class MonteCarloPipeline(Pipeline):
@@ -268,11 +263,9 @@ class MonteCarloPipeline(Pipeline):
             mean: float = 0
             M2: float = 0
 
-            self.load_input(band)
-            err_path = band.error
-            if err_path is not None:
-                self.load_error(band)
-            else:
+            self.load_data(band)
+            self.load_error(band)
+            if self.err_hdu is None:
                 std_data = mad_std(self.data_hdu.data, ignore_nan=True)
                 self.err_hdu = fits.PrimaryHDU(
                     header=fits.Header(),
@@ -328,4 +321,4 @@ class MonteCarloPipeline(Pipeline):
             )
 
             self.save_error(band)
-        return None
+        return 
