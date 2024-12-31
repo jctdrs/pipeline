@@ -201,16 +201,7 @@ class Integrate(IntegrateSingleton):
 
 
 class IntegrateAutomaticDifferentiation(Integrate):
-    def run(
-        self,
-    ) -> typing.Tuple[
-        astropy.io.fits.hdu.image.PrimaryHDU,
-        astropy.io.fits.hdu.image.PrimaryHDU,
-        typing.Union[np.ndarray, typing.Any],
-    ]:
-        super().run()
-        super().diagnosis()
-        return self.data_hdu, self.err_hdu, None
+    pass
 
 
 class IntegrateMonteCarlo(Integrate):

@@ -112,16 +112,7 @@ class CutoutMonteCarlo(Cutout):
 
 
 class CutoutAutomaticDifferentiation(Cutout):
-    def run(
-        self,
-    ) -> typing.Tuple[
-        astropy.io.fits.hdu.image.PrimaryHDU,
-        astropy.io.fits.hdu.image.PrimaryHDU,
-        typing.Union[jnp.ndarray, typing.Any],
-    ]:
-        super().run()
-        super().diagnosis()
-        return self.data_hdu, self.err_hdu, None
+    pass
 
 
 class CutoutSinglePass(Cutout):

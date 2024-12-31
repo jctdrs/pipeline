@@ -47,6 +47,7 @@ class Pipeline:
             return SinglePassPipeline(spec)
 
         elif spec.config.mode == "Automatic Differentiation":
+            SinglePassPipeline(spec).execute()
             return AutomaticDifferentiationPipeline(spec)
 
         elif spec.config.mode == "Monte-Carlo":
@@ -178,10 +179,9 @@ class AutomaticDifferentiationPipeline(Pipeline):
                         )
                     )
 
-            self.save_data(band)
             self.save_error(band)
 
-        return 
+        return
 
 
 class SinglePassPipeline(Pipeline):
@@ -217,7 +217,7 @@ class SinglePassPipeline(Pipeline):
                 ).run()
 
             self.save_data(band)
-        return 
+        return
 
 
 class MonteCarloPipeline(Pipeline):
@@ -321,4 +321,4 @@ class MonteCarloPipeline(Pipeline):
             )
 
             self.save_error(band)
-        return 
+        return
