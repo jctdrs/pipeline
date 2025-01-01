@@ -12,6 +12,7 @@ from hip import regrid
 from hip import foreground_mask
 from hip import cutout
 from hip import integrate
+from hip import test
 
 from astropy.io import fits
 from astropy.stats import mad_std
@@ -29,6 +30,7 @@ Interface: dict = {
     "hip.cutout": cutout.Cutout.create,
     "hip.integrate": integrate.Integrate.create,
     "hip.foregroundMask": foreground_mask.ForegroundMask.create,
+    "hip.test": test.Test,
 }
 
 
