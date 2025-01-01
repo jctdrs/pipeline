@@ -1,7 +1,5 @@
 import typing
 
-import jax.numpy as jnp
-
 import astropy
 
 
@@ -57,9 +55,8 @@ class Test(TestSingleton):
     ) -> typing.Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         astropy.io.fits.hdu.image.PrimaryHDU,
-        typing.Union[jnp.array, typing.Any],
     ]:
-        return self.data_hdu, self.err_hdu, None
+        return self.data_hdu, self.err_hdu
 
 
 class TestSinglePass(Test):

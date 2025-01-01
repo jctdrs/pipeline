@@ -70,7 +70,6 @@ class SkySubtract(SkySubtractSingleton):
     ) -> typing.Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         astropy.io.fits.hdu.image.PrimaryHDU,
-        typing.Union[jnp.array, typing.Any],
     ]:
         # This masking is needed to tame the Warning from photutils
         self.data_hdu_invalid = ma.masked_invalid(self.data_hdu.data)
@@ -128,7 +127,7 @@ class SkySubtract(SkySubtractSingleton):
         self.data_hdu.data = self.data_hdu.data - self.bkg.background
         self.data_hdu.data[self.data_hdu_invalid.mask] = jnp.nan
 
-        return self.data_hdu, self.err_hdu, None
+        return self.data_hdu, self.err_hdu
 
     def diagnosis(self) -> None:
         if self.task.diagnosis:
@@ -178,8 +177,7 @@ class SkySubtractSinglePass(SkySubtract):
     ) -> typing.Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         astropy.io.fits.hdu.image.PrimaryHDU,
-        typing.Union[jnp.ndarray, typing.Any],
     ]:
         super().run()
         super().diagnosis()
-        return self.data_hdu, self.err_hdu, None
+        return self.data_hdu, self.err_hdu

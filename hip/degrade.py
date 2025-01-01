@@ -80,7 +80,6 @@ class Degrade(DegradeSingleton):
     ) -> typing.Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         astropy.io.fits.hdu.image.PrimaryHDU,
-        typing.Union[jnp.array, typing.Any],
     ]:
         data_hdu_invalid = ma.masked_invalid(self.data_hdu.data)
         self.data_hdu.data[data_hdu_invalid.mask] = 0.0
@@ -95,17 +94,17 @@ class Degrade(DegradeSingleton):
         # TODO: Move this to DegradeAutomaticDifferentiation
         if False:  # self.differentiate:
             grad_call = jacfwd(self.convolve)
-            grad_res = grad_call(jnp.array(self.data_hdu.data, dtype="bfloat16"))
+            grad_res = grad_call(jnp.array(self.data_hdu.data, dtype="bfloat16"))  # noqa
             self.data_hdu.data = self.convolve(jnp.array(self.data_hdu.data))
             self.convert_from_radiance_to_Jyperpx()
             self.data_hdu.data[data_hdu_invalid.mask] = jnp.nan
-            return self.data_hdu, self.err_hdu, grad_res
+            return self.data_hdu, self.err_hdu
 
         else:
             self.data_hdu.data = self.convolve(self.data_hdu.data)
             self.convert_from_radiance_to_Jyperpx()
             self.data_hdu.data[data_hdu_invalid.mask] = jnp.nan
-            return self.data_hdu, self.err_hdu, None
+            return self.data_hdu, self.err_hdu
 
     def load_kernel(self) -> typing.Any:
         hdu_kernel: astropy.io.image.PrimaryHDU = astropy.io.fits.open(

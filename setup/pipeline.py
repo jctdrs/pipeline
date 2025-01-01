@@ -150,11 +150,9 @@ class AutomaticDifferentiationPipeline(Pipeline):
                     data=jnp.full_like(self.data_hdu.data, std_data),
                 )[0]
 
-            first_step_with_grad: bool = True
-            pipeline_grad = None
             for idx, task in enumerate(self.task_control["tasks"]):
                 self.task_control["idx"] = idx
-                self.data_hdu, self.err_hdu, grad_arr = Interface[task.step](
+                self.data_hdu, self.err_hdu = Interface[task.step](
                     task_control=self.task_control,
                     data_hdu=self.data_hdu,
                     err_hdu=self.err_hdu,
@@ -164,22 +162,7 @@ class AutomaticDifferentiationPipeline(Pipeline):
                     instruments=self.instruments,
                 ).run()
 
-                # Accumulate gradient
-                if grad_arr is not None:
-                    if first_step_with_grad:
-                        pipeline_grad = grad_arr
-                        first_step_with_grad = False
-                    else:
-                        pipeline_grad = jnp.tensordot(
-                            grad_arr, pipeline_grad, axes=([2, 3], [0, 1])
-                        )
-
-                if pipeline_grad is not None:
-                    self.err_hdu.data = jnp.sqrt(
-                        jnp.einsum(
-                            "ijkl,kl->ij", pipeline_grad**2, self.err_hdu.data**2
-                        )
-                    )
+            self.err_hdu.data = jnp.sqrt(self.err_hdu.data)
 
             self.save_error(band)
 
@@ -208,7 +191,7 @@ class SinglePassPipeline(Pipeline):
 
             for idx, task in enumerate(self.task_control["tasks"]):
                 self.task_control["idx"] = idx
-                self.data_hdu, self.err_hdu, _ = Interface[task.step](
+                self.data_hdu, self.err_hdu = Interface[task.step](
                     task_control=self.task_control,
                     data_hdu=self.data_hdu,
                     err_hdu=self.err_hdu,
@@ -294,9 +277,8 @@ class MonteCarloPipeline(Pipeline):
                     )
 
                     self.err_hdu = copy.copy(original_err_hdu)
-                    count += 1
 
-                self.data_hdu, self.err_hdu, _ = Interface[task.step](
+                self.data_hdu, self.err_hdu = Interface[task.step](
                     task_control=self.task_control,
                     data_hdu=self.data_hdu,
                     err_hdu=self.err_hdu,
@@ -312,6 +294,7 @@ class MonteCarloPipeline(Pipeline):
                     or self.task_control["repeat"][idx] == 2
                 ):
                     # Running variance
+                    count += 1
                     delta = self.data_hdu.data - mean
                     mean += delta / count
                     delta2 = self.data_hdu.data - mean

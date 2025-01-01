@@ -1,7 +1,5 @@
 import typing
 
-import jax.numpy as jnp
-
 import matplotlib.pyplot as plt
 
 import astropy
@@ -63,7 +61,6 @@ class Cutout(CutoutSingleton):
     ) -> typing.Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         astropy.io.fits.hdu.image.PrimaryHDU,
-        typing.Union[jnp.array, typing.Any],
     ]:
         wcs_data = WCS(self.data_hdu.header)
         pos_center = SkyCoord(
@@ -90,7 +87,7 @@ class Cutout(CutoutSingleton):
             self.err_hdu.data = err_cutout.data
             self.err_hdu.header.update(err_cutout.wcs.to_header())
 
-        return self.data_hdu, self.err_hdu, None
+        return self.data_hdu, self.err_hdu
 
     def diagnosis(self) -> None:
         if self.task.diagnosis:
@@ -121,8 +118,7 @@ class CutoutSinglePass(Cutout):
     ) -> typing.Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         astropy.io.fits.hdu.image.PrimaryHDU,
-        typing.Union[jnp.ndarray, typing.Any],
     ]:
         super().run()
         super().diagnosis()
-        return self.data_hdu, self.err_hdu, None
+        return self.data_hdu, self.err_hdu

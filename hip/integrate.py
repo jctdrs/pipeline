@@ -69,7 +69,6 @@ class Integrate(IntegrateSingleton):
     ) -> typing.Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         astropy.io.fits.hdu.image.PrimaryHDU,
-        typing.Union[np.ndarray, typing.Any],
     ]:
         wcs = WCS(self.data_hdu.header)
         px_size = read.pixel_size_arcsec(self.data_hdu.header)
@@ -153,7 +152,7 @@ class Integrate(IntegrateSingleton):
             np.array(integrated_flux_list).reshape((-1,)),
         )
 
-        return self.data_hdu, self.err_hdu, None
+        return self.data_hdu, self.err_hdu
 
     def diagnosis(self) -> None:
         if self.task.diagnosis:
@@ -222,7 +221,6 @@ class IntegrateMonteCarlo(Integrate):
     ) -> typing.Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         astropy.io.fits.hdu.image.PrimaryHDU,
-        typing.Union[np.ndarray, typing.Any],
     ]:
         super().run()
         self.update(self.integrated_flux)
@@ -234,7 +232,7 @@ class IntegrateMonteCarlo(Integrate):
             print(
                 f"[INFO] Integrated flux error = {flux_error:.03f}_stat {cal_error:.03f}_inst {np.sqrt(flux_error**2 + cal_error**2):.03f}_tot"
             )
-        return self.data_hdu, self.err_hdu, None
+        return self.data_hdu, self.err_hdu
 
 
 class IntegrateSinglePass(Integrate):
@@ -247,4 +245,4 @@ class IntegrateSinglePass(Integrate):
     ]:
         super().run()
         super().diagnosis()
-        return self.data_hdu, self.err_hdu, None
+        return self.data_hdu, self.err_hdu

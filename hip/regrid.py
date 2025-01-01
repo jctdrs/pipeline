@@ -1,6 +1,7 @@
 import math
 import typing
 
+import jax
 import jax.numpy as jnp
 
 import astropy
@@ -64,7 +65,6 @@ class Regrid(RegridSingleton):
     ) -> typing.Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         astropy.io.fits.hdu.image.PrimaryHDU,
-        typing.Union[jnp.array, typing.Any],
     ]:
         self.convert_from_Jyperpx_to_radiance()
         with fits.open(self.task.parameters.target) as hdul:
@@ -78,9 +78,9 @@ class Regrid(RegridSingleton):
         self.data_hdu.header.update(wcs_out.to_header())
         self.convert_from_radiance_to_Jyperpx()
 
-        return self.data_hdu, self.err_hdu, None
+        return self.data_hdu, self.err_hdu
 
-    def convert_from_Jyperpx_to_radiance(self) -> typing.Any:
+    def convert_from_Jyperpx_to_radiance(self) -> None:
         pixel_size = read.pixel_size_arcsec(self.data_hdu.header)
         px_x: float = pixel_size * 2 * math.pi / 360
         px_y: float = pixel_size * 2 * math.pi / 360
@@ -98,7 +98,7 @@ class Regrid(RegridSingleton):
         self.data_hdu.data *= conversion_factor
         return None
 
-    def convert_from_radiance_to_Jyperpx(self) -> typing.Any:
+    def convert_from_radiance_to_Jyperpx(self) -> None:
         pixel_size = read.pixel_size_arcsec(self.data_hdu.header)
         px_x: float = pixel_size * 2 * math.pi / 360
         px_y: float = pixel_size * 2 * math.pi / 360
@@ -120,4 +120,95 @@ class RegridMonteCarlo(Regrid):
 
 
 class RegridAutomaticDifferentiation(Regrid):
-    pass
+    @staticmethod
+    def compute_contributions_for_pixel(
+        old_x,
+        old_y,
+        H_orig,
+        W_orig,
+    ):
+        # Floor and ceil values to find the 4 nearest neighbors
+        x0 = jnp.floor(old_x).astype(int)
+        x1 = x0 + 1
+        y0 = jnp.floor(old_y).astype(int)
+        y1 = y0 + 1
+
+        # Clip indices to ensure they are within bounds
+        x0 = jnp.clip(x0, 0, W_orig - 1)
+        x1 = jnp.clip(x1, 0, W_orig - 1)
+        y0 = jnp.clip(y0, 0, H_orig - 1)
+        y1 = jnp.clip(y1, 0, H_orig - 1)
+
+        # Calculate distances for weights
+        dx = old_x - x0
+        dy = old_y - y0
+
+        # Contributions based on bilinear interpolation
+        w00 = (1 - dx) * (1 - dy)  # Top-left
+        w10 = dx * (1 - dy)  # Top-right
+        w01 = (1 - dx) * dy  # Bottom-left
+        w11 = dx * dy  # Bottom-right
+
+        # Collect indices and weights
+        indices = jnp.array(
+            [
+                [old_y, old_x, y0, x0],
+                [old_y, old_x, y0, x1],
+                [old_y, old_x, y1, x0],
+                [old_y, old_x, y1, x1],
+            ]
+        )
+        contributions = jnp.array([w00, w10, w01, w11])
+
+        return indices, contributions
+
+    def run(
+        self,
+    ) -> typing.Tuple[
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        astropy.io.fits.hdu.image.PrimaryHDU,
+    ]:
+        original_shape = self.data_hdu.data.shape
+        with fits.open(self.task.parameters.target) as hdul:
+            hdr_target = hdul[0].header
+            target_shape = hdul[0].data.shape
+
+        original_wcs = WCS(self.data_hdu.header)
+        target_wcs = WCS(hdr_target)
+
+        H_orig, W_orig = original_shape
+        H_new, W_new = target_shape
+
+        new_y, new_x = jnp.meshgrid(jnp.arange(H_new), jnp.arange(W_new), indexing="ij")
+
+        # Convert the target pixel coordinates (new_y, new_x) to world coordinates
+        target_coords = target_wcs.pixel_to_world(new_x, new_y)
+        old_x, old_y = original_wcs.world_to_pixel(target_coords)
+
+        vmap_fun = jax.vmap(
+            self.compute_contributions_for_pixel,
+            in_axes=(0, 0, None, None),
+        )
+        indices, contributions = vmap_fun(
+            old_x.flatten(),
+            old_y.flatten(),
+            H_orig,
+            W_orig,
+        )
+        contributions /= jnp.sum(contributions, axis=1, keepdims=True)
+        old_y = indices[:, :, 0]
+        old_x = indices[:, :, 1]
+
+        old_y = jnp.floor(old_y).astype(int)
+        old_x = jnp.floor(old_x).astype(int)
+        old_y = jnp.clip(old_y, 0, self.err_hdu.data.shape[0] - 1)
+        old_x = jnp.clip(old_x, 0, self.err_hdu.data.shape[1] - 1)
+        old_errors = self.err_hdu.data[old_y, old_x]
+
+        weighted_contributions = jnp.array(old_errors) * contributions**2
+        propagated_contributions = jnp.sum(weighted_contributions, axis=1)
+        propagated_contributions = propagated_contributions.reshape(target_shape)
+        self.err_hdu.data = propagated_contributions
+        self.err_hdu.header.update(target_wcs.to_header())
+
+        return self.data_hdu, self.err_hdu
