@@ -86,12 +86,12 @@ class Pipeline:
         )
         return
 
-    def save_error(self, band: bands_validation.Band) -> None:
+    def save_error(self, band: bands_validation.Band, mode: str) -> None:
         name: str = band.name
         out_path: str = band.output
 
         fits.writeto(
-            f"{out_path}/{name}_Error.fits",
+            f"{out_path}/{name}_Error_{mode}.fits",
             self.err_hdu.data,
             self.err_hdu.header,
             overwrite=True,
@@ -163,8 +163,7 @@ class AutomaticDifferentiationPipeline(Pipeline):
                 ).run()
 
             self.err_hdu.data = jnp.sqrt(self.err_hdu.data)
-
-            self.save_error(band)
+            self.save_error(band, "AD")
 
         return
 
@@ -305,5 +304,5 @@ class MonteCarloPipeline(Pipeline):
                 header=self.data_hdu.header, data=(jnp.sqrt(M2 / (count - 1)))
             )
 
-            self.save_error(band)
+            self.save_error(band, "MC")
         return
