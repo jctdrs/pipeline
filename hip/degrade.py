@@ -73,6 +73,14 @@ class Degrade(DegradeSingleton):
         self.data_hdu.data = self.convolve(self.data_hdu.data, self.kernel_hdu.data)
         self.convert_from_radiance_to_Jyperpx(self.data_hdu)
         self.data_hdu.data[data_hdu_invalid.mask] = np.nan
+
+        resolution = self.instruments[self.task.parameters.name]["RESOLUTION"]["VALUE"]
+        self.data_hdu.header.set(
+            "BMAJ", resolution / 3600, "[deg] Beam major axis in degrees"
+        )
+        self.data_hdu.header.set(
+            "BMIN", resolution / 3600, "[deg] Beam minor axis in degrees"
+        )
         return self.data_hdu, self.err_hdu
 
     def load_kernel(self) -> None:
@@ -158,12 +166,20 @@ class DegradeAutomaticDifferentiation(Degrade):
     ]:
         self.load_kernel()
         self.scale_kernel(self.err_hdu)
-        self.kernel_hdu.data /= np.sum(self.kernel_hdu.data)
+        self.kernel_hdu.data /= jnp.sum(self.kernel_hdu.data)
 
         self.convert_from_Jyperpx_to_radiance(self.err_hdu)
         self.err_hdu.data = self.convolve(self.err_hdu.data**2, self.kernel_hdu.data**2)
 
         self.err_hdu.data = jnp.sqrt(self.err_hdu.data)
         self.convert_from_radiance_to_Jyperpx(self.err_hdu)
+
+        resolution = self.instruments[self.task.parameters.name]["RESOLUTION"]["VALUE"]
+        self.err_hdu.header.set(
+            "BMAJ", resolution / 3600, "[deg] Beam major axis in degrees"
+        )
+        self.err_hdu.header.set(
+            "BMIN", resolution / 3600, "[deg] Beam minor axis in degrees"
+        )
 
         return self.data_hdu, self.err_hdu
