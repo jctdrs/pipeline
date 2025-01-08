@@ -162,7 +162,6 @@ class AutomaticDifferentiationPipeline(Pipeline):
                     instruments=self.instruments,
                 ).run()
 
-            self.err_hdu.data = jnp.sqrt(self.err_hdu.data)
             self.save_error(band, "AD")
 
         return
@@ -293,6 +292,7 @@ class MonteCarloPipeline(Pipeline):
                     or self.task_control["repeat"][idx] == 2
                 ):
                     # Running variance
+                    print(f"[DEBUG] Monte-Carlo iteration {count}.")
                     count += 1
                     delta = self.data_hdu.data - mean
                     mean += delta / count

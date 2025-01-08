@@ -68,10 +68,10 @@ class Degrade(DegradeSingleton):
         data_hdu_invalid = ma.masked_invalid(self.data_hdu.data)
         self.load_kernel()
         self.scale_kernel(self.data_hdu)
-        self.data_hdu = self.convert_from_Jyperpx_to_radiance(self.data_hdu)
+        self.convert_from_Jyperpx_to_radiance(self.data_hdu)
         self.kernel_hdu.data /= np.sum(self.kernel_hdu.data)
         self.data_hdu.data = self.convolve(self.data_hdu.data, self.kernel_hdu.data)
-        self.data_hdu = self.convert_from_radiance_to_Jyperpx(self.data_hdu)
+        self.convert_from_radiance_to_Jyperpx(self.data_hdu)
         self.data_hdu.data[data_hdu_invalid.mask] = np.nan
         return self.data_hdu, self.err_hdu
 
@@ -126,7 +126,7 @@ class Degrade(DegradeSingleton):
         )
 
         hdu.data *= conversion_factor
-        return hdu
+        return
 
     def convert_from_radiance_to_Jyperpx(self, hdu) -> None:
         pixel_size = read.pixel_size_arcsec(hdu.header)
@@ -138,7 +138,7 @@ class Degrade(DegradeSingleton):
         )
 
         hdu.data *= conversion_factor
-        return hdu
+        return
 
 
 class DegradeSinglePass(Degrade):
@@ -156,11 +156,14 @@ class DegradeAutomaticDifferentiation(Degrade):
         astropy.io.fits.hdu.image.PrimaryHDU,
         astropy.io.fits.hdu.image.PrimaryHDU,
     ]:
-        err_hdu_invalid = ma.masked_invalid(self.err_hdu.data)
         self.load_kernel()
         self.scale_kernel(self.err_hdu)
         self.kernel_hdu.data /= np.sum(self.kernel_hdu.data)
+
+        self.convert_from_Jyperpx_to_radiance(self.err_hdu)
         self.err_hdu.data = self.convolve(self.err_hdu.data**2, self.kernel_hdu.data**2)
-        self.err_hdu.data[err_hdu_invalid.mask] = np.nan
+
+        self.err_hdu.data = jnp.sqrt(self.err_hdu.data)
+        self.convert_from_radiance_to_Jyperpx(self.err_hdu)
 
         return self.data_hdu, self.err_hdu

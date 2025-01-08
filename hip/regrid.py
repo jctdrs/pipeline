@@ -66,7 +66,7 @@ class Regrid(RegridSingleton):
         astropy.io.fits.hdu.image.PrimaryHDU,
         astropy.io.fits.hdu.image.PrimaryHDU,
     ]:
-        self.convert_from_Jyperpx_to_radiance()
+        self.convert_from_Jyperpx_to_radiance(self.data_hdu)
         with fits.open(self.task.parameters.target) as hdul:
             hdr_target = hdul[0].header
 
@@ -76,12 +76,11 @@ class Regrid(RegridSingleton):
             output_projection=wcs_out,
         )
         self.data_hdu.header.update(wcs_out.to_header())
-        self.convert_from_radiance_to_Jyperpx()
-
+        self.convert_from_radiance_to_Jyperpx(self.data_hdu)
         return self.data_hdu, self.err_hdu
 
-    def convert_from_Jyperpx_to_radiance(self) -> None:
-        pixel_size = read.pixel_size_arcsec(self.data_hdu.header)
+    def convert_from_Jyperpx_to_radiance(self, hdu) -> None:
+        pixel_size = read.pixel_size_arcsec(hdu.header)
         px_x: float = pixel_size * 2 * math.pi / 360
         px_y: float = pixel_size * 2 * math.pi / 360
 
@@ -95,11 +94,11 @@ class Regrid(RegridSingleton):
             / (px_x * px_y * 3.846e26)
         )
 
-        self.data_hdu.data *= conversion_factor
+        hdu.data *= conversion_factor
         return None
 
-    def convert_from_radiance_to_Jyperpx(self) -> None:
-        pixel_size = read.pixel_size_arcsec(self.data_hdu.header)
+    def convert_from_radiance_to_Jyperpx(self, hdu) -> None:
+        pixel_size = read.pixel_size_arcsec(hdu.header)
         px_x: float = pixel_size * 2 * math.pi / 360
         px_y: float = pixel_size * 2 * math.pi / 360
 
@@ -107,7 +106,7 @@ class Regrid(RegridSingleton):
             1e-26 * pow((self.data.geometry.distance * 3.086e22), 2) * 4 * math.pi
         )
 
-        self.data_hdu.data *= conversion_factor
+        hdu.data *= conversion_factor
         return None
 
 
@@ -168,12 +167,12 @@ class RegridAutomaticDifferentiation(Regrid):
         astropy.io.fits.hdu.image.PrimaryHDU,
         astropy.io.fits.hdu.image.PrimaryHDU,
     ]:
-        original_shape = self.data_hdu.data.shape
+        original_shape = self.err_hdu.data.shape
         with fits.open(self.task.parameters.target) as hdul:
             hdr_target = hdul[0].header
             target_shape = hdul[0].data.shape
 
-        original_wcs = WCS(self.data_hdu.header)
+        original_wcs = WCS(self.err_hdu.header)
         target_wcs = WCS(hdr_target)
 
         H_orig, W_orig = original_shape
@@ -203,12 +202,17 @@ class RegridAutomaticDifferentiation(Regrid):
         old_x = jnp.floor(old_x).astype(int)
         old_y = jnp.clip(old_y, 0, self.err_hdu.data.shape[0] - 1)
         old_x = jnp.clip(old_x, 0, self.err_hdu.data.shape[1] - 1)
+
+        self.convert_from_Jyperpx_to_radiance(self.err_hdu)
         old_errors = self.err_hdu.data[old_y, old_x]
 
-        weighted_contributions = jnp.array(old_errors) * contributions**2
+        weighted_contributions = jnp.array(old_errors) ** 2 * contributions**2
         propagated_contributions = jnp.sum(weighted_contributions, axis=1)
         propagated_contributions = propagated_contributions.reshape(target_shape)
         self.err_hdu.data = propagated_contributions
         self.err_hdu.header.update(target_wcs.to_header())
+
+        self.err_hdu.data = jnp.sqrt(self.err_hdu.data)
+        self.convert_from_radiance_to_Jyperpx(self.err_hdu)
 
         return self.data_hdu, self.err_hdu
