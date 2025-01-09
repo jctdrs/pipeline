@@ -1,5 +1,4 @@
 import typing
-
 from util import read
 
 from scipy.ndimage import zoom
@@ -7,9 +6,6 @@ import jax.numpy as jnp  # noqa
 
 import astropy
 from astropy.convolution import convolve_fft
-
-import numpy as np
-import numpy.ma as ma
 
 
 class DegradeSingleton:
@@ -65,14 +61,12 @@ class Degrade(DegradeSingleton):
         astropy.io.fits.hdu.image.PrimaryHDU,
         astropy.io.fits.hdu.image.PrimaryHDU,
     ]:
-        data_hdu_invalid = ma.masked_invalid(self.data_hdu.data)
         self.load_kernel()
         self.scale_kernel(self.data_hdu)
         self.convert_from_Jyperpx_to_radiance(self.data_hdu)
-        self.kernel_hdu.data /= np.sum(self.kernel_hdu.data)
+        self.kernel_hdu.data /= jnp.sum(self.kernel_hdu.data)
         self.data_hdu.data = self.convolve(self.data_hdu.data, self.kernel_hdu.data)
         self.convert_from_radiance_to_Jyperpx(self.data_hdu)
-        self.data_hdu.data[data_hdu_invalid.mask] = np.nan
 
         resolution = self.instruments[self.task.parameters.name]["RESOLUTION"]["VALUE"]
         self.data_hdu.header.set(
@@ -107,7 +101,7 @@ class Degrade(DegradeSingleton):
             self.kernel_hdu.data = zoom(self.kernel_hdu.data, ratio) / ratio**2
         return None
 
-    def convolve(self, data: np.ndarray, kernel: np.ndarray) -> np.ndarray:
+    def convolve(self, data: jnp.ndarray, kernel: jnp.ndarray) -> jnp.ndarray:
         return convolve_fft(
             data,
             kernel,
@@ -122,14 +116,14 @@ class Degrade(DegradeSingleton):
 
     def convert_from_Jyperpx_to_radiance(self, hdu) -> None:
         pixel_size = read.pixel_size_arcsec(hdu.header)
-        px_x: float = pixel_size * 2 * np.pi / 360
-        px_y: float = pixel_size * 2 * np.pi / 360
+        px_x: float = pixel_size * 2 * jnp.pi / 360
+        px_y: float = pixel_size * 2 * jnp.pi / 360
 
         conversion_factor = (
             1e-26
             * pow((self.data.geometry.distance * 3.086e22), 2)
             * 4
-            * np.pi
+            * jnp.pi
             / (px_x * px_y * 3.846e26)
         )
 
@@ -138,11 +132,11 @@ class Degrade(DegradeSingleton):
 
     def convert_from_radiance_to_Jyperpx(self, hdu) -> None:
         pixel_size = read.pixel_size_arcsec(hdu.header)
-        px_x: float = pixel_size * 2 * np.pi / 360
-        px_y: float = pixel_size * 2 * np.pi / 360
+        px_x: float = pixel_size * 2 * jnp.pi / 360
+        px_y: float = pixel_size * 2 * jnp.pi / 360
 
         conversion_factor = (px_x * px_y * 3.846e26) / (
-            1e-26 * pow((self.data.geometry.distance * 3.086e22), 2) * 4 * np.pi
+            1e-26 * pow((self.data.geometry.distance * 3.086e22), 2) * 4 * jnp.pi
         )
 
         hdu.data *= conversion_factor
