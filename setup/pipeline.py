@@ -292,7 +292,11 @@ class MonteCarloPipeline(Pipeline):
                     or self.task_control["repeat"][idx] == 2
                 ):
                     # Running variance
-                    print(f"[DEBUG] Monte-Carlo iteration {count}.")
+                    print(
+                        f"[INFO] Monte-Carlo iteration {count+1}/{self.spec.config.niter} \r",
+                        flush=True,
+                        end="",
+                    )
                     count += 1
                     delta = self.data_hdu.data - mean
                     mean += delta / count
