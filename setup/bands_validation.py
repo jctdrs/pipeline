@@ -2,8 +2,45 @@ import os
 from typing import Optional
 
 from pydantic import BaseModel
-from pydantic import PositiveFloat
+from pydantic import NonNegativeFloat
 from pydantic import model_validator
+
+DEFAULT_CALIBRATION_ERROR = {
+    "IRAC1": 10.2,
+    "IRAC2": 10.2,
+    "IRAC3": 10.2,
+    "IRAC4": 10.2,
+    "WISE1_ATLAS": 3.2,
+    "WISE2_ATLAS": 3.5,
+    "WISE3_ATLAS": 5.0,
+    "WISE4_ATLAS": 7.0,
+    "IPS1": 4.0,
+    "IPS2": 5.0,
+    "IPS3": 11.6,
+    "PACS1": 5.4,
+    "PACS2": 5.4,
+    "PACS3": 5.4,
+    "SPIRE1": 5.9,
+    "SPIRE2": 5.9,
+    "SPIRE3": 5.9,
+    "NIKA2_1": 5.0,
+    "NIKA2_2": 5.0,
+    "HFI1": 4.3,
+    "HFI2": 4.2,
+    "HFI3": 0.9,
+    "HFI4": 0.9,
+    "HFI5": 0.9,
+    "2MASS1": 1.7,
+    "2MASS2": 1.9,
+    "2MASS3": 1.9,
+    "SDSS1": 1.3,
+    "SDSS2": 0.8,
+    "SDSS3": 0.8,
+    "SDSS4": 0.7,
+    "SDSS5": 0.8,
+    "GALEX_FUV": 4.5,
+    "GALEX_NUV": 2.7,
+}
 
 
 class Band(BaseModel):
@@ -11,7 +48,7 @@ class Band(BaseModel):
     output: str
     name: str
     error: Optional[str] = None
-    calError: Optional[PositiveFloat] = 0.0
+    calError: Optional[NonNegativeFloat] = None
 
     @model_validator(mode="after")
     def validate_paths(self):
@@ -28,8 +65,15 @@ class Band(BaseModel):
 
     @model_validator(mode="after")
     def warning_if_calibration_error_not_defined(self):
-        if self.calError == 0:
-            msg = "[WARNING] Calibration error not defined, assuming null."
+        if self.calError is None:
+            try:
+                cal_error: float = DEFAULT_CALIBRATION_ERROR[self.name]
+                msg = f"[WARNING] Calibration error not defined, assuming {cal_error} for {self.name}."
+            except KeyError:
+                cal_error: float = 0.0
+                msg = "[WARNING] Calibration error not defined, asumming null."
+
+            self.calError = cal_error
             print(msg)
 
         return self
