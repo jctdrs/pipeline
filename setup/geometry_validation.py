@@ -77,7 +77,13 @@ class Geometry(BaseModel):
                 ):
                     for key, value in required_fields.items():
                         if key in none_fields:
+                            msg = (
+                                f"[WARNING] '{key}' not defined in 'Geometry'."
+                                f" Set to {float(row[value])} for {self.body}."
+                            )
+                            print(msg)
                             setattr(self, key, float(row[value]))
+
                     return
 
         msg = f"[ERROR] Body {self.body} not found."

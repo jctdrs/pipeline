@@ -68,10 +68,10 @@ class Band(BaseModel):
         if self.calError is None:
             try:
                 cal_error: float = DEFAULT_CALIBRATION_ERROR[self.name]
-                msg = f"[WARNING] Calibration error not defined, assuming {cal_error} for {self.name}."
+                msg = f"[WARNING] 'calError' not defined for {self.name}, assuming {cal_error}."
             except KeyError:
                 cal_error: float = 0.0
-                msg = "[WARNING] Calibration error not defined, asumming null."
+                msg = "[WARNING] 'calError' assumed null."
 
             self.calError = cal_error
             print(msg)

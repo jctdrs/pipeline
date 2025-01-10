@@ -19,7 +19,7 @@ def factory_method(pipeline_step: str, **parameters):
 
 
 class HIPDegrade(BaseModel):
-    kernel: str
+    target: str
     name: str
 
     @model_validator(mode="after")

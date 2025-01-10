@@ -36,7 +36,7 @@ class PipelineStep(BaseModel):
         }
 
         if self.step not in hip_possible_steps:
-            msg = f"[ERROR] Step '{self.step}' not available."
+            msg = f"[ERROR] Step '{self.step}' not valid."
             raise ValueError(msg)
         return self
 
