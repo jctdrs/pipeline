@@ -8,6 +8,7 @@ from setup import parameters_validation
 from pydantic import BaseModel
 from pydantic import model_validator
 
+
 # When building the pipeline for each band, we need to parse the parameters
 # for each band name. This is exactly as PipelineStep but with the parameters
 # unrolled for each step instead of a list.
@@ -45,6 +46,7 @@ class PipelineStep(BaseModel):
             "hip.regrid",
             "hip.integrate",
             "hip.foregroundMask",
+            "hip.rms",
             "hip.test",
         }
 

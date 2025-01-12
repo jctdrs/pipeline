@@ -13,6 +13,7 @@ from hip import regrid
 from hip import foreground_mask
 from hip import cutout
 from hip import integrate
+from hip import rms
 from hip import test
 
 from util import read
@@ -33,6 +34,7 @@ Interface: dict = {
     "hip.cutout": cutout.Cutout.create,
     "hip.integrate": integrate.Integrate.create,
     "hip.foregroundMask": foreground_mask.ForegroundMask.create,
+    "hip.rms": rms.Rms.create,
     "hip.test": test.Test,
 }
 
@@ -69,7 +71,7 @@ class Pipeline:
         self.data_hdu = hdul[0]
 
         unit = read.unit(self.data_hdu.header)
-        if unit == "mJy/beam" and "NIKA2" in band.name:
+        if "mJy/beam" in unit and "NIKA2" in band.name:
             beam_deg = read.BMAJ(self.data_hdu.header)
             px_size_deg = read.pixel_size_arcsec(self.data_hdu.header) / 3600
 
@@ -77,6 +79,11 @@ class Pipeline:
                 px_size_deg**2 / (jnp.pi * beam_deg**2 / (4 * 0.693))
             ) * 1e-3
             self.data_hdu.data *= conversion_factor
+        elif "Jy/px" in unit or "Jy/pix" in unit:
+            pass
+        else:
+            msg = f"[ERROR] Unit should be Jy/px except for NIKA maps. Input {unit}."
+            raise ValueError(msg)
 
     def load_error(self, band: bands_validation.Band) -> None:
         err_path: str = band.error

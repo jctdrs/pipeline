@@ -38,6 +38,7 @@ class HIPDegrade(BaseModel):
             raise ValueError(msg)
         return self
 
+
 class HIPSkySubtract(BaseModel):
     cellSize: Optional[PositiveInt] = 1
     band: str
@@ -53,6 +54,7 @@ class HIPRegrid(BaseModel):
             msg = f"[ERROR] Path {self.target} not found."
             raise OSError(msg)
         return self
+
 
 class HIPCutout(BaseModel):
     raTrim: PositiveFloat
@@ -72,6 +74,10 @@ class HIPForegroundMask(BaseModel):
     band: str
 
 
+class HIPRms(BaseModel):
+    band: str
+
+
 class HIPTest(BaseModel):
     pass
 
@@ -83,5 +89,6 @@ Interface = {
     "hip.cutout": HIPCutout,
     "hip.integrate": HIPIntegrate,
     "hip.foregroundMask": HIPForegroundMask,
+    "hip.rms": HIPRms,
     "hip.test": HIPTest,
 }
