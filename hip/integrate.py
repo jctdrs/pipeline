@@ -164,7 +164,9 @@ class Integrate(IntegrateSingleton):
                 * np.pi
                 / (3.846e26)
             )
-            print(f"[INFO] Integrated flux = {self.integrated_flux:.03f}")
+            print(
+                f"[INFO] Integrated flux {self.band.name} = {self.integrated_flux:.03f} Jy/px "
+            )
 
             reg = EllipsePixelRegion(
                 PixCoord(self.position_px[0], self.position_px[1]),
