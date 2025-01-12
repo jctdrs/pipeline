@@ -15,6 +15,8 @@ from hip import cutout
 from hip import integrate
 from hip import test
 
+from util import read
+
 from astropy.io import fits
 from astropy.stats import mad_std
 
@@ -65,6 +67,16 @@ class Pipeline:
         inp_path: str = band.input
         hdul = fits.open(inp_path)
         self.data_hdu = hdul[0]
+
+        unit = read.unit(self.data_hdu.header)
+        if unit == "mJy/beam" and "NIKA2" in band.name:
+            beam_deg = read.BMAJ(self.data_hdu.header)
+            px_size_deg = read.pixel_size_arcsec(self.data_hdu.header) / 3600
+
+            conversion_factor = (
+                px_size_deg**2 / (jnp.pi * beam_deg**2 / (4 * 0.693))
+            ) * 1e-3
+            self.data_hdu.data *= conversion_factor
 
     def load_error(self, band: bands_validation.Band) -> None:
         err_path: str = band.error
@@ -204,7 +216,6 @@ class SinglePassPipeline(Pipeline):
             self.load_data(band)
             self.err_hdu = None
             self._set_task_control(band)
-
             for idx, task in enumerate(self.task_control["tasks"]):
                 self.data_hdu, self.err_hdu = Interface[task.step](
                     task_control=self.task_control,
