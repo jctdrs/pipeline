@@ -1,11 +1,11 @@
 import typing
 from util import read
 
-from scipy.ndimage import zoom
 import jax.numpy as jnp  # noqa
 
 import astropy
 from astropy.convolution import convolve_fft
+from astropy.convolution import Gaussian2DKernel
 
 
 class DegradeSingleton:
@@ -62,43 +62,40 @@ class Degrade(DegradeSingleton):
         astropy.io.fits.hdu.image.PrimaryHDU,
     ]:
         self.load_kernel()
-        self.scale_kernel(self.data_hdu)
+        self.kernel_hdu.data = jnp.array(self.kernel_hdu.data)
         self.convert_from_Jyperpx_to_radiance(self.data_hdu)
-        self.kernel_hdu.data /= jnp.sum(self.kernel_hdu.data)
         self.data_hdu.data = self.convolve(self.data_hdu.data, self.kernel_hdu.data)
         self.convert_from_radiance_to_Jyperpx(self.data_hdu)
 
-        resolution = self.instruments[self.task.parameters.name]["RESOLUTION"]["VALUE"]
-        self.data_hdu.header.set(
-            "BMAJ", resolution / 3600, "[deg] Beam major axis in degrees"
-        )
-        self.data_hdu.header.set(
-            "BMIN", resolution / 3600, "[deg] Beam minor axis in degrees"
-        )
         return self.data_hdu, self.err_hdu
 
     def load_kernel(self) -> None:
-        hdu_kernel: astropy.io.image.PrimaryHDU = astropy.io.fits.open(
-            self.task.parameters.kernel
-        )
-        self.kernel_hdu = hdu_kernel[0]
-        return None
+        if self.task.parameters.kernel is not None:
+            print("[DEBUG] Loaded kernel from path.")
+            hdu_kernel: astropy.io.image.PrimaryHDU = astropy.io.fits.open(
+                self.task.parameters.kernel
+            )
+            self.kernel_hdu = hdu_kernel[0]
 
-    def scale_kernel(self, hdu) -> None:
-        pixel_data = read.pixel_size_arcsec(hdu.header)
-        pixel_kernel = read.pixel_size_arcsec(self.kernel_hdu.header)
-        kernel_xsize, kernel_ysize = read.shape(self.kernel_hdu.header)
+        elif self.task.parameters.target is not None:
+            print("[DEBUG] Build kernel from resolution.")
+            input_resolution = self.instruments[self.band.name]["RESOLUTION"]
+            target_resolution = self.task.parameters.target
+            if target_resolution < input_resolution:
+                msg = "[ERROR] Cannot degrade to lower resolution."
+                raise ValueError(msg)
 
-        # Resize kernel if necessary
-        if pixel_kernel != pixel_data:
-            ratio = pixel_kernel / pixel_data
-            size = ratio * kernel_xsize
-            # Ensure an odd kernel
-            if round(size) % 2 == 0:
-                size += 1
-                ratio = size / kernel_xsize
+            match_std = (target_resolution**2 - input_resolution**2) ** 0.5
+            r_trim = jnp.sqrt(2 * match_std**2 * jnp.log(1 / (1 - 0.999)))
+            grid_size = int(jnp.ceil(2 * r_trim)) | 1
 
-            self.kernel_hdu.data = zoom(self.kernel_hdu.data, ratio) / ratio**2
+            kernel = Gaussian2DKernel(
+                match_std,
+                x_size=grid_size,
+                y_size=grid_size,
+            )
+            header = astropy.io.fits.Header()
+            self.kernel_hdu = astropy.io.fits.PrimaryHDU(data=kernel, header=header)
         return None
 
     def convolve(self, data: jnp.ndarray, kernel: jnp.ndarray) -> jnp.ndarray:
@@ -106,7 +103,7 @@ class Degrade(DegradeSingleton):
             data,
             kernel,
             nan_treatment="interpolate",
-            normalize_kernel=False,
+            normalize_kernel=True,
             preserve_nan=True,
             fft_pad=True,
             boundary="fill",
@@ -167,13 +164,5 @@ class DegradeAutomaticDifferentiation(Degrade):
 
         self.err_hdu.data = jnp.sqrt(self.err_hdu.data)
         self.convert_from_radiance_to_Jyperpx(self.err_hdu)
-
-        resolution = self.instruments[self.task.parameters.name]["RESOLUTION"]["VALUE"]
-        self.err_hdu.header.set(
-            "BMAJ", resolution / 3600, "[deg] Beam major axis in degrees"
-        )
-        self.err_hdu.header.set(
-            "BMIN", resolution / 3600, "[deg] Beam minor axis in degrees"
-        )
 
         return self.data_hdu, self.err_hdu

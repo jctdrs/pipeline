@@ -88,7 +88,7 @@ class ForegroundMask(ForegroundMaskSingleton):
             r_mask = (
                 rad_fac[k]
                 * self.task.parameters.factor
-                * self.instruments[self.band.name]["RESOLUTION"]["VALUE"]
+                * self.instruments[self.band.name]["resolutionArcsec"]
             ) // 2
 
             # iterate over the indicidual points

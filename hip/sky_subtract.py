@@ -79,7 +79,7 @@ class SkySubtract(SkySubtractSingleton):
         xsize, ysize = read.shape(self.data_hdu.header)
         lcell_px = jnp.ceil(
             self.task.parameters.cellSize
-            * self.instruments[self.band.name]["RESOLUTION"]["VALUE"]
+            * self.instruments[self.band.name]["resolutionArcsec"]
             / pixel_size
         )
         ncells1 = int(jnp.ceil(xsize / lcell_px))
