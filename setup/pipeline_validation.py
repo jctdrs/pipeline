@@ -9,6 +9,12 @@ from pydantic import BaseModel
 from pydantic import model_validator
 
 
+class PipelineStepUnrolled(BaseModel):
+    step: str
+    diagnosis: bool
+    parameters: BaseModel
+
+
 class PipelineStep(BaseModel):
     step: str
     parameters: List[BaseModel]
@@ -18,6 +24,10 @@ class PipelineStep(BaseModel):
     # that would be to use factory method design.
     @model_validator(mode="before")
     def pass_step_to_parameters(self):
+        if "parameters" not in self:
+            msg = "[ERROR] 'parameters' not defined."
+            raise ValueError(msg)
+
         for idx, model in enumerate(self["parameters"]):
             self["parameters"][idx] = parameters_validation.factory_method(
                 self["step"], **self["parameters"][idx]

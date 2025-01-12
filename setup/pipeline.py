@@ -3,6 +3,7 @@ import typing
 import yaml
 import copy
 
+from setup import pipeline_validation
 from setup import bands_validation
 from setup import spec_validation
 
@@ -120,20 +121,35 @@ class Pipeline:
             raise ValueError(msg)
         return
 
-    def _set_task_control(self) -> None:
+    def _set_task_control(self, band) -> None:
         return
+
+    def _get_tasks_for_band(self, band) -> list:
+        all_tasks = [task for task in self.spec.pipeline]
+        tasks: list = []
+        for task in all_tasks:
+            for bands in task.parameters:
+                if bands.band == band.name:
+                    tasks.append(
+                        pipeline_validation.PipelineStepUnrolled(
+                            step=task.step,
+                            diagnosis=task.diagnosis,
+                            parameters=bands,
+                        )
+                    )
+        return tasks
 
 
 class AutomaticDifferentiationPipeline(Pipeline):
     def __init__(self, spec: spec_validation.Specification):
         super().__init__(spec)
         print("[INFO] Starting Automatic Differentiation Pipeline")
-        self._set_task_control()
 
-    def _set_task_control(self) -> None:
+    def _set_task_control(self, band) -> None:
+        unrolled_tasks = self._get_tasks_for_band(band)
         self.task_control = {
             "mode": "Automatic Differentiation",
-            "tasks": [task for task in self.spec.pipeline],
+            "tasks": unrolled_tasks,
             "idx": 0,
         }
         return
@@ -143,6 +159,7 @@ class AutomaticDifferentiationPipeline(Pipeline):
         for band in bands:
             self.load_data(band)
             self.load_error(band)
+            self._set_task_control(band)
             if self.err_hdu is None:
                 std_data = mad_std(self.data_hdu.data, ignore_nan=True)
                 self.err_hdu = fits.PrimaryHDU(
@@ -171,13 +188,13 @@ class SinglePassPipeline(Pipeline):
     def __init__(self, spec: spec_validation.Specification):
         super().__init__(spec)
         print("[INFO] Starting Single Pass Pipeline")
-        self._set_task_control()
 
-    def _set_task_control(self) -> None:
+    def _set_task_control(self, band) -> None:
+        unrolled_tasks = self._get_tasks_for_band(band)
+
         self.task_control = {
             "mode": "Single Pass",
-            "tasks": [task for task in self.spec.pipeline],
-            "idx": 0,
+            "tasks": unrolled_tasks,
         }
         return
 
@@ -186,9 +203,9 @@ class SinglePassPipeline(Pipeline):
         for band in bands:
             self.load_data(band)
             self.err_hdu = None
+            self._set_task_control(band)
 
             for idx, task in enumerate(self.task_control["tasks"]):
-                self.task_control["idx"] = idx
                 self.data_hdu, self.err_hdu = Interface[task.step](
                     task_control=self.task_control,
                     data_hdu=self.data_hdu,
@@ -207,22 +224,23 @@ class MonteCarloPipeline(Pipeline):
     def __init__(self, spec: spec_validation.Specification):
         super().__init__(spec)
         print("[INFO] Starting Monte-Carlo Pipeline")
-        self._set_task_control()
 
-    def _set_task_control(self) -> None:
+    def _set_task_control(self, band) -> None:
         niter: int = self.spec.config.niter
         MC_diagnosis: list = []
         repeat: list = []
         tasks: list = []
 
+        unrolled_tasks = self._get_tasks_for_band(band)
+
         tasks.extend(
-            itertools.chain.from_iterable(itertools.repeat(self.spec.pipeline, niter))
+            itertools.chain.from_iterable(itertools.repeat(unrolled_tasks, niter))
         )
-        if len(self.spec.pipeline) == 1:
+        if len(unrolled_tasks) == 1:
             repeat.extend([2] * niter)
             MC_diagnosis.extend([False] * (niter - 1) + [True])
         else:
-            repeat.extend(([1] + [0] * (len(self.spec.pipeline) - 2) + [-1]) * niter)
+            repeat.extend(([1] + [0] * (len(unrolled_tasks) - 2) + [-1]) * niter)
             MC_diagnosis.extend(
                 [False] * len(self.spec.pipeline) * (niter - 1)
                 + [True] * len(self.spec.pipeline)
@@ -248,12 +266,13 @@ class MonteCarloPipeline(Pipeline):
 
             self.load_data(band)
             self.load_error(band)
+            self._set_task_control(band)
             if self.err_hdu is None:
                 std_data = mad_std(self.data_hdu.data, ignore_nan=True)
                 self.err_hdu = fits.PrimaryHDU(
                     header=fits.Header(),
                     data=jnp.full_like(self.data_hdu.data, std_data),
-                )[0]
+                )
 
             for idx, task in enumerate(self.task_control["tasks"]):
                 self.task_control["idx"] = idx
@@ -286,7 +305,6 @@ class MonteCarloPipeline(Pipeline):
                     instruments=self.instruments,
                 ).run()
 
-                # Running sum
                 if (
                     self.task_control["repeat"][idx] == -1
                     or self.task_control["repeat"][idx] == 2
