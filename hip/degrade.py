@@ -7,6 +7,8 @@ import astropy
 from astropy.convolution import convolve_fft
 from astropy.convolution import Gaussian2DKernel
 
+from scipy.ndimage import zoom
+
 
 class DegradeSingleton:
     _instance = None
@@ -71,15 +73,25 @@ class Degrade(DegradeSingleton):
 
     def load_kernel(self) -> None:
         if self.task.parameters.kernel is not None:
-            print("[DEBUG] Loaded kernel from path.")
             hdu_kernel: astropy.io.image.PrimaryHDU = astropy.io.fits.open(
                 self.task.parameters.kernel
             )
+
             self.kernel_hdu = hdu_kernel[0]
+            pixel_scale_i = read.pixel_size_arcsec(self.data_hdu.header)
+            pixel_scale_k = read.pixel_size_arcsec(self.kernel_hdu.header)
+
+            if pixel_scale_k != pixel_scale_i:
+                ratio = pixel_scale_k / pixel_scale_i
+                size = ratio * self.kernel_hdu.data.shape[0]
+                if round(size) % 2 == 0:
+                    size += 1
+                    ratio = size / self.kernel_hdu.data.shape[0]
+
+                self.kernel_hdu.data = zoom(self.kernel_hdu.data, ratio) / ratio**2
 
         elif self.task.parameters.target is not None:
-            print("[DEBUG] Build kernel from resolution.")
-            input_resolution = self.instruments[self.band.name]["RESOLUTION"]
+            input_resolution = self.instruments[self.band.name]["resolutionArcsec"]
             target_resolution = self.task.parameters.target
             if target_resolution < input_resolution:
                 msg = "[ERROR] Cannot degrade to lower resolution."
@@ -158,7 +170,6 @@ class DegradeAutomaticDifferentiation(Degrade):
         self.load_kernel()
         self.scale_kernel(self.err_hdu)
         self.kernel_hdu.data /= jnp.sum(self.kernel_hdu.data)
-
         self.convert_from_Jyperpx_to_radiance(self.err_hdu)
         self.err_hdu.data = self.convolve(self.err_hdu.data**2, self.kernel_hdu.data**2)
 
