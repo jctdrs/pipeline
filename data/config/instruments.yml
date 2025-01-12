@@ -1,118 +1,74 @@
 WISE1: 
-    WAVELENGTH: 
-        CENTRAL: 3.4
-        UNIT: micron
     resolutionArcsec: 6.1
+
 WISE2: 
-    WAVELENGTH: 
-        CENTRAL: 4.6
-        UNIT: micron
     resolutionArcsec: 6.4
+
 WISE3: 
-    WAVELENGTH: 
-        CENTRAL: 11.6
-        UNIT: micron
     resolutionArcsec: 6.5
+
 WISE4: 
-    WAVELENGTH: 
-        CENTRAL: 22.1
-        UNIT: micron
     resolutionArcsec: 12
+
 IRAC1: 
-    WAVELENGTH: 
-        CENTRAL: 3.5
-        UNIT: micron
     resolutionArcsec: 1.66
+
 IRAC2: 
-    WAVELENGTH: 
-        CENTRAL: 4.5
-        UNIT: micron
     resolutionArcsec: 1.72
+
 IRAC3: 
-    WAVELENGTH: 
-        CENTRAL: 5.7
-        UNIT: micron
     resolutionArcsec: 1.88
+
 IRAC4: 
-    WAVELENGTH: 
-        CENTRAL: 7.8
-        UNIT: micron
     resolutionArcsec: 1.98
+
 MIPS1:
-    WAVELENGTH: 
-        CENTRAL: 23.7
-        UNIT: micron
     resolutionArcsec: 6
+
 MIPS2: 
-    WAVELENGTH: 
-        CENTRAL: 71
-        UNIT: micron
     resolutionArcsec: 18
+
 MIPS3:
-    WAVELENGTH: 
-        CENTRAL: 156
-        UNIT: micron
     resolutionArcsec: 35.2
+
 PACS1: 
-    WAVELENGTH: 
-        CENTRAL: 70
-        UNIT: micron
     resolutionArcsec: 9
+
 PACS2: 
-    WAVELENGTH: 
-        CENTRAL: 350
-        UNIT: micron
     resolutionArcsec: 10
+
 PACS3: 
-    WAVELENGTH: 
-        CENTRAL: 500
-        UNIT: micron
     resolutionArcsec: 13
+
 SPIRE1: 
-    WAVELENGTH: 
-        CENTRAL: 250
-        UNIT: micron
     resolutionArcsec: 18
+
 SPIRE2: 
-    WAVELENGTH: 
-        CENTRAL: 350
-        UNIT: micron
     resolutionArcsec: 25
+
 SPIRE3: 
-    WAVELENGTH: 
-        CENTRAL: 500
-        UNIT: micron
     resolutionArcsec: 36
+
 HFI1:
-    WAVELENGTH: 
-        CENTRAL: 350
-        UNIT: micron
     resolutionArcsec: 300
-HFI2: 
-    WAVELENGTH: 
-        CENTRAL: 550
-        UNIT: micron
+
+HFI2:
     resolutionArcsec: 300
+
 HFI3: 
-    WAVELENGTH: 
-        CENTRAL: 850
-        UNIT: micron
     resolutionArcsec: 300
 
 HFI4: 
-    WAVELENGTH: 
-        cENTRAL: 1380
-        UNIT: micron
     resolutionArcsec: 330
 
 NIKA2_1:
-    WAVELENGTH:
-        CENTRAL: 1.5
-        UNIT: mm
     resolutionArcsec: 12
 
 NIKA2_2:
-    WAVELENGTH:
-        CENTRAL: 2
-        UNIT: mm
     resolutionArcsec: 18
+
+GALEX_FUV:
+    resolutionArcsec: 4.3
+
+GALEX_NUV:
+    resolutionArcsec: 5.3
