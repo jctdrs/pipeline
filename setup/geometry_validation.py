@@ -14,9 +14,6 @@ DUSTPEDIA_HYPERLEDA_HERSCHEL = (
 
 
 class Geometry(BaseModel):
-    distance: float
-    redshift: float
-
     # The 'body' attribute is passed from the 'Data' class to the 'Geometry'
     # class through the '@model_validator'. This is necessary in order to
     # parse the corresponding geometry fields in case they are missing.
@@ -33,6 +30,7 @@ class Geometry(BaseModel):
     semiMajorAxis: Optional[float] = None
     inclination: Optional[float] = None
     radius: Optional[float] = None
+    distance: Optional[float] = None
 
     @model_validator(mode="after")
     def geometry_from_config(self):
@@ -49,6 +47,7 @@ class Geometry(BaseModel):
         required_dist = {
             "inclination": "incl",
             "radius": "d25",
+            "distance": "ned_dist_z_corr",
         }
 
         # The 'Geometry' fields are scattered into two separate config csv
