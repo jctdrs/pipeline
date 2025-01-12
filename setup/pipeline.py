@@ -141,7 +141,7 @@ class Pipeline:
         tasks: list = []
         for task in all_tasks:
             for bands in task.parameters:
-                if bands.band == band.name:
+                if bands.band == band.name or bands.band == "all":
                     tasks.append(
                         pipeline_validation.PipelineStepUnrolled(
                             step=task.step,
