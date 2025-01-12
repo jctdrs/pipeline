@@ -16,8 +16,8 @@ def pixel_size_arcsec(header: fits.header.Header) -> typing.Union[float, typing.
         return math.sqrt(px_size_fits[0] ** 2 + px_size_fits[1] ** 2) * 3600
 
     else:
-        print("[ERROR]\tUnable to get pixel scale from image header.")
-        exit()
+        msg = "[ERROR] Unable to get pixel scale from image header."
+        raise KeyError(msg)
 
 
 def _check_px_size(
@@ -68,8 +68,8 @@ def _check_px_size(
                 return (float(header["PC1_1"]), float(header["PC2_2"]), "PC")
 
     else:
-        print("[ERROR]\tUnable to get pixel scale from header.")
-        exit()
+        msg = "[ERROR] Unable to get pixel scale from header."
+        raise KeyError(msg)
 
 
 def shape(
@@ -79,14 +79,15 @@ def shape(
     if "NAXIS" in keys and header["NAXIS"] == 2 and "NAXIS1" in keys:
         xsize = header["NAXIS1"]
     else:
-        print("[ERROR]\tUnable to get number of pixels from header.")
-        exit()
+        msg = "[ERROR] Unable to get number of pixels from header."
+        raise KeyError(msg)
 
     if "NAXIS" in keys and header["NAXIS"] == 2 and "NAXIS2" in keys:
         ysize = header["NAXIS2"]
     else:
-        print("[ERROR]\tUnable to get number of pixels from header.")
-        exit()
+        msg = "[ERROR] Unable to get number of pixels from header."
+        raise KeyError(msg)
+
     return (xsize, ysize)
 
 
@@ -97,6 +98,18 @@ def unit(header: fits.header.Header) -> typing.Union[typing.Any, str]:
         return header["BUNIT"]
     elif "SIGUNIT" in keys:
         return header["SIGUNIT"]
+    elif "ZUNIT" in keys:
+        return header["ZUNIT"]
     else:
-        print("[ERROR]\tUnable to get unit from header.")
-        exit()
+        msg = "[ERROR] Unable to get unit from header."
+        raise KeyError(msg)
+
+
+def BMAJ(header: fits.header.Header) -> typing.Union[typing.Any, float]:
+    keys: list = list(header.keys())
+
+    if "BMAJ" in keys:
+        return header["BMAJ"]
+    else:
+        msg = "[ERROR] Unable to read BMAJ from header."
+        raise KeyError(msg)
