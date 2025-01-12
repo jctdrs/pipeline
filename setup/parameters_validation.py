@@ -12,21 +12,63 @@ from pydantic import model_validator
 # nature of the step.
 def factory_method(pipeline_step: str, **parameters):
     if pipeline_step not in Interface:
-        msg = f"[ERROR] Pipeline step {pipeline_step} not defined."
+        msg = f"[ERROR] Pipeline step {pipeline_step} not valid."
         raise ValueError(msg)
     pipeline_step_class = Interface.get(pipeline_step)
     return pipeline_step_class(**parameters)
 
 
 class HIPDegrade(BaseModel):
-    target: str
+    target: Optional[str] = None
+    kernel: Optional[str] = None
+    type: Optional[str] = None
     name: str
+    band: str
 
     @model_validator(mode="after")
-    def check_if_path_exists(self):
-        if not os.path.exists(self.kernel):
-            msg = f"[ERROR] Path {self.kernel} not found."
-            raise OSError(msg)
+    def check_if_kernel_path_exists(self):
+        if self.kernel is not None:
+            if not os.path.exists(self.kernel):
+                msg = f"[ERROR] Path {self.kernel} not found."
+                raise OSError(msg)
+        return self
+
+    @model_validator(mode="after")
+    def check_if_target_path_exists(self):
+        if self.target is not None:
+            if not os.path.exists(self.target):
+                msg = f"[ERROR] Path {self.target} not found."
+                raise OSError(msg)
+        return self
+
+    @model_validator(mode="after")
+    def check_if_type_is_defined_when_target_is_defined(self):
+        if self.target is not None and self.type is None:
+            self.type = "Gaussian"
+            msg = "[WARNING] 'Type' not defined, defaulting to 'Gaussian'."
+            print(msg)
+        return self
+
+    @model_validator(mode="after")
+    def check_type(self):
+        valid_type = {"Gaussian", "Aniano"}
+        if self.type is not None and self.type not in valid_type:
+            msg = f"[ERROR] 'Type' {self.type} not valid."
+            raise ValueError(msg)
+        return self
+
+    @model_validator(mode="after")
+    def ignore_type_if_kernel_defined(self):
+        if self.kernel is not None and self.type is not None:
+            msg = "[WARNING] Ignoring 'type' when 'kernel' is defined."
+            print(msg)
+        return self
+
+    @model_validator(mode="after")
+    def check_if_kernel_and_target_are_defined(self):
+        if self.kernel is not None and self.target is not None:
+            msg = "[ERROR] Both 'target' and 'kernel' are defined."
+            raise ValueError(msg)
         return self
 
     @model_validator(mode="after")
@@ -75,11 +117,13 @@ class HIPDegrade(BaseModel):
 
 class HIPSkySubtract(BaseModel):
     cellSize: Optional[PositiveInt] = 1
+    band: str
 
 
 class HIPRegrid(BaseModel):
     target: str
     name: str
+    band: str
 
     @model_validator(mode="after")
     def check_if_path_exists(self):
@@ -135,9 +179,11 @@ class HIPRegrid(BaseModel):
 class HIPCutout(BaseModel):
     raTrim: PositiveFloat
     decTrim: PositiveFloat
+    band: str
 
 
 class HIPIntegrate(BaseModel):
+    band: str
     radius: PositiveFloat
 
 
@@ -145,6 +191,7 @@ class HIPForegroundMask(BaseModel):
     factor: PositiveFloat
     raTrim: PositiveFloat
     decTrim: PositiveFloat
+    band: str
 
 
 class HIPTest(BaseModel):

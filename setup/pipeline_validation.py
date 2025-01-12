@@ -11,16 +11,17 @@ from pydantic import model_validator
 
 class PipelineStep(BaseModel):
     step: str
-    parameters: BaseModel
+    parameters: List[BaseModel]
     diagnosis: Optional[bool] = False
 
     # All possible pipeline steps have their own validator. One way of creating
     # that would be to use factory method design.
     @model_validator(mode="before")
     def pass_step_to_parameters(self):
-        self["parameters"] = parameters_validation.factory_method(
-            self["step"], **self["parameters"]
-        )
+        for idx, model in enumerate(self["parameters"]):
+            self["parameters"][idx] = parameters_validation.factory_method(
+                self["step"], **self["parameters"][idx]
+            )
         return self
 
     @model_validator(mode="after")
