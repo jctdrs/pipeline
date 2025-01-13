@@ -10,10 +10,10 @@ DEFAULT_CALIBRATION_ERROR = {
     "IRAC2": 10.2,
     "IRAC3": 10.2,
     "IRAC4": 10.2,
-    "WISE1_ATLAS": 3.2,
-    "WISE2_ATLAS": 3.5,
-    "WISE3_ATLAS": 5.0,
-    "WISE4_ATLAS": 7.0,
+    "WISE1": 3.2,
+    "WISE2": 3.5,
+    "WISE3": 5.0,
+    "WISE4": 7.0,
     "MIPS1": 4.0,
     "MIPS2": 5.0,
     "MIPS3": 11.6,
@@ -85,11 +85,11 @@ class Band(BaseModel):
             and self.name != "IRAC2"
             and self.name != "IRAC3"
             and self.name != "IRAC4"
-            and self.name != "WISE1_ATLAS"
-            and self.name != "WISE2_ATLAS"
-            and self.name != "WISE3_ATLAS"
-            and self.name != "WISE3_ATLAS"
-            and self.name != "WISE4_ATLAS"
+            and self.name != "WISE1"
+            and self.name != "WISE2"
+            and self.name != "WISE3"
+            and self.name != "WISE3"
+            and self.name != "WISE4"
             and self.name != "MIPS1"
             and self.name != "MIPS2"
             and self.name != "MIPS3"
