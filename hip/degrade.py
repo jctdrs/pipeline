@@ -2,7 +2,7 @@ from typing import Optional
 
 from util import read
 
-import jax.numpy as jnp  # noqa
+import jax.numpy as jnp
 
 import astropy
 from astropy.convolution import convolve_fft
@@ -109,6 +109,7 @@ class Degrade(DegradeSingleton):
             )
             header = astropy.io.fits.Header()
             self.kernel_hdu = astropy.io.fits.PrimaryHDU(data=kernel, header=header)
+
         return None
 
     def convolve(self, data: jnp.ndarray, kernel: jnp.ndarray) -> jnp.ndarray:

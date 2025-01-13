@@ -2,6 +2,7 @@ import itertools
 import yaml
 import copy
 from dataclasses import dataclass
+from dataclasses import field
 
 from typing import Union
 from typing import Any
@@ -50,8 +51,8 @@ class TaskControl:
     idx: int
 
     # Only used for MonteCarloPipeline
-    MC_diagnosis: list = []
-    repeat: list = []
+    MC_diagnosis: list = field(default_factory=list)
+    repeat: list = field(default_factory=list)
 
 
 class PipelineGeneric:

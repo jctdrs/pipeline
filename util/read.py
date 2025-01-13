@@ -1,7 +1,7 @@
 from typing import Union
 from typing import Any
 
-import jax.numpy as jnp
+import math
 
 from astropy.io import fits
 
@@ -13,10 +13,10 @@ def pixel_size_arcsec(header: fits.header.Header) -> Union[float, Any]:
         return abs(px_size_fits[0]) * 3600
 
     elif px_size_fits[2] == "CD":
-        return jnp.sqrt(px_size_fits[0] ** 2 + px_size_fits[1] ** 2) * 3600
+        return math.sqrt(px_size_fits[0] ** 2 + px_size_fits[1] ** 2) * 3600
 
     elif px_size_fits[2] == "PC":
-        return jnp.sqrt(px_size_fits[0] ** 2 + px_size_fits[1] ** 2) * 3600
+        return math.sqrt(px_size_fits[0] ** 2 + px_size_fits[1] ** 2) * 3600
 
     else:
         msg = "[ERROR] Unable to get pixel scale from image header."
