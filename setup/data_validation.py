@@ -1,4 +1,3 @@
-from typing import List
 from typing import Optional
 
 from setup.geometry_validation import Geometry
@@ -11,7 +10,7 @@ from pydantic import model_validator
 class Data(BaseModel):
     body: str
     geometry: Optional[Geometry] = None
-    bands: List[Band]
+    bands: list[Band]
 
     # We need to use the 'before' mode in this case because the 'body'
     # attribute in 'Geometry' is not defined by the user from the specification

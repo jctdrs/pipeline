@@ -1,7 +1,10 @@
 import argparse
+import warnings
 
 from setup import spec_validation
 from setup import pipeline
+
+warnings.filterwarnings("ignore")
 
 
 def main() -> None:

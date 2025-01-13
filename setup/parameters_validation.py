@@ -1,5 +1,5 @@
 import os
-from typing_extensions import Optional
+from typing import Optional
 
 from pydantic import BaseModel
 from pydantic import PositiveFloat

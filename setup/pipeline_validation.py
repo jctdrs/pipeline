@@ -1,5 +1,4 @@
-from typing_extensions import Optional
-from typing_extensions import List
+from typing import Optional
 
 from setup.config_validation import Config
 from setup.data_validation import Data
@@ -20,7 +19,7 @@ class PipelineStepUnrolled(BaseModel):
 
 class PipelineStep(BaseModel):
     step: str
-    parameters: List[BaseModel]
+    parameters: list[BaseModel]
     diagnosis: Optional[bool] = False
 
     # All possible pipeline steps have their own validator. One way of creating
@@ -76,4 +75,5 @@ class Pipeline(BaseModel):
     )
     config: Config
     data: Data
-    pipeline: List[PipelineStep]
+    before: Optional[list[PipelineStep]]
+    pipeline: list[PipelineStep]

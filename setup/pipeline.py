@@ -160,10 +160,22 @@ class PipelineGeneric:
     def _set_task_control(self, band: Band) -> None:
         return None
 
-    def _get_tasks_for_band(
+    def _get_before_tasks_for_band(
         self,
         band: Band,
     ) -> list[PipelineStepUnrolled]:
+        return [
+            PipelineStepUnrolled(
+                step=task.step,
+                diagnosis=task.diagnosis,
+                parameters=params,
+            )
+            for task in self.spec.before
+            for params in task.parameters
+            if params.band in {band.name, "all"}
+        ]
+
+    def _get_pipeline_tasks_for_band(self, band: Band) -> list[PipelineStepUnrolled]:
         return [
             PipelineStepUnrolled(
                 step=task.step,
@@ -182,10 +194,11 @@ class AutomaticDifferentiationPipeline(PipelineGeneric):
         print("[INFO] Starting Automatic Differentiation Pipeline")
 
     def _set_task_control(self, band: Band) -> None:
-        unrolled_tasks = self._get_tasks_for_band(band)
+        unrolled_before_tasks = self._get_before_tasks_for_band(band)
+        unrolled_pipeline_tasks = self._get_pipeline_tasks_for_band(band)
         self.task_control = TaskControl(
             mode="Automatic Differentiation",
-            tasks=unrolled_tasks,
+            tasks=unrolled_before_tasks + unrolled_pipeline_tasks,
             idx=0,
         )
         return None
@@ -226,11 +239,13 @@ class SinglePassPipeline(PipelineGeneric):
         print("[INFO] Starting Single Pass Pipeline")
 
     def _set_task_control(self, band: Band) -> None:
-        unrolled_tasks = self._get_tasks_for_band(band)
+        unrolled_before_tasks = self._get_before_tasks_for_band(band)
+        unrolled_pipeline_tasks = self._get_pipeline_tasks_for_band(band)
+
         self.task_control = TaskControl(
             idx=0,
             mode="Single Pass",
-            tasks=unrolled_tasks,
+            tasks=unrolled_before_tasks + unrolled_pipeline_tasks,
         )
         return None
 
@@ -262,20 +277,30 @@ class MonteCarloPipeline(PipelineGeneric):
 
     def _set_task_control(self, band: Band) -> None:
         niter: int = self.spec.config.niter
-        MC_diagnosis: list = []
-        repeat: list = []
-        tasks: list = []
+        MC_diagnosis: list[bool] = []
+        repeat: list[int] = []
+        tasks: list[PipelineStepUnrolled] = []
 
-        unrolled_tasks = self._get_tasks_for_band(band)
+        unrolled_before_tasks = self._get_before_tasks_for_band(band)
+        unrolled_pipeline_tasks = self._get_pipeline_tasks_for_band(band)
+
+        if unrolled_before_tasks:
+            tasks.extend(unrolled_before_tasks)
+            repeat.extend([0] * len(unrolled_before_tasks))
+            MC_diagnosis.extend([False] * len(unrolled_before_tasks))
 
         tasks.extend(
-            itertools.chain.from_iterable(itertools.repeat(unrolled_tasks, niter))
+            itertools.chain.from_iterable(
+                itertools.repeat(unrolled_pipeline_tasks, niter)
+            )
         )
-        if len(unrolled_tasks) == 1:
+        if len(unrolled_pipeline_tasks) == 1:
             repeat.extend([2] * niter)
             MC_diagnosis.extend([False] * (niter - 1) + [True])
         else:
-            repeat.extend(([1] + [0] * (len(unrolled_tasks) - 2) + [-1]) * niter)
+            repeat.extend(
+                ([1] + [0] * (len(unrolled_pipeline_tasks) - 2) + [-1]) * niter
+            )
             MC_diagnosis.extend(
                 [False] * len(self.spec.pipeline) * (niter - 1)
                 + [True] * len(self.spec.pipeline)
@@ -302,6 +327,7 @@ class MonteCarloPipeline(PipelineGeneric):
             self.load_data(band)
             self.load_error(band)
             self._set_task_control(band)
+
             if self.err_hdu is None:
                 std_data = mad_std(self.data_hdu.data, ignore_nan=True)
                 self.err_hdu = fits.PrimaryHDU(
