@@ -1,5 +1,5 @@
-import typing
-import math
+from typing import Optional
+
 import copy
 
 from astroquery.vizier import Vizier
@@ -22,7 +22,7 @@ class ForegroundMaskSingleton:
     _mode = None
 
     def __new__(cls, *args, **kwargs):
-        mode = kwargs["task_control"]["mode"]
+        mode = kwargs["task_control"].mode
         if cls._instance is None and (mode is None or mode != cls._mode):
             cls._instance = super().__new__(cls)
             cls._mode = mode
@@ -53,7 +53,7 @@ class ForegroundMask(ForegroundMaskSingleton):
 
     @classmethod
     def create(cls, *args, **kwargs):
-        mode = kwargs["task_control"]["mode"]
+        mode = kwargs["task_control"].mode
         if mode == "Single Pass":
             return ForegroundMaskSinglePass(*args, **kwargs)
         elif mode == "Monte-Carlo":
@@ -66,10 +66,9 @@ class ForegroundMask(ForegroundMaskSingleton):
 
     def run(
         self,
-    ) -> typing.Tuple[
+    ) -> tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
-        astropy.io.fits.hdu.image.PrimaryHDU,
-        typing.Union[jnp.array, typing.Any],
+        Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
         # generate copy to be masked
         px_size = read.pixel_size_arcsec(self.data_hdu.header)
@@ -111,8 +110,9 @@ class ForegroundMask(ForegroundMaskSingleton):
 
                         self.data_hdu.data[mask_fgs_reg] = jnp.nan
 
-        return self.data_hdu, self.err_hdu, None
+        return self.data_hdu, self.err_hdu
 
+    # TODO: Rewrite this
     def find_fgs(self):
         mag = ["<13.5", "<14.", "<15.5", "<16.", "<18.", "<40."]
         rad_fac = [4.6, 3.0, 2.1, 1.4, 1.15, 0.7]
@@ -170,8 +170,8 @@ class ForegroundMask(ForegroundMaskSingleton):
         pos_center_px = wcs.all_world2pix(pos_ctr, 0)
         rma_gal = self.data.geometry.semiMajorAxis / 2
         rmi_gal = rma_gal / self.data.geometry.axialRatio
-        rma_gal_px = math.ceil(rma_gal / px_size)
-        rmi_gal_px = math.ceil(rmi_gal / px_size)
+        rma_gal_px = jnp.ceil(rma_gal / px_size)
+        rmi_gal_px = jnp.ceil(rmi_gal / px_size)
 
         region = """
                 image

@@ -19,10 +19,10 @@ def main() -> None:
 
     spec = spec_validation.Specification(spec_path).validate()
 
-    pipe = pipeline.Pipeline.create(spec)
+    pipe = pipeline.PipelineGeneric.create(spec)
     pipe.execute()
 
-    return
+    return None
 
 
 if __name__ == "__main__":

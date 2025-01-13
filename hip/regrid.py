@@ -1,5 +1,4 @@
-import math
-import typing
+from typing import Optional
 
 import jax
 import jax.numpy as jnp
@@ -18,7 +17,7 @@ class RegridSingleton:
     _mode = None
 
     def __new__(cls, *args, **kwargs):
-        mode = kwargs["task_control"]["mode"]
+        mode = kwargs["task_control"].mode
         if cls._instance is None and (mode is None or mode != cls._mode):
             cls._instance = super().__new__(cls)
             cls._mode = mode
@@ -49,7 +48,7 @@ class Regrid(RegridSingleton):
 
     @classmethod
     def create(cls, *args, **kwargs):
-        mode = kwargs["task_control"]["mode"]
+        mode = kwargs["task_control"].mode
         if mode == "Single Pass":
             return RegridSinglePass(*args, **kwargs)
         elif mode == "Monte-Carlo":
@@ -62,9 +61,9 @@ class Regrid(RegridSingleton):
 
     def run(
         self,
-    ) -> typing.Tuple[
+    ) -> tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
-        astropy.io.fits.hdu.image.PrimaryHDU,
+        Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
         self.convert_from_Jyperpx_to_radiance(self.data_hdu)
         with fits.open(self.task.parameters.target) as hdul:
@@ -81,8 +80,8 @@ class Regrid(RegridSingleton):
 
     def convert_from_Jyperpx_to_radiance(self, hdu) -> None:
         pixel_size = read.pixel_size_arcsec(hdu.header)
-        px_x: float = pixel_size * 2 * math.pi / 360
-        px_y: float = pixel_size * 2 * math.pi / 360
+        px_x: float = pixel_size * 2 * jnp.pi / 360
+        px_y: float = pixel_size * 2 * jnp.pi / 360
 
         # divide by 3.846x10^26 (Lsun in Watt) to convert W/Hz/m2/sr in
         # Lsun/Hz/m2/sr multiply by the galaxy distance in m2 to get Lsun/Hz/sr
@@ -90,7 +89,7 @@ class Regrid(RegridSingleton):
             1e-26
             * pow((self.data.geometry.distance * 3.086e22), 2)
             * 4
-            * math.pi
+            * jnp.pi
             / (px_x * px_y * 3.846e26)
         )
 
@@ -99,11 +98,11 @@ class Regrid(RegridSingleton):
 
     def convert_from_radiance_to_Jyperpx(self, hdu) -> None:
         pixel_size = read.pixel_size_arcsec(hdu.header)
-        px_x: float = pixel_size * 2 * math.pi / 360
-        px_y: float = pixel_size * 2 * math.pi / 360
+        px_x: float = pixel_size * 2 * jnp.pi / 360
+        px_y: float = pixel_size * 2 * jnp.pi / 360
 
         conversion_factor = (px_x * px_y * 3.846e26) / (
-            1e-26 * pow((self.data.geometry.distance * 3.086e22), 2) * 4 * math.pi
+            1e-26 * pow((self.data.geometry.distance * 3.086e22), 2) * 4 * jnp.pi
         )
 
         hdu.data *= conversion_factor
@@ -163,9 +162,9 @@ class RegridAutomaticDifferentiation(Regrid):
 
     def run(
         self,
-    ) -> typing.Tuple[
+    ) -> tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
-        astropy.io.fits.hdu.image.PrimaryHDU,
+        Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
         original_shape = self.err_hdu.data.shape
         with fits.open(self.task.parameters.target) as hdul:

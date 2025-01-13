@@ -1,19 +1,22 @@
-import math
-import typing
+from typing import Union
+from typing import Any
+
+import jax.numpy as jnp
+
 from astropy.io import fits
 
 
-def pixel_size_arcsec(header: fits.header.Header) -> typing.Union[float, typing.Any]:
+def pixel_size_arcsec(header: fits.header.Header) -> Union[float, Any]:
     px_size_fits = _check_px_size(header)
 
     if px_size_fits[2] == "CDELT":
         return abs(px_size_fits[0]) * 3600
 
     elif px_size_fits[2] == "CD":
-        return math.sqrt(px_size_fits[0] ** 2 + px_size_fits[1] ** 2) * 3600
+        return jnp.sqrt(px_size_fits[0] ** 2 + px_size_fits[1] ** 2) * 3600
 
     elif px_size_fits[2] == "PC":
-        return math.sqrt(px_size_fits[0] ** 2 + px_size_fits[1] ** 2) * 3600
+        return jnp.sqrt(px_size_fits[0] ** 2 + px_size_fits[1] ** 2) * 3600
 
     else:
         msg = "[ERROR] Unable to get pixel scale from image header."
@@ -22,7 +25,7 @@ def pixel_size_arcsec(header: fits.header.Header) -> typing.Union[float, typing.
 
 def _check_px_size(
     header: fits.header.Header,
-) -> typing.Union[typing.Any, typing.Tuple[float, float, str]]:
+) -> Union[tuple[float, float, str], Any]:
     keys: list = list(header.keys())
     if ("CDELT1" in keys) and ("CDELT2" in keys):
         if (
@@ -71,10 +74,12 @@ def _check_px_size(
         msg = "[ERROR] Unable to get pixel scale from header."
         raise KeyError(msg)
 
+    return None
+
 
 def shape(
     header: fits.header.Header,
-) -> typing.Union[typing.Any, typing.Tuple[int, int]]:
+) -> Union[Any, tuple[int, int]]:
     keys: list = list(header.keys())
     if "NAXIS" in keys and header["NAXIS"] == 2 and "NAXIS1" in keys:
         xsize = header["NAXIS1"]
@@ -91,7 +96,7 @@ def shape(
     return (xsize, ysize)
 
 
-def unit(header: fits.header.Header) -> typing.Union[typing.Any, str]:
+def unit(header: fits.header.Header) -> Union[Any, str]:
     keys: list = list(header.keys())
 
     if "BUNIT" in keys:
@@ -105,7 +110,7 @@ def unit(header: fits.header.Header) -> typing.Union[typing.Any, str]:
         raise KeyError(msg)
 
 
-def BMAJ(header: fits.header.Header) -> typing.Union[typing.Any, float]:
+def BMAJ(header: fits.header.Header) -> Union[Any, float]:
     keys: list = list(header.keys())
 
     if "BMAJ" in keys:

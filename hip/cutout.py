@@ -1,4 +1,4 @@
-import typing
+from typing import Optional
 
 import matplotlib.pyplot as plt
 
@@ -14,7 +14,7 @@ class CutoutSingleton:
     _mode = None
 
     def __new__(cls, *args, **kwargs):
-        mode = kwargs["task_control"]["mode"]
+        mode = kwargs["task_control"].mode
         if cls._instance is None and (mode is None or mode != cls._mode):
             cls._instance = super().__new__(cls)
             cls._mode = mode
@@ -45,7 +45,7 @@ class Cutout(CutoutSingleton):
 
     @classmethod
     def create(cls, *args, **kwargs):
-        mode = kwargs["task_control"]["mode"]
+        mode = kwargs["task_control"].mode
         if mode == "Single Pass":
             return CutoutSinglePass(*args, **kwargs)
         elif mode == "Monte-Carlo":
@@ -58,9 +58,9 @@ class Cutout(CutoutSingleton):
 
     def run(
         self,
-    ) -> typing.Tuple[
+    ) -> tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
-        astropy.io.fits.hdu.image.PrimaryHDU,
+        Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
         wcs_data = WCS(self.data_hdu.header)
         pos_center = SkyCoord(
@@ -101,7 +101,7 @@ class Cutout(CutoutSingleton):
                 f"{self.band.output}/CUTOUT_{self.data.body}_{self.band.name}.png"
             )
             plt.close()
-        return
+        return None
 
 
 class CutoutMonteCarlo(Cutout):
@@ -115,9 +115,9 @@ class CutoutAutomaticDifferentiation(Cutout):
 class CutoutSinglePass(Cutout):
     def run(
         self,
-    ) -> typing.Tuple[
+    ) -> tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
-        astropy.io.fits.hdu.image.PrimaryHDU,
+        Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
         super().run()
         super().diagnosis()

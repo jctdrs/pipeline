@@ -1,4 +1,4 @@
-import typing
+from typing import Optional
 
 import astropy
 from astropy.stats import SigmaClip
@@ -23,7 +23,7 @@ class SkySubtractSingleton:
     _mode = None
 
     def __new__(cls, *args, **kwargs):
-        mode = kwargs["task_control"]["mode"]
+        mode = kwargs["task_control"].mode
         if cls._instance is None and (mode is None or mode != cls._mode):
             cls._instance = super().__new__(cls)
             cls._mode = mode
@@ -54,7 +54,7 @@ class SkySubtract(SkySubtractSingleton):
 
     @classmethod
     def create(cls, *args, **kwargs):
-        mode = kwargs["task_control"]["mode"]
+        mode = kwargs["task_control"].mode
         if mode == "Single Pass":
             return SkySubtractSinglePass(*args, **kwargs)
         elif mode == "Monte-Carlo":
@@ -67,9 +67,9 @@ class SkySubtract(SkySubtractSingleton):
 
     def run(
         self,
-    ) -> typing.Tuple[
+    ) -> tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
-        astropy.io.fits.hdu.image.PrimaryHDU,
+        Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
         # This masking is needed to tame the Warning from photutils
         self.data_hdu_invalid = ma.masked_invalid(self.data_hdu.data)
@@ -160,7 +160,7 @@ class SkySubtract(SkySubtractSingleton):
                 f"{self.band.output}/BKGMAP_SRCMASK_{self.data.body}_{self.band.name}.png"
             )
             plt.close()
-        return
+        return None
 
 
 class SkySubtractMonteCarlo(SkySubtract):
@@ -174,9 +174,9 @@ class SkySubtractAutomaticDifferentiation(SkySubtract):
 class SkySubtractSinglePass(SkySubtract):
     def run(
         self,
-    ) -> typing.Tuple[
+    ) -> tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
-        astropy.io.fits.hdu.image.PrimaryHDU,
+        Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
         super().run()
         super().diagnosis()

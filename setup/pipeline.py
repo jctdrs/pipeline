@@ -1,11 +1,15 @@
 import itertools
-import typing
 import yaml
 import copy
+from dataclasses import dataclass
 
-from setup import pipeline_validation
-from setup import bands_validation
-from setup import spec_validation
+from typing import Union
+from typing import Any
+
+from setup.pipeline_validation import PipelineStepUnrolled
+from setup.pipeline_validation import Pipeline
+from setup.bands_validation import Band
+from setup.spec_validation import Specification
 
 from hip import degrade
 from hip import sky_subtract
@@ -25,9 +29,9 @@ import jax
 import jax.numpy as jnp
 
 
-INSTRUMENTS_CONFIG = "/home/jtedros/Repo/pipeline/data/config/instruments.yml"
+INSTRUMENTS_CONFIG: str = "/home/jtedros/Repo/pipeline/data/config/instruments.yml"
 
-Interface: dict = {
+Interface: dict[str, Any] = {
     "hip.degrade": degrade.Degrade.create,
     "hip.skySubtract": sky_subtract.SkySubtract.create,
     "hip.regrid": regrid.Regrid.create,
@@ -39,15 +43,26 @@ Interface: dict = {
 }
 
 
-class Pipeline:
+@dataclass
+class TaskControl:
+    tasks: list[PipelineStepUnrolled]
+    mode: str
+    idx: int
+
+    # Only used for MonteCarloPipeline
+    MC_diagnosis: list = []
+    repeat: list = []
+
+
+class PipelineGeneric:
     def __init__(self, spec):
         self.spec = spec
         self._load_instruments()
 
     @classmethod
     def create(
-        cls, spec: spec_validation.Specification
-    ) -> typing.Union[
+        cls, spec: Pipeline
+    ) -> Union[
         "AutomaticDifferentiationPipeline", "MonteCarloPipeline", "SinglePassPipeline"
     ]:
         if spec.config.mode == "Single Pass":
@@ -65,8 +80,8 @@ class Pipeline:
             msg = f"[ERROR] Mode '{spec.config.mode}' not recognized"
             raise ValueError(msg)
 
-    def load_data(self, band: bands_validation.Band) -> None:
-        inp_path: str = band.input
+    def load_data(self, band: Band) -> None:
+        inp_path = band.input
         hdul = fits.open(inp_path)
         self.data_hdu = hdul[0]
 
@@ -84,19 +99,20 @@ class Pipeline:
         else:
             msg = f"[ERROR] Unit should be Jy/px except for NIKA maps. Input {unit}."
             raise ValueError(msg)
+        return None
 
-    def load_error(self, band: bands_validation.Band) -> None:
-        err_path: str = band.error
+    def load_error(self, band: Band) -> None:
+        err_path = band.error
         if err_path is None:
             self.err_hdu = None
         else:
             hdul = fits.open(err_path)
             self.err_hdu = hdul[0]
-        return
+        return None
 
-    def save_data(self, band: bands_validation.Band) -> None:
-        name: str = band.name
-        out_path: str = band.output
+    def save_data(self, band: Band) -> None:
+        name = band.name
+        out_path = band.output
 
         fits.writeto(
             f"{out_path}/{name}.fits",
@@ -104,22 +120,22 @@ class Pipeline:
             self.data_hdu.header,
             overwrite=True,
         )
-        return
+        return None
 
-    def save_error(self, band: bands_validation.Band, mode: str) -> None:
+    def save_error(self, band: Band, mode: str) -> None:
         name: str = band.name
         out_path: str = band.output
-
-        fits.writeto(
-            f"{out_path}/{name}_Error_{mode}.fits",
-            self.err_hdu.data,
-            self.err_hdu.header,
-            overwrite=True,
-        )
-        return
+        if self.err_hdu is not None:
+            fits.writeto(
+                f"{out_path}/{name}_Error_{mode}.fits",
+                self.err_hdu.data,
+                self.err_hdu.header,
+                overwrite=True,
+            )
+        return None
 
     def execute(self):
-        return
+        return None
 
     def _load_instruments(self) -> None:
         try:
@@ -138,43 +154,43 @@ class Pipeline:
             column = e.problem_mark.column + 1  # type: ignore
             msg = f"[ERROR] YAML parsing error at line {line}, column {column}."
             raise ValueError(msg)
-        return
+        return None
 
-    def _set_task_control(self, band) -> None:
-        return
+    def _set_task_control(self, band: Band) -> None:
+        return None
 
-    def _get_tasks_for_band(self, band) -> list:
-        all_tasks = [task for task in self.spec.pipeline]
-        tasks: list = []
-        for task in all_tasks:
-            for bands in task.parameters:
-                if bands.band == band.name or bands.band == "all":
-                    tasks.append(
-                        pipeline_validation.PipelineStepUnrolled(
-                            step=task.step,
-                            diagnosis=task.diagnosis,
-                            parameters=bands,
-                        )
-                    )
-        return tasks
+    def _get_tasks_for_band(
+        self,
+        band: Band,
+    ) -> list[PipelineStepUnrolled]:
+        return [
+            PipelineStepUnrolled(
+                step=task.step,
+                diagnosis=task.diagnosis,
+                parameters=params,
+            )
+            for task in self.spec.pipeline
+            for params in task.parameters
+            if params.band in {band.name, "all"}
+        ]
 
 
-class AutomaticDifferentiationPipeline(Pipeline):
-    def __init__(self, spec: spec_validation.Specification):
+class AutomaticDifferentiationPipeline(PipelineGeneric):
+    def __init__(self, spec: Specification):
         super().__init__(spec)
         print("[INFO] Starting Automatic Differentiation Pipeline")
 
-    def _set_task_control(self, band) -> None:
+    def _set_task_control(self, band: Band) -> None:
         unrolled_tasks = self._get_tasks_for_band(band)
-        self.task_control = {
-            "mode": "Automatic Differentiation",
-            "tasks": unrolled_tasks,
-            "idx": 0,
-        }
-        return
+        self.task_control = TaskControl(
+            mode="Automatic Differentiation",
+            tasks=unrolled_tasks,
+            idx=0,
+        )
+        return None
 
     def execute(self) -> None:
-        bands: list = self.spec.data.bands
+        bands = self.spec.data.bands
         for band in bands:
             self.load_data(band)
             self.load_error(band)
@@ -186,8 +202,8 @@ class AutomaticDifferentiationPipeline(Pipeline):
                     data=jnp.full_like(self.data_hdu.data, std_data),
                 )[0]
 
-            for idx, task in enumerate(self.task_control["tasks"]):
-                self.task_control["idx"] = idx
+            for idx, task in enumerate(self.task_control.tasks):
+                self.task_control.idx = idx
                 self.data_hdu, self.err_hdu = Interface[task.step](
                     task_control=self.task_control,
                     data_hdu=self.data_hdu,
@@ -200,34 +216,34 @@ class AutomaticDifferentiationPipeline(Pipeline):
 
             self.save_error(band, "AD")
 
-        return
+        return None
 
 
-class SinglePassPipeline(Pipeline):
-    def __init__(self, spec: spec_validation.Specification):
+class SinglePassPipeline(PipelineGeneric):
+    def __init__(self, spec: Specification):
         super().__init__(spec)
         print("[INFO] Starting Single Pass Pipeline")
 
-    def _set_task_control(self, band) -> None:
+    def _set_task_control(self, band: Band) -> None:
         unrolled_tasks = self._get_tasks_for_band(band)
-
-        self.task_control = {
-            "mode": "Single Pass",
-            "tasks": unrolled_tasks,
-        }
-        return
+        self.task_control = TaskControl(
+            idx=0,
+            mode="Single Pass",
+            tasks=unrolled_tasks,
+        )
+        return None
 
     def execute(self) -> None:
-        bands: list = self.spec.data.bands
+        bands = self.spec.data.bands
         for band in bands:
             self.load_data(band)
-            self.err_hdu = None
             self._set_task_control(band)
-            for idx, task in enumerate(self.task_control["tasks"]):
-                self.data_hdu, self.err_hdu = Interface[task.step](
+
+            for idx, task in enumerate(self.task_control.tasks):
+                self.data_hdu, _ = Interface[task.step](
                     task_control=self.task_control,
                     data_hdu=self.data_hdu,
-                    err_hdu=self.err_hdu,
+                    err_hdu=None,
                     data=self.spec.data,
                     task=task,
                     band=band,
@@ -235,15 +251,15 @@ class SinglePassPipeline(Pipeline):
                 ).run()
 
             self.save_data(band)
-        return
+        return None
 
 
-class MonteCarloPipeline(Pipeline):
-    def __init__(self, spec: spec_validation.Specification):
+class MonteCarloPipeline(PipelineGeneric):
+    def __init__(self, spec: Specification):
         super().__init__(spec)
         print("[INFO] Starting Monte-Carlo Pipeline")
 
-    def _set_task_control(self, band) -> None:
+    def _set_task_control(self, band: Band) -> None:
         niter: int = self.spec.config.niter
         MC_diagnosis: list = []
         repeat: list = []
@@ -264,14 +280,14 @@ class MonteCarloPipeline(Pipeline):
                 + [True] * len(self.spec.pipeline)
             )
 
-        self.task_control = {
-            "mode": "Monte-Carlo",
-            "tasks": tasks,
-            "repeat": repeat,
-            "MC_diagnosis": MC_diagnosis,
-            "idx": 0,
-        }
-        return
+        self.task_control = TaskControl(
+            mode="Monte-Carlo",
+            tasks=tasks,
+            repeat=repeat,
+            MC_diagnosis=MC_diagnosis,
+            idx=0,
+        )
+        return None
 
     def execute(self) -> None:
         key = jax.random.key(638)
@@ -292,11 +308,11 @@ class MonteCarloPipeline(Pipeline):
                     data=jnp.full_like(self.data_hdu.data, std_data),
                 )
 
-            for idx, task in enumerate(self.task_control["tasks"]):
-                self.task_control["idx"] = idx
+            for idx, task in enumerate(self.task_control.tasks):
+                self.task_control.idx = idx
                 if (
-                    self.task_control["repeat"][idx] == 1
-                    or self.task_control["repeat"][idx] == 2
+                    self.task_control.repeat[idx] == 1
+                    or self.task_control.repeat[idx] == 2
                 ):
                     key, subkey = jax.random.split(key)
 
@@ -324,8 +340,8 @@ class MonteCarloPipeline(Pipeline):
                 ).run()
 
                 if (
-                    self.task_control["repeat"][idx] == -1
-                    or self.task_control["repeat"][idx] == 2
+                    self.task_control.repeat[idx] == -1
+                    or self.task_control.repeat[idx] == 2
                 ):
                     # Running variance
                     print(
@@ -345,4 +361,4 @@ class MonteCarloPipeline(Pipeline):
             )
 
             self.save_error(band, "MC")
-        return
+        return None

@@ -5,10 +5,10 @@ from pydantic import BaseModel
 from pydantic import model_validator
 
 
-DUSTPEDIA_APERTURE_PHOTOMETRY = (
+DUSTPEDIA_APERTURE_PHOTOMETRY: str = (
     "/home/jtedros/Repo/pipeline/data/config/DustPedia_Aperture_Photometry_2.2.csv"
 )
-DUSTPEDIA_HYPERLEDA_HERSCHEL = (
+DUSTPEDIA_HYPERLEDA_HERSCHEL: str = (
     "/home/jtedros/Repo/pipeline/data/config/DustPedia_HyperLEDA_Herschel.csv"
 )
 
@@ -53,9 +53,9 @@ class Geometry(BaseModel):
         # The 'Geometry' fields are scattered into two separate config csv
         # files. In order to avoid opening and parsing the files when not
         # needed.
-        none_attrs: list = [key for key, value in vars(self).items() if value is None]
-        none_phot: list = [key for key in required_phot if key in none_attrs]
-        none_dist: list = [key for key in required_dist if key in none_attrs]
+        none_attrs = [key for key, value in vars(self).items() if value is None]
+        none_phot = [key for key in required_phot if key in none_attrs]
+        none_dist = [key for key in required_dist if key in none_attrs]
 
         if none_phot:
             self.parse_csv(DUSTPEDIA_APERTURE_PHOTOMETRY, none_phot, required_phot)
@@ -65,7 +65,9 @@ class Geometry(BaseModel):
 
         return self
 
-    def parse_csv(self, config_path, none_fields, required_fields):
+    def parse_csv(
+        self, config_path: str, none_fields: list[str], required_fields: dict[str, str]
+    ) -> None:
         with open(config_path, "r") as f:
             reader = csv.DictReader(f)
             for row in reader:
@@ -83,7 +85,7 @@ class Geometry(BaseModel):
                             print(msg)
                             setattr(self, key, float(row[value]))
 
-                    return
+                    return None
 
         msg = f"[ERROR] Body {self.body} not found."
         raise ValueError(msg)

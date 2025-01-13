@@ -1,4 +1,5 @@
-import typing
+from typing import Optional
+
 from util import read
 
 import jax.numpy as jnp  # noqa
@@ -15,7 +16,7 @@ class DegradeSingleton:
     _mode = None
 
     def __new__(cls, *args, **kwargs):
-        mode = kwargs["task_control"]["mode"]
+        mode = kwargs["task_control"].mode
         if cls._instance is None and (mode is None or mode != cls._mode):
             cls._instance = super().__new__(cls)
             cls._mode = mode
@@ -46,7 +47,7 @@ class Degrade(DegradeSingleton):
 
     @classmethod
     def create(cls, *args, **kwargs):
-        mode = kwargs["task_control"]["mode"]
+        mode = kwargs["task_control"].mode
         if mode == "Single Pass":
             return DegradeSinglePass(*args, **kwargs)
         elif mode == "Monte-Carlo":
@@ -59,9 +60,9 @@ class Degrade(DegradeSingleton):
 
     def run(
         self,
-    ) -> typing.Tuple[
+    ) -> tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
-        astropy.io.fits.hdu.image.PrimaryHDU,
+        Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
         self.load_kernel()
         self.kernel_hdu.data = jnp.array(self.kernel_hdu.data)
@@ -137,7 +138,7 @@ class Degrade(DegradeSingleton):
         )
 
         hdu.data *= conversion_factor
-        return
+        return None
 
     def convert_from_radiance_to_Jyperpx(self, hdu) -> None:
         pixel_size = read.pixel_size_arcsec(hdu.header)
@@ -149,7 +150,7 @@ class Degrade(DegradeSingleton):
         )
 
         hdu.data *= conversion_factor
-        return
+        return None
 
 
 class DegradeSinglePass(Degrade):
@@ -163,12 +164,11 @@ class DegradeMonteCarlo(Degrade):
 class DegradeAutomaticDifferentiation(Degrade):
     def run(
         self,
-    ) -> typing.Tuple[
+    ) -> tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
-        astropy.io.fits.hdu.image.PrimaryHDU,
+        Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
         self.load_kernel()
-        self.scale_kernel(self.err_hdu)
         self.kernel_hdu.data /= jnp.sum(self.kernel_hdu.data)
         self.convert_from_Jyperpx_to_radiance(self.err_hdu)
         self.err_hdu.data = self.convolve(self.err_hdu.data**2, self.kernel_hdu.data**2)

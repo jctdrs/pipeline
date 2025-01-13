@@ -1,4 +1,4 @@
-import typing
+from typing import Optional
 
 from util import read
 
@@ -22,7 +22,7 @@ class IntegrateSingleton:
     _mode = None
 
     def __new__(cls, *args, **kwargs):
-        mode = kwargs["task_control"]["mode"]
+        mode = kwargs["task_control"].mode
         if cls._instance is None and (mode is None or mode != cls._mode):
             cls._instance = super().__new__(cls)
             cls._mode = mode
@@ -53,7 +53,7 @@ class Integrate(IntegrateSingleton):
 
     @classmethod
     def create(cls, *args, **kwargs):
-        mode = kwargs["task_control"]["mode"]
+        mode = kwargs["task_control"].mode
         if mode == "Single Pass":
             return IntegrateSinglePass(*args, **kwargs)
         elif mode == "Monte-Carlo":
@@ -66,9 +66,9 @@ class Integrate(IntegrateSingleton):
 
     def run(
         self,
-    ) -> typing.Tuple[
+    ) -> tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
-        astropy.io.fits.hdu.image.PrimaryHDU,
+        Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
         wcs = WCS(self.data_hdu.header)
         px_size = read.pixel_size_arcsec(self.data_hdu.header)
@@ -198,7 +198,7 @@ class Integrate(IntegrateSingleton):
                 f"{self.band.output}/PHOT_{self.data.body}_{self.band.name}.png"
             )
             plt.close()
-        return
+        return None
 
 
 class IntegrateAutomaticDifferentiation(Integrate):
@@ -220,15 +220,15 @@ class IntegrateMonteCarlo(Integrate):
 
     def run(
         self,
-    ) -> typing.Tuple[
+    ) -> tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
-        astropy.io.fits.hdu.image.PrimaryHDU,
+        Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
         super().run()
         self.update(self.integrated_flux)
 
-        idx = self.task_control["idx"]
-        if self.task_control["MC_diagnosis"][idx]:
+        idx = self.task_control.idx
+        if self.task_control.MC_diagnosis[idx]:
             flux_error = np.sqrt(self.M2 / (self.count - 1))
             cal_error = self.integrated_flux * self.band.calError / 100
             print(
@@ -240,10 +240,9 @@ class IntegrateMonteCarlo(Integrate):
 class IntegrateSinglePass(Integrate):
     def run(
         self,
-    ) -> typing.Tuple[
+    ) -> tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
-        astropy.io.fits.hdu.image.PrimaryHDU,
-        typing.Union[np.ndarray, typing.Any],
+        Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
         super().run()
         super().diagnosis()

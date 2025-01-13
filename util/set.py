@@ -1,9 +1,7 @@
-import typing
-
 from astropy.io import fits
 
 
-def unit(header: fits.header.Header, elem: str) -> typing.Any:
+def unit(header: fits.header.Header, elem: str) -> None:
     keys: list = list(header.keys())
 
     if "BUNIT" in keys:
@@ -11,5 +9,7 @@ def unit(header: fits.header.Header, elem: str) -> typing.Any:
     elif "SIGUNIT" in keys:
         header["SIGUNIT"] = elem
     else:
-        print("[ERROR]\tUnable to set unit from header.")
-        exit()
+        msg = "[ERROR] Unable to set unit from header."
+        raise KeyError(msg)
+
+    return None

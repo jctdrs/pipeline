@@ -10,11 +10,11 @@ from pydantic import model_validator
 # A factory method design to return the correct validator for each step of the
 # pipeline depending on what the user needs. Each validator is unique to the
 # nature of the step.
-def factory_method(pipeline_step: str, **parameters):
-    if pipeline_step not in Interface:
+def factory_method(pipeline_step: str, **parameters) -> BaseModel:
+    pipeline_step_class = Interface.get(pipeline_step)
+    if pipeline_step_class is None:
         msg = f"[ERROR] Pipeline step {pipeline_step} not valid."
         raise ValueError(msg)
-    pipeline_step_class = Interface.get(pipeline_step)
     return pipeline_step_class(**parameters)
 
 
@@ -82,7 +82,7 @@ class HIPTest(BaseModel):
     pass
 
 
-Interface = {
+Interface: dict[str, BaseModel] = {
     "hip.degrade": HIPDegrade,
     "hip.skySubtract": HIPSkySubtract,
     "hip.regrid": HIPRegrid,

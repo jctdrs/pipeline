@@ -1,9 +1,7 @@
 import yaml
+from typing import Any
 
-# TODO: Remove typing. Go over all typing conventions and take care of python version
-import typing
-
-from setup import pipeline_validation
+from setup.pipeline_validation import Pipeline
 
 
 class DuplicateKeyError(Exception):
@@ -26,7 +24,7 @@ class Specification:
     def __init__(self, spec_path: str):
         self.spec_path = spec_path
 
-    def validate(self) -> typing.Any:
+    def validate(self) -> Any:
         # Check if specification exists
         try:
             f = open(self.spec_path, "r")
@@ -50,6 +48,6 @@ class Specification:
 
         # JSON is a super-set of YAML therefore we can use a JSON schema
         # validator to validate.
-        spec = pipeline_validation.Pipeline.model_validate(schema)
+        spec = Pipeline.model_validate(schema)
 
         return spec

@@ -1,8 +1,8 @@
 from typing_extensions import Optional
 from typing_extensions import List
 
-from setup import config_validation
-from setup import data_validation
+from setup.config_validation import Config
+from setup.data_validation import Data
 from setup import parameters_validation
 
 from pydantic import BaseModel
@@ -74,6 +74,6 @@ class Pipeline(BaseModel):
         version="Default",
         description="Default",
     )
-    config: config_validation.Config
-    data: data_validation.Data
+    config: Config
+    data: Data
     pipeline: List[PipelineStep]

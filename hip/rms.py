@@ -1,4 +1,5 @@
-import typing
+from typing import Optional
+
 import copy
 
 from util import read
@@ -24,7 +25,7 @@ class RmsSingleton:
     _mode = None
 
     def __new__(cls, *args, **kwargs):
-        mode = kwargs["task_control"]["mode"]
+        mode = kwargs["task_control"].mode
         if cls._instance is None and (mode is None or mode != cls._mode):
             cls._instance = super().__new__(cls)
             cls._mode = mode
@@ -55,7 +56,7 @@ class Rms(RmsSingleton):
 
     @classmethod
     def create(cls, *args, **kwargs):
-        mode = kwargs["task_control"]["mode"]
+        mode = kwargs["task_control"].mode
         if mode == "Single Pass":
             return RmsSinglePass(*args, **kwargs)
         elif mode == "Monte-Carlo":
@@ -68,9 +69,9 @@ class Rms(RmsSingleton):
 
     def run(
         self,
-    ) -> typing.Tuple[
+    ) -> tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
-        astropy.io.fits.hdu.image.PrimaryHDU,
+        Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
         self.data_copy = copy.deepcopy(self.data_hdu.data)
 
@@ -147,7 +148,7 @@ class Rms(RmsSingleton):
             )
             plt.close()
 
-        return
+        return None
 
 
 class RmsAutomaticDifferentiation(Rms):
@@ -161,10 +162,9 @@ class RmsMonteCarlo(Rms):
 class RmsSinglePass(Rms):
     def run(
         self,
-    ) -> typing.Tuple[
+    ) -> tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
-        astropy.io.fits.hdu.image.PrimaryHDU,
-        typing.Union[np.ndarray, typing.Any],
+        Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
         super().run()
         super().diagnosis()

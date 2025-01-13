@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from pydantic import NonNegativeFloat
 from pydantic import model_validator
 
-DEFAULT_CALIBRATION_ERROR = {
+DEFAULT_CALIBRATION_ERROR: dict[str, float] = {
     "IRAC1": 10.2,
     "IRAC2": 10.2,
     "IRAC3": 10.2,
@@ -66,11 +66,11 @@ class Band(BaseModel):
     @model_validator(mode="after")
     def warning_if_calibration_error_not_defined(self):
         if self.calError is None:
+            cal_error: float = 0.0
             try:
-                cal_error: float = DEFAULT_CALIBRATION_ERROR[self.name]
+                cal_error = DEFAULT_CALIBRATION_ERROR[self.name]
                 msg = f"[WARNING] 'calError' not defined for {self.name}, assuming {cal_error}."
             except KeyError:
-                cal_error: float = 0.0
                 msg = "[WARNING] 'calError' assumed null."
 
             self.calError = cal_error
