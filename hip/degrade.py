@@ -93,7 +93,7 @@ class Degrade(DegradeSingleton):
         elif self.task.parameters.target is not None:
             input_resolution = self.instruments[self.band.name]["resolutionArcsec"]
             target_resolution = self.task.parameters.target
-            if target_resolution < input_resolution:
+            if target_resolution <= input_resolution:
                 msg = "[ERROR] Cannot degrade to lower resolution."
                 raise ValueError(msg)
 
