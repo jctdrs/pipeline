@@ -322,6 +322,8 @@ class MonteCarloPipeline(PipelineGeneric):
         for band in bands:
             count: float = 0
             mean: float = 0
+            delta: float = 0
+            delta2: float = 0
             M2: float = 0
 
             self.load_data(band)
@@ -387,5 +389,6 @@ class MonteCarloPipeline(PipelineGeneric):
                 header=self.data_hdu.header, data=(jnp.sqrt(M2 / (count - 1)))
             )
 
+            del original_data_hdu
             self.save_error(band, "MC")
         return None

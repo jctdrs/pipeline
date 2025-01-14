@@ -17,22 +17,25 @@ from regions import PixCoord, EllipsePixelRegion
 import matplotlib.pyplot as plt
 
 
-class IntegrateSingleton:
+class Integrate:
     _instance = None
     _mode = None
+    _band = None
 
     def __new__(cls, *args, **kwargs):
         mode = kwargs["task_control"].mode
-        if cls._instance is None and (mode is None or mode != cls._mode):
+        band = kwargs["band"].name
+        if (
+            cls._instance is None
+            or (mode is None or mode != cls._mode)
+            or (band is None or band != cls._band)
+        ):
             cls._instance = super().__new__(cls)
             cls._mode = mode
+            cls._band = band
+
         return cls._instance
 
-    def run(self, *args, **kwargs):
-        pass
-
-
-class Integrate(IntegrateSingleton):
     def __init__(
         self,
         task_control,
@@ -206,17 +209,16 @@ class IntegrateAutomaticDifferentiation(Integrate):
 
 
 class IntegrateMonteCarlo(Integrate):
-    mean: float = 0
-    count: float = 0
-    M2: float = 0
+    count = 0
+    mean = 0.0
+    M2 = 0.0
 
-    @classmethod
-    def update(cls, value):
-        cls.count += 1
-        delta = value - cls.mean
-        cls.mean += delta / cls.count
-        delta2 = value - cls.mean
-        cls.M2 += delta * delta2
+    def update(self, value):
+        self.count += 1
+        delta = value - self.mean
+        self.mean += delta / self.count
+        delta2 = value - self.mean
+        self.M2 += delta * delta2
 
     def run(
         self,

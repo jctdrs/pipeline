@@ -20,22 +20,24 @@ import pyregion
 import matplotlib.pyplot as plt
 
 
-class RmsSingleton:
+class Rms:
     _instance = None
     _mode = None
+    _band = None
 
     def __new__(cls, *args, **kwargs):
         mode = kwargs["task_control"].mode
-        if cls._instance is None and (mode is None or mode != cls._mode):
+        band = kwargs["band"].name
+        if (
+            cls._instance is None
+            or (mode is None or mode != cls._mode)
+            or (band is None or band != cls._band)
+        ):
             cls._instance = super().__new__(cls)
             cls._mode = mode
+            cls._band = band
         return cls._instance
 
-    def run(self, *args, **kwargs):
-        pass
-
-
-class Rms(RmsSingleton):
     def __init__(
         self,
         task_control,
