@@ -75,5 +75,5 @@ class Pipeline(BaseModel):
     )
     config: Config
     data: Data
-    before: Optional[list[PipelineStep]]
+    before: Optional[list[PipelineStep]] = []
     pipeline: list[PipelineStep]
