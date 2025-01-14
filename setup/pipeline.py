@@ -25,6 +25,9 @@ from util import read
 
 from astropy.io import fits
 from astropy.stats import mad_std
+from astropy.wcs import WCS
+
+from reproject import reproject_interp
 
 import jax
 import jax.numpy as jnp
@@ -109,6 +112,21 @@ class PipelineGeneric:
         else:
             hdul = fits.open(err_path)
             self.err_hdu = hdul[0]
+
+        unit = read.unit(self.data_hdu.header)
+        if "mJy/beam" in unit and "NIKA2" in band.name:
+            beam_deg = read.BMAJ(self.err_hdu.header)
+            px_size_deg = read.pixel_size_arcsec(self.err_hdu.header) / 3600
+
+            conversion_factor = (
+                px_size_deg**2 / (jnp.pi * beam_deg**2 / (4 * 0.693))
+            ) * 1e-3
+            self.err_hdu.data *= conversion_factor
+        elif "Jy/px" in unit or "Jy/pix" in unit:
+            pass
+        else:
+            msg = f"[ERROR] Unit should be Jy/px except for NIKA maps. Input {unit}."
+            raise ValueError(msg)
         return None
 
     def save_data(self, band: Band) -> None:
@@ -328,6 +346,11 @@ class MonteCarloPipeline(PipelineGeneric):
 
             self.load_data(band)
             self.load_error(band)
+            self.err_hdu.data, _ = reproject_interp(
+                self.err_hdu,
+                WCS(self.data_hdu.header),
+                shape_out=self.data_hdu.data.shape,
+            )
             self._set_task_control(band)
 
             if self.err_hdu is None:
