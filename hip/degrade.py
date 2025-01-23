@@ -68,6 +68,7 @@ class Degrade:
     ]:
         self.load_kernel()
         self.kernel_hdu.data = jnp.array(self.kernel_hdu.data)
+        self.kernel_hdu.data /= jnp.sum(self.kernel_hdu.data)
         self.convert_from_Jyperpx_to_radiance(self.data_hdu)
         self.data_hdu.data = self.convolve(self.data_hdu.data, self.kernel_hdu.data)
         self.convert_from_radiance_to_Jyperpx(self.data_hdu)
@@ -119,7 +120,7 @@ class Degrade:
             data,
             kernel,
             nan_treatment="interpolate",
-            normalize_kernel=True,
+            normalize_kernel=False,
             preserve_nan=True,
             fft_pad=True,
             boundary="fill",
