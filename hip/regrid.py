@@ -11,6 +11,8 @@ from reproject import reproject_interp
 
 from util import read
 
+import matplotlib.pyplot as plt  # noqa
+
 
 class Regrid:
     _instance = None
@@ -128,10 +130,10 @@ class RegridAutomaticDifferentiation(Regrid):
         W_orig,
     ):
         # Floor and ceil values to find the 4 nearest neighbors
-        x0 = jnp.floor(old_x).astype(int)
-        x1 = x0 + 1
-        y0 = jnp.floor(old_y).astype(int)
-        y1 = y0 + 1
+        x0 = jnp.floor(old_x)
+        x1 = x0.astype(int) + 1
+        y0 = jnp.floor(old_y)
+        y1 = y0.astype(int) + 1
 
         # Clip indices to ensure they are within bounds
         x0 = jnp.clip(x0, 0, W_orig - 1)
@@ -158,7 +160,7 @@ class RegridAutomaticDifferentiation(Regrid):
                 [old_y, old_x, y1, x1],
             ]
         )
-        contributions = jnp.array([w00, w10, w01, w11])
+        contributions = jnp.array([w00, w10, w01, w11], dtype=jnp.float64)
 
         return indices, contributions
 
@@ -189,31 +191,39 @@ class RegridAutomaticDifferentiation(Regrid):
             self.compute_contributions_for_pixel,
             in_axes=(0, 0, None, None),
         )
+
         indices, contributions = vmap_fun(
             old_x.flatten(),
             old_y.flatten(),
             H_orig,
             W_orig,
         )
-        contributions /= jnp.sum(contributions, axis=1, keepdims=True)
+
         old_y = indices[:, :, 0]
         old_x = indices[:, :, 1]
 
         old_y = jnp.floor(old_y).astype(int)
         old_x = jnp.floor(old_x).astype(int)
+
         old_y = jnp.clip(old_y, 0, self.err_hdu.data.shape[0] - 1)
         old_x = jnp.clip(old_x, 0, self.err_hdu.data.shape[1] - 1)
 
         self.convert_from_Jyperpx_to_radiance(self.err_hdu)
         old_errors = self.err_hdu.data[old_y, old_x]
 
-        weighted_contributions = jnp.array(old_errors) ** 2 * contributions**2
-        propagated_contributions = jnp.sum(weighted_contributions, axis=1)
-        propagated_contributions = propagated_contributions.reshape(target_shape)
-        self.err_hdu.data = propagated_contributions
-        self.err_hdu.header.update(target_wcs.to_header())
+        sum_contributions = jnp.sum(contributions, axis=1, keepdims=True)
+        contributions = contributions / sum_contributions
+        print(jnp.sum(contributions, axis=1))
+        plt.plot(jnp.sum(contributions, axis=1))
+        plt.show()
 
-        self.err_hdu.data = jnp.sqrt(self.err_hdu.data)
+        weighted_contributions = jnp.square(old_errors) * jnp.square(contributions)
+
+        self.err_hdu.data = jnp.sqrt(
+            jnp.sum(weighted_contributions, axis=1).reshape(target_shape)
+        )
+
+        self.err_hdu.header.update(target_wcs.to_header())
         self.convert_from_radiance_to_Jyperpx(self.err_hdu)
 
         return self.data_hdu, self.err_hdu

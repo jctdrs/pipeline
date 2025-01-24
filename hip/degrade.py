@@ -175,7 +175,9 @@ class DegradeAutomaticDifferentiation(Degrade):
         self.load_kernel()
         self.kernel_hdu.data /= jnp.sum(self.kernel_hdu.data)
         self.convert_from_Jyperpx_to_radiance(self.err_hdu)
-        self.err_hdu.data = self.convolve(self.err_hdu.data**2, self.kernel_hdu.data**2)
+        self.err_hdu.data = self.convolve(
+            jnp.square(jnp.array(self.err_hdu.data)), jnp.square(self.kernel_hdu.data)
+        )
 
         self.err_hdu.data = jnp.sqrt(self.err_hdu.data)
         self.convert_from_radiance_to_Jyperpx(self.err_hdu)
