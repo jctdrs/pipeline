@@ -29,8 +29,7 @@ from astropy.wcs import WCS
 
 from reproject import reproject_interp
 
-import jax
-import jax.numpy as jnp
+import numpy as np
 
 
 INSTRUMENTS_CONFIG: str = "/home/jtedros/Repo/pipeline/data/config/instruments.yml"
@@ -95,7 +94,7 @@ class PipelineGeneric:
             px_size_deg = read.pixel_size_arcsec(self.data_hdu.header) / 3600
 
             conversion_factor = (
-                px_size_deg**2 / (jnp.pi * beam_deg**2 / (4 * 0.693))
+                px_size_deg**2 / (np.pi * beam_deg**2 / (4 * 0.693))
             ) * 1e-3
             self.data_hdu.data *= conversion_factor
         elif "Jy/px" in unit or "Jy/pix" in unit:
@@ -119,7 +118,7 @@ class PipelineGeneric:
             px_size_deg = read.pixel_size_arcsec(self.err_hdu.header) / 3600
 
             conversion_factor = (
-                px_size_deg**2 / (jnp.pi * beam_deg**2 / (4 * 0.693))
+                px_size_deg**2 / (np.pi * beam_deg**2 / (4 * 0.693))
             ) * 1e-3
             self.err_hdu.data *= conversion_factor
         elif "Jy/px" in unit or "Jy/pix" in unit:
@@ -231,7 +230,7 @@ class AutomaticDifferentiationPipeline(PipelineGeneric):
                 std_data = mad_std(self.data_hdu.data, ignore_nan=True)
                 self.err_hdu = fits.PrimaryHDU(
                     header=fits.Header(),
-                    data=jnp.full_like(self.data_hdu.data, std_data),
+                    data=np.full_like(self.data_hdu.data, std_data),
                 )[0]
 
             for idx, task in enumerate(self.task_control.tasks):
@@ -334,7 +333,6 @@ class MonteCarloPipeline(PipelineGeneric):
         return None
 
     def execute(self) -> None:
-        key = jax.random.key(638)
         bands: list = self.spec.data.bands
 
         for band in bands:
@@ -357,7 +355,7 @@ class MonteCarloPipeline(PipelineGeneric):
                 std_data = mad_std(self.data_hdu.data, ignore_nan=True)
                 self.err_hdu = fits.PrimaryHDU(
                     header=fits.Header(),
-                    data=jnp.full_like(self.data_hdu.data, std_data),
+                    data=np.full_like(self.data_hdu.data, std_data),
                 )
 
             for idx, task in enumerate(self.task_control.tasks):
@@ -366,17 +364,15 @@ class MonteCarloPipeline(PipelineGeneric):
                     self.task_control.repeat[idx] == 1
                     or self.task_control.repeat[idx] == 2
                 ):
-                    key, subkey = jax.random.split(key)
-
                     if "original_data_hdu" not in locals():
                         original_data_hdu = self.data_hdu
                         original_err_hdu = self.err_hdu
 
                     self.data_hdu = fits.PrimaryHDU(
                         header=original_data_hdu.header,
-                        data=jnp.array(original_data_hdu.data)
-                        + jnp.array(original_err_hdu.data)
-                        * jax.random.normal(subkey, original_err_hdu.data.shape),
+                        data=np.array(original_data_hdu.data)
+                        + np.array(original_err_hdu.data)
+                        * np.random.normal(size=original_err_hdu.data.shape),
                     )
 
                     self.err_hdu = copy.copy(original_err_hdu)
@@ -409,7 +405,7 @@ class MonteCarloPipeline(PipelineGeneric):
 
             # Standard deviation
             self.err_hdu = fits.PrimaryHDU(
-                header=self.data_hdu.header, data=(jnp.sqrt(M2 / (count - 1)))
+                header=self.data_hdu.header, data=(np.sqrt(M2 / (count - 1)))
             )
 
             del original_data_hdu

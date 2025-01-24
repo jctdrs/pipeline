@@ -6,7 +6,7 @@ from astropy.wcs import WCS
 import astropy.units as au
 import astropy
 
-import numpy as jnp
+import numpy as np
 
 import pyregion
 
@@ -97,8 +97,8 @@ class ForegroundMask:
 
             # Iterate over the points and apply the mask
             for i in range(len(fgs_pos_px)):
-                x = jnp.ceil(fgs_pos_px[i][0]).astype(int)
-                y = jnp.ceil(fgs_pos_px[i][1]).astype(int)
+                x = np.ceil(fgs_pos_px[i][0]).astype(int)
+                y = np.ceil(fgs_pos_px[i][1]).astype(int)
 
                 # Check if the pixel is within bounds and not part of the galaxy region
                 if (
@@ -107,7 +107,7 @@ class ForegroundMask:
                     and not mask_gal_reg[y, x]
                 ):
                     # Create the circular mask region
-                    r_circle = int(jnp.ceil(r_mask / px_size))
+                    r_circle = int(np.ceil(r_mask / px_size))
                     region = f"""
                         image
                         circle({fgs_pos_px[i][0]},{fgs_pos_px[i][1]},{r_circle})
@@ -116,7 +116,7 @@ class ForegroundMask:
                     mask_fgs_reg = r.get_mask(hdu=self.data_hdu)
 
                     # Apply the mask by setting the corresponding pixels to NaN
-                    self.data_hdu.data[mask_fgs_reg] = jnp.nan
+                    self.data_hdu.data[mask_fgs_reg] = np.nan
 
         return self.data_hdu, self.err_hdu
 
@@ -146,10 +146,10 @@ class ForegroundMask:
 
             fgs_sources = fgs_table[0]
             fgs_RA, fgs_DEC = (
-                jnp.asarray(fgs_sources["RAJ2000"]),
-                jnp.asarray(fgs_sources["DEJ2000"]),
+                np.asarray(fgs_sources["RAJ2000"]),
+                np.asarray(fgs_sources["DEJ2000"]),
             )
-            fgs = jnp.vstack([fgs_RA, fgs_DEC]).T
+            fgs = np.vstack([fgs_RA, fgs_DEC]).T
 
             fgs_unique = [tuple(elem) for elem in fgs if tuple(elem) not in fgs_set]
 
@@ -157,11 +157,11 @@ class ForegroundMask:
             for elem in fgs_unique:
                 fgs_set.add(elem)
 
-            fgs_list.append(jnp.array(fgs_unique))
+            fgs_list.append(np.array(fgs_unique))
 
         return fgs_list, rad_fac
 
-    def get_mask_source(self) -> jnp.ndarray:
+    def get_mask_source(self) -> np.ndarray:
         px_size = read.pixel_size_arcsec(self.data_hdu.header)
 
         wcs = WCS(self.data_hdu.header)
@@ -172,8 +172,8 @@ class ForegroundMask:
         rma_ = self.data.geometry.semiMajorAxis / 2
         rmi_ = rma_ / self.data.geometry.axialRatio
 
-        rma = int(jnp.ceil(rma_ / px_size))
-        rmi = int(jnp.ceil(rmi_ / px_size))
+        rma = int(np.ceil(rma_ / px_size))
+        rmi = int(np.ceil(rmi_ / px_size))
 
         region = """
                 image

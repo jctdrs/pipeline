@@ -6,7 +6,7 @@ from astropy.wcs import WCS
 
 from photutils import background
 
-import jax.numpy as jnp
+import numpy as np
 
 import pyregion
 
@@ -79,18 +79,18 @@ class SkySubtract:
 
         pixel_size = read.pixel_size_arcsec(self.data_hdu.header)
         xsize, ysize = read.shape(self.data_hdu.header)
-        lcell_px = jnp.ceil(
+        lcell_px = np.ceil(
             self.task.parameters.cellSize
             * self.instruments[self.band.name]["resolutionArcsec"]
             / pixel_size
         )
-        ncells1 = int(jnp.ceil(xsize / lcell_px))
-        ncells2 = int(jnp.ceil(ysize / lcell_px))
+        ncells1 = int(np.ceil(xsize / lcell_px))
+        ncells2 = int(np.ceil(ysize / lcell_px))
 
         wcs = WCS(self.data_hdu.header)
         pos = wcs.all_world2pix(self.data.geometry.ra, self.data.geometry.dec, 0)
-        rma = jnp.ceil(self.data.geometry.semiMajorAxis / 2 / pixel_size)
-        rmi = jnp.ceil(
+        rma = np.ceil(self.data.geometry.semiMajorAxis / 2 / pixel_size)
+        rmi = np.ceil(
             self.data.geometry.semiMajorAxis
             / 2
             / self.data.geometry.axialRatio
@@ -127,17 +127,17 @@ class SkySubtract:
         )
 
         self.data_hdu.data = self.data_hdu.data - self.bkg.background
-        self.data_hdu.data[self.data_hdu_invalid.mask] = jnp.nan
+        self.data_hdu.data[self.data_hdu_invalid.mask] = np.nan
 
         return self.data_hdu, self.err_hdu
 
     def diagnosis(self) -> None:
         if self.task.diagnosis:
             mask_bkg = copy.copy(self.bkg.background)
-            mask_bkg[self.data_hdu_invalid.mask] = jnp.nan
+            mask_bkg[self.data_hdu_invalid.mask] = np.nan
 
             sourcemask = copy.deepcopy(mask_bkg)
-            sourcemask[self.bkg_mask] = jnp.nan
+            sourcemask[self.bkg_mask] = np.nan
 
             plt.imshow(mask_bkg, origin="lower")
             plt.title(f"{self.data.body} {self.band.name} background map")

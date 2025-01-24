@@ -1,7 +1,6 @@
 from typing import Optional
 
-import jax
-import jax.numpy as jnp
+import numpy as np
 
 import astropy
 from astropy.wcs import WCS
@@ -10,8 +9,6 @@ from astropy.io import fits
 from reproject import reproject_interp
 
 from util import read
-
-import matplotlib.pyplot as plt  # noqa
 
 
 class Regrid:
@@ -84,8 +81,8 @@ class Regrid:
 
     def convert_from_Jyperpx_to_radiance(self, hdu) -> None:
         pixel_size = read.pixel_size_arcsec(hdu.header)
-        px_x: float = pixel_size * 2 * jnp.pi / 360
-        px_y: float = pixel_size * 2 * jnp.pi / 360
+        px_x: float = pixel_size * 2 * np.pi / 360
+        px_y: float = pixel_size * 2 * np.pi / 360
 
         # divide by 3.846x10^26 (Lsun in Watt) to convert W/Hz/m2/sr in
         # Lsun/Hz/m2/sr multiply by the galaxy distance in m2 to get Lsun/Hz/sr
@@ -93,7 +90,7 @@ class Regrid:
             1e-26
             * pow((self.data.geometry.distance * 3.086e22), 2)
             * 4
-            * jnp.pi
+            * np.pi
             / (px_x * px_y * 3.846e26)
         )
 
@@ -102,11 +99,11 @@ class Regrid:
 
     def convert_from_radiance_to_Jyperpx(self, hdu) -> None:
         pixel_size = read.pixel_size_arcsec(hdu.header)
-        px_x: float = pixel_size * 2 * jnp.pi / 360
-        px_y: float = pixel_size * 2 * jnp.pi / 360
+        px_x: float = pixel_size * 2 * np.pi / 360
+        px_y: float = pixel_size * 2 * np.pi / 360
 
         conversion_factor = (px_x * px_y * 3.846e26) / (
-            1e-26 * pow((self.data.geometry.distance * 3.086e22), 2) * 4 * jnp.pi
+            1e-26 * pow((self.data.geometry.distance * 3.086e22), 2) * 4 * np.pi
         )
 
         hdu.data *= conversion_factor
@@ -130,16 +127,16 @@ class RegridAutomaticDifferentiation(Regrid):
         W_orig,
     ):
         # Floor and ceil values to find the 4 nearest neighbors
-        x0 = jnp.floor(old_x)
+        x0 = np.floor(old_x)
         x1 = x0.astype(int) + 1
-        y0 = jnp.floor(old_y)
+        y0 = np.floor(old_y)
         y1 = y0.astype(int) + 1
 
         # Clip indices to ensure they are within bounds
-        x0 = jnp.clip(x0, 0, W_orig - 1)
-        x1 = jnp.clip(x1, 0, W_orig - 1)
-        y0 = jnp.clip(y0, 0, H_orig - 1)
-        y1 = jnp.clip(y1, 0, H_orig - 1)
+        x0 = np.clip(x0, 0, W_orig - 1)
+        x1 = np.clip(x1, 0, W_orig - 1)
+        y0 = np.clip(y0, 0, H_orig - 1)
+        y1 = np.clip(y1, 0, H_orig - 1)
 
         # Calculate distances for weights
         dx = old_x - x0
@@ -152,7 +149,7 @@ class RegridAutomaticDifferentiation(Regrid):
         w11 = dx * dy  # Bottom-right
 
         # Collect indices and weights
-        indices = jnp.array(
+        indices = np.array(
             [
                 [old_y, old_x, y0, x0],
                 [old_y, old_x, y0, x1],
@@ -160,7 +157,7 @@ class RegridAutomaticDifferentiation(Regrid):
                 [old_y, old_x, y1, x1],
             ]
         )
-        contributions = jnp.array([w00, w10, w01, w11], dtype=jnp.float64)
+        contributions = np.array([w00, w10, w01, w11])
 
         return indices, contributions
 
@@ -181,46 +178,51 @@ class RegridAutomaticDifferentiation(Regrid):
         H_orig, W_orig = original_shape
         H_new, W_new = target_shape
 
-        new_y, new_x = jnp.meshgrid(jnp.arange(H_new), jnp.arange(W_new), indexing="ij")
+        new_y, new_x = np.meshgrid(np.arange(H_new), np.arange(W_new), indexing="ij")
 
         # Convert the target pixel coordinates (new_y, new_x) to world coordinates
         target_coords = target_wcs.pixel_to_world(new_x, new_y)
         old_x, old_y = original_wcs.world_to_pixel(target_coords)
 
-        vmap_fun = jax.vmap(
-            self.compute_contributions_for_pixel,
-            in_axes=(0, 0, None, None),
-        )
+        indices = []
+        contributions = []
 
-        indices, contributions = vmap_fun(
-            old_x.flatten(),
-            old_y.flatten(),
-            H_orig,
-            W_orig,
-        )
+        # Flatten the old_x and old_y arrays
+        flat_old_x = old_x.flatten()
+        flat_old_y = old_y.flatten()
+
+        # Iterate over flattened arrays
+        for x, y in zip(flat_old_x, flat_old_y):
+            # Compute contributions for each pixel
+            index, contribution = self.compute_contributions_for_pixel(
+                x, y, H_orig, W_orig
+            )
+            indices.append(index)
+            contributions.append(contribution)
+
+        # Convert lists to NumPy arrays
+        indices = np.array(indices)
+        contributions = np.array(contributions)
 
         old_y = indices[:, :, 0]
         old_x = indices[:, :, 1]
 
-        old_y = jnp.floor(old_y).astype(int)
-        old_x = jnp.floor(old_x).astype(int)
+        old_y = np.floor(old_y).astype(int)
+        old_x = np.floor(old_x).astype(int)
 
-        old_y = jnp.clip(old_y, 0, self.err_hdu.data.shape[0] - 1)
-        old_x = jnp.clip(old_x, 0, self.err_hdu.data.shape[1] - 1)
+        old_y = np.clip(old_y, 0, self.err_hdu.data.shape[0] - 1)
+        old_x = np.clip(old_x, 0, self.err_hdu.data.shape[1] - 1)
 
         self.convert_from_Jyperpx_to_radiance(self.err_hdu)
         old_errors = self.err_hdu.data[old_y, old_x]
 
-        sum_contributions = jnp.sum(contributions, axis=1, keepdims=True)
+        sum_contributions = np.sum(contributions, axis=1, keepdims=True)
         contributions = contributions / sum_contributions
-        print(jnp.sum(contributions, axis=1))
-        plt.plot(jnp.sum(contributions, axis=1))
-        plt.show()
 
-        weighted_contributions = jnp.square(old_errors) * jnp.square(contributions)
+        weighted_contributions = np.square(old_errors) * np.square(contributions)
 
-        self.err_hdu.data = jnp.sqrt(
-            jnp.sum(weighted_contributions, axis=1).reshape(target_shape)
+        self.err_hdu.data = np.sqrt(
+            np.sum(weighted_contributions, axis=1).reshape(target_shape)
         )
 
         self.err_hdu.header.update(target_wcs.to_header())

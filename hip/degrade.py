@@ -2,7 +2,7 @@ from typing import Optional
 
 from util import read
 
-import jax.numpy as jnp
+import numpy as np
 
 import astropy
 from astropy.convolution import convolve_fft
@@ -67,8 +67,8 @@ class Degrade:
         Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
         self.load_kernel()
-        self.kernel_hdu.data = jnp.array(self.kernel_hdu.data)
-        self.kernel_hdu.data /= jnp.sum(self.kernel_hdu.data)
+        self.kernel_hdu.data = np.array(self.kernel_hdu.data)
+        self.kernel_hdu.data /= np.sum(self.kernel_hdu.data)
         self.convert_from_Jyperpx_to_radiance(self.data_hdu)
         self.data_hdu.data = self.convolve(self.data_hdu.data, self.kernel_hdu.data)
         self.convert_from_radiance_to_Jyperpx(self.data_hdu)
@@ -102,8 +102,8 @@ class Degrade:
                 raise ValueError(msg)
 
             match_std = (target_resolution**2 - input_resolution**2) ** 0.5
-            r_trim = jnp.sqrt(2 * match_std**2 * jnp.log(1 / (1 - 0.999)))
-            grid_size = int(jnp.ceil(2 * r_trim)) | 1
+            r_trim = np.sqrt(2 * match_std**2 * np.log(1 / (1 - 0.999)))
+            grid_size = int(np.ceil(2 * r_trim)) | 1
 
             kernel = Gaussian2DKernel(
                 match_std,
@@ -115,7 +115,7 @@ class Degrade:
 
         return None
 
-    def convolve(self, data: jnp.ndarray, kernel: jnp.ndarray) -> jnp.ndarray:
+    def convolve(self, data: np.ndarray, kernel: np.ndarray) -> np.ndarray:
         return convolve_fft(
             data,
             kernel,
@@ -130,14 +130,14 @@ class Degrade:
 
     def convert_from_Jyperpx_to_radiance(self, hdu) -> None:
         pixel_size = read.pixel_size_arcsec(hdu.header)
-        px_x: float = pixel_size * 2 * jnp.pi / 360
-        px_y: float = pixel_size * 2 * jnp.pi / 360
+        px_x: float = pixel_size * 2 * np.pi / 360
+        px_y: float = pixel_size * 2 * np.pi / 360
 
         conversion_factor = (
             1e-26
             * pow((self.data.geometry.distance * 3.086e22), 2)
             * 4
-            * jnp.pi
+            * np.pi
             / (px_x * px_y * 3.846e26)
         )
 
@@ -146,11 +146,11 @@ class Degrade:
 
     def convert_from_radiance_to_Jyperpx(self, hdu) -> None:
         pixel_size = read.pixel_size_arcsec(hdu.header)
-        px_x: float = pixel_size * 2 * jnp.pi / 360
-        px_y: float = pixel_size * 2 * jnp.pi / 360
+        px_x: float = pixel_size * 2 * np.pi / 360
+        px_y: float = pixel_size * 2 * np.pi / 360
 
         conversion_factor = (px_x * px_y * 3.846e26) / (
-            1e-26 * pow((self.data.geometry.distance * 3.086e22), 2) * 4 * jnp.pi
+            1e-26 * pow((self.data.geometry.distance * 3.086e22), 2) * 4 * np.pi
         )
 
         hdu.data *= conversion_factor
@@ -173,13 +173,13 @@ class DegradeAutomaticDifferentiation(Degrade):
         Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
         self.load_kernel()
-        self.kernel_hdu.data /= jnp.sum(self.kernel_hdu.data)
+        self.kernel_hdu.data /= np.sum(self.kernel_hdu.data)
         self.convert_from_Jyperpx_to_radiance(self.err_hdu)
         self.err_hdu.data = self.convolve(
-            jnp.square(jnp.array(self.err_hdu.data)), jnp.square(self.kernel_hdu.data)
+            np.square(np.array(self.err_hdu.data)), np.square(self.kernel_hdu.data)
         )
 
-        self.err_hdu.data = jnp.sqrt(self.err_hdu.data)
+        self.err_hdu.data = np.sqrt(self.err_hdu.data)
         self.convert_from_radiance_to_Jyperpx(self.err_hdu)
 
         return self.data_hdu, self.err_hdu

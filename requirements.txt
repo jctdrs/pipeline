@@ -1,6 +1,4 @@
 astropy==6.1.0
-jax==0.4.29
-jaxlib==0.4.29
 matplotlib==3.8.4
 numpy==1.26.4
 photutils==1.12.0
