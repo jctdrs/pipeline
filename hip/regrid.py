@@ -170,61 +170,53 @@ class RegridAutomaticDifferentiation(Regrid):
         original_shape = self.err_hdu.data.shape
         with fits.open(self.task.parameters.target) as hdul:
             hdr_target = hdul[0].header
-            target_shape = hdul[0].data.shape
 
         original_wcs = WCS(self.err_hdu.header)
         target_wcs = WCS(hdr_target)
 
-        H_orig, W_orig = original_shape
-        H_new, W_new = target_shape
+        # Create a meshgrid of target pixel indices (from (0, 0) to (W_target, H_target))
+        H_target, W_target = target_wcs.pixel_shape
+        target_x, target_y = np.meshgrid(np.arange(W_target), np.arange(H_target))
 
-        new_y, new_x = np.meshgrid(np.arange(H_new), np.arange(W_new), indexing="ij")
+        # Convert target pixel coordinates to world coordinates
+        target_coords = target_wcs.pixel_to_world(target_x, target_y)
 
-        # Convert the target pixel coordinates (new_y, new_x) to world coordinates
-        target_coords = target_wcs.pixel_to_world(new_x, new_y)
-        old_x, old_y = original_wcs.world_to_pixel(target_coords)
+        # Convert the adjusted target coordinates back to world coordinates in the input WCS
+        input_coords = original_wcs.world_to_pixel(target_coords)
 
-        indices = []
-        contributions = []
+        # To propagate the error matrix properly, we need to consider the interpolation weights
+        # Perform the same bilinear interpolation on the error matrix as done for the image
+        # Calculate the weights based on bilinear interpolation for the target pixels
+        x0 = np.floor(input_coords[0])
+        x1 = x0 + 1
+        y0 = np.floor(input_coords[1])
+        y1 = y0 + 1
 
-        # Flatten the old_x and old_y arrays
-        flat_old_x = old_x.flatten()
-        flat_old_y = old_y.flatten()
+        # Clip indices to avoid out-of-bounds errors
+        x0 = np.clip(x0, 0, original_shape[1] - 1)
+        x1 = np.clip(x1, 0, original_shape[1] - 1)
+        y0 = np.clip(y0, 0, original_shape[0] - 1)
+        y1 = np.clip(y1, 0, original_shape[0] - 1)
 
-        # Iterate over flattened arrays
-        for x, y in zip(flat_old_x, flat_old_y):
-            # Compute contributions for each pixel
-            index, contribution = self.compute_contributions_for_pixel(
-                x, y, H_orig, W_orig
-            )
-            indices.append(index)
-            contributions.append(contribution)
+        # Compute the weight for each pixel (based on distance to neighbors)
+        dx = input_coords[0] - x0
+        dy = input_coords[1] - y0
+        w00 = (1 - dx) * (1 - dy)
+        w10 = dx * (1 - dy)
+        w01 = (1 - dx) * dy
+        w11 = dx * dy
 
-        # Convert lists to NumPy arrays
-        indices = np.array(indices)
-        contributions = np.array(contributions)
-
-        old_y = indices[:, :, 0]
-        old_x = indices[:, :, 1]
-
-        old_y = np.floor(old_y).astype(int)
-        old_x = np.floor(old_x).astype(int)
-
-        old_y = np.clip(old_y, 0, self.err_hdu.data.shape[0] - 1)
-        old_x = np.clip(old_x, 0, self.err_hdu.data.shape[1] - 1)
-
-        self.convert_from_Jyperpx_to_radiance(self.err_hdu)
-        old_errors = self.err_hdu.data[old_y, old_x]
-
-        sum_contributions = np.sum(contributions, axis=1, keepdims=True)
-        contributions = contributions / sum_contributions
-
-        weighted_contributions = np.square(old_errors) * np.square(contributions)
-
-        self.err_hdu.data = np.sqrt(
-            np.sum(weighted_contributions, axis=1).reshape(target_shape)
+        self.err_hdu.data = np.square(self.err_hdu.data)
+        # Now, we propagate the error using the bilinear interpolation weights
+        propagated_error_matrix = (
+            w00 * self.err_hdu.data[y0.astype(int), x0.astype(int)]
+            + w10 * self.err_hdu.data[y0.astype(int), x1.astype(int)]
+            + w01 * self.err_hdu.data[y1.astype(int), x0.astype(int)]
+            + w11 * self.err_hdu.data[y1.astype(int), x1.astype(int)]
         )
 
+        self.err_hdu.data = np.sqrt(propagated_error_matrix)
+        self.convert_from_Jyperpx_to_radiance(self.err_hdu)
         self.err_hdu.header.update(target_wcs.to_header())
         self.convert_from_radiance_to_Jyperpx(self.err_hdu)
 
