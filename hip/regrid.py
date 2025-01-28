@@ -119,48 +119,6 @@ class RegridMonteCarlo(Regrid):
 
 
 class RegridAutomaticDifferentiation(Regrid):
-    @staticmethod
-    def compute_contributions_for_pixel(
-        old_x,
-        old_y,
-        H_orig,
-        W_orig,
-    ):
-        # Floor and ceil values to find the 4 nearest neighbors
-        x0 = np.floor(old_x)
-        x1 = x0.astype(int) + 1
-        y0 = np.floor(old_y)
-        y1 = y0.astype(int) + 1
-
-        # Clip indices to ensure they are within bounds
-        x0 = np.clip(x0, 0, W_orig - 1)
-        x1 = np.clip(x1, 0, W_orig - 1)
-        y0 = np.clip(y0, 0, H_orig - 1)
-        y1 = np.clip(y1, 0, H_orig - 1)
-
-        # Calculate distances for weights
-        dx = old_x - x0
-        dy = old_y - y0
-
-        # Contributions based on bilinear interpolation
-        w00 = (1 - dx) * (1 - dy)  # Top-left
-        w10 = dx * (1 - dy)  # Top-right
-        w01 = (1 - dx) * dy  # Bottom-left
-        w11 = dx * dy  # Bottom-right
-
-        # Collect indices and weights
-        indices = np.array(
-            [
-                [old_y, old_x, y0, x0],
-                [old_y, old_x, y0, x1],
-                [old_y, old_x, y1, x0],
-                [old_y, old_x, y1, x1],
-            ]
-        )
-        contributions = np.array([w00, w10, w01, w11])
-
-        return indices, contributions
-
     def run(
         self,
     ) -> tuple[
@@ -206,17 +164,17 @@ class RegridAutomaticDifferentiation(Regrid):
         w01 = (1 - dx) * dy
         w11 = dx * dy
 
-        self.err_hdu.data = np.square(self.err_hdu.data)
-        # Now, we propagate the error using the bilinear interpolation weights
+        self.convert_from_Jyperpx_to_radiance(self.err_hdu)
+        # TODO: This is not valid propagation after convolution because of 
+        # the pixels are more correlated
         propagated_error_matrix = (
-            w00 * self.err_hdu.data[y0.astype(int), x0.astype(int)]
-            + w10 * self.err_hdu.data[y0.astype(int), x1.astype(int)]
-            + w01 * self.err_hdu.data[y1.astype(int), x0.astype(int)]
-            + w11 * self.err_hdu.data[y1.astype(int), x1.astype(int)]
+            np.square(w00) * np.square(self.err_hdu.data[y0.astype(int), x0.astype(int)])
+            + np.square(w10) * np.square(self.err_hdu.data[y0.astype(int), x1.astype(int)])
+            + np.square(w01) * np.square(self.err_hdu.data[y1.astype(int), x0.astype(int)])
+            + np.square(w11) * np.square(self.err_hdu.data[y1.astype(int), x1.astype(int)])
         )
 
         self.err_hdu.data = np.sqrt(propagated_error_matrix)
-        self.convert_from_Jyperpx_to_radiance(self.err_hdu)
         self.err_hdu.header.update(target_wcs.to_header())
         self.convert_from_radiance_to_Jyperpx(self.err_hdu)
 

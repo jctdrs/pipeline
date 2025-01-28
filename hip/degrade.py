@@ -175,11 +175,13 @@ class DegradeAutomaticDifferentiation(Degrade):
         self.load_kernel()
         self.kernel_hdu.data /= np.sum(self.kernel_hdu.data)
         self.convert_from_Jyperpx_to_radiance(self.err_hdu)
-        self.err_hdu.data = self.convolve(
-            np.square(np.array(self.err_hdu.data)), np.square(self.kernel_hdu.data)
+
+        convolved = self.convolve(
+            data=np.square(np.array(self.err_hdu.data)),
+            kernel=np.square(self.kernel_hdu.data),
         )
 
-        self.err_hdu.data = np.sqrt(self.err_hdu.data)
+        self.err_hdu.data = np.sqrt(convolved)
         self.convert_from_radiance_to_Jyperpx(self.err_hdu)
 
         return self.data_hdu, self.err_hdu
