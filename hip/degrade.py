@@ -54,8 +54,8 @@ class Degrade:
             return DegradeSinglePass(*args, **kwargs)
         elif mode == "Monte-Carlo":
             return DegradeMonteCarlo(*args, **kwargs)
-        elif mode == "Automatic Differentiation":
-            return DegradeAutomaticDifferentiation(*args, **kwargs)
+        elif mode == "Analytic":
+            return DegradeAnalytic(*args, **kwargs)
         else:
             msg = f"[ERROR] Mode '{mode}' not recognized."
             raise ValueError(msg)
@@ -165,7 +165,7 @@ class DegradeMonteCarlo(Degrade):
     pass
 
 
-class DegradeAutomaticDifferentiation(Degrade):
+class DegradeAnalytic(Degrade):
     def run(
         self,
     ) -> tuple[

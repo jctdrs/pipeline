@@ -57,8 +57,8 @@ class ForegroundMask:
             return ForegroundMaskSinglePass(*args, **kwargs)
         elif mode == "Monte-Carlo":
             return ForegroundMaskMonteCarlo(*args, **kwargs)
-        elif mode == "Automatic Differentiation":
-            return ForegroundMaskAutomaticDifferentiation(*args, **kwargs)
+        elif mode == "Analytic":
+            return ForegroundMaskAnalytic(*args, **kwargs)
         else:
             msg = f"[ERROR] Mode '{mode}' not recognized."
             raise ValueError(msg)
@@ -199,5 +199,5 @@ class ForegroundMaskMonteCarlo(ForegroundMask):
     pass
 
 
-class ForegroundMaskAutomaticDifferentiation(ForegroundMask):
+class ForegroundMaskAnalytic(ForegroundMask):
     pass

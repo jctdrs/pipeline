@@ -4,13 +4,15 @@ from typing import Optional
 from pydantic import BaseModel
 from pydantic import model_validator
 
-
+#TODO: Check paths
 DUSTPEDIA_APERTURE_PHOTOMETRY: str = (
     "/home/jtedros/Repo/pipeline/data/config/DustPedia_Aperture_Photometry_2.2.csv"
 )
 DUSTPEDIA_HYPERLEDA_HERSCHEL: str = (
     "/home/jtedros/Repo/pipeline/data/config/DustPedia_HyperLEDA_Herschel.csv"
 )
+
+# TODO: Need to be positive floats
 
 
 class Geometry(BaseModel):

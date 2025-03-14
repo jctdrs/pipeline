@@ -65,15 +65,13 @@ class PipelineGeneric:
     @classmethod
     def create(
         cls, spec: Pipeline
-    ) -> Union[
-        "AutomaticDifferentiationPipeline", "MonteCarloPipeline", "SinglePassPipeline"
-    ]:
+    ) -> Union["AnalyticPipeline", "MonteCarloPipeline", "SinglePassPipeline"]:
         if spec.config.mode == "Single Pass":
             return SinglePassPipeline(spec)
 
-        elif spec.config.mode == "Automatic Differentiation":
+        elif spec.config.mode == "Analytic":
             SinglePassPipeline(spec).execute()
-            return AutomaticDifferentiationPipeline(spec)
+            return AnalyticPipeline(spec)
 
         elif spec.config.mode == "Monte-Carlo":
             SinglePassPipeline(spec).execute()
@@ -205,16 +203,16 @@ class PipelineGeneric:
         ]
 
 
-class AutomaticDifferentiationPipeline(PipelineGeneric):
+class AnalyticPipeline(PipelineGeneric):
     def __init__(self, spec: Specification):
         super().__init__(spec)
-        print("[INFO] Starting Automatic Differentiation Pipeline")
+        print("[INFO] Starting Analytic Pipeline")
 
     def _set_task_control(self, band: Band) -> None:
         unrolled_before_tasks = self._get_before_tasks_for_band(band)
         unrolled_pipeline_tasks = self._get_pipeline_tasks_for_band(band)
         self.task_control = TaskControl(
-            mode="Automatic Differentiation",
+            mode="Analytic",
             tasks=unrolled_before_tasks + unrolled_pipeline_tasks,
             idx=0,
         )

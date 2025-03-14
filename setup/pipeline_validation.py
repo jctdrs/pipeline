@@ -7,6 +7,7 @@ from setup import parameters_validation
 from pydantic import BaseModel
 from pydantic import model_validator
 
+#TODO: step should be Literal
 
 # When building the pipeline for each band, we need to parse the parameters
 # for each band name. This is exactly as PipelineStep but with the parameters
@@ -59,8 +60,6 @@ class Meta(BaseModel):
     # Individual fields in 'Meta' are not mandatory. In case they are not
     # defined by the user, then they are manually filled with default values.
     name: str = "Default"
-    author: str = "Default"
-    version: str = "Default"
     description: str = "Default"
 
 

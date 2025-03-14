@@ -46,8 +46,8 @@ class Test:
             return TestSinglePass(*args, **kwargs)
         elif mode == "Monte-Carlo":
             return TestMonteCarlo(*args, **kwargs)
-        elif mode == "Automatic Differentiation":
-            return TestAutomaticDifferentiation(*args, **kwargs)
+        elif mode == "Analytic":
+            return TestAnalytic(*args, **kwargs)
         else:
             msg = f"[ERROR] Mode '{mode}' not recognized."
             raise ValueError(msg)
@@ -69,5 +69,5 @@ class TestMonteCarlo(Test):
     pass
 
 
-class TestAutomaticDifferentiation(Test):
+class TestAnalytic(Test):
     pass

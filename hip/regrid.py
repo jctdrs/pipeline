@@ -54,8 +54,8 @@ class Regrid:
             return RegridSinglePass(*args, **kwargs)
         elif mode == "Monte-Carlo":
             return RegridMonteCarlo(*args, **kwargs)
-        elif mode == "Automatic Differentiation":
-            return RegridAutomaticDifferentiation(*args, **kwargs)
+        elif mode == "Analytic":
+            return RegridAnalytic(*args, **kwargs)
         else:
             msg = f"[ERROR] Mode '{mode}' not recognized."
             raise ValueError(msg)
@@ -118,7 +118,7 @@ class RegridMonteCarlo(Regrid):
     pass
 
 
-class RegridAutomaticDifferentiation(Regrid):
+class RegridAnalytic(Regrid):
     def run(
         self,
     ) -> tuple[
@@ -165,13 +165,17 @@ class RegridAutomaticDifferentiation(Regrid):
         w11 = dx * dy
 
         self.convert_from_Jyperpx_to_radiance(self.err_hdu)
-        # TODO: This is not valid propagation after convolution because of 
+        # TODO: This is not valid propagation after convolution because of
         # the pixels are more correlated
         propagated_error_matrix = (
-            np.square(w00) * np.square(self.err_hdu.data[y0.astype(int), x0.astype(int)])
-            + np.square(w10) * np.square(self.err_hdu.data[y0.astype(int), x1.astype(int)])
-            + np.square(w01) * np.square(self.err_hdu.data[y1.astype(int), x0.astype(int)])
-            + np.square(w11) * np.square(self.err_hdu.data[y1.astype(int), x1.astype(int)])
+            np.square(w00)
+            * np.square(self.err_hdu.data[y0.astype(int), x0.astype(int)])
+            + np.square(w10)
+            * np.square(self.err_hdu.data[y0.astype(int), x1.astype(int)])
+            + np.square(w01)
+            * np.square(self.err_hdu.data[y1.astype(int), x0.astype(int)])
+            + np.square(w11)
+            * np.square(self.err_hdu.data[y1.astype(int), x1.astype(int)])
         )
 
         self.err_hdu.data = np.sqrt(propagated_error_matrix)

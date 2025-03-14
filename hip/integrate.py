@@ -61,8 +61,8 @@ class Integrate:
             return IntegrateSinglePass(*args, **kwargs)
         elif mode == "Monte-Carlo":
             return IntegrateMonteCarlo(*args, **kwargs)
-        elif mode == "Automatic Differentiation":
-            return IntegrateAutomaticDifferentiation(*args, **kwargs)
+        elif mode == "Analytic":
+            return IntegrateAnalytic(*args, **kwargs)
         else:
             msg = f"[ERROR] Mode '{mode}' not recognized."
             raise ValueError(msg)
@@ -204,7 +204,7 @@ class Integrate:
         return None
 
 
-class IntegrateAutomaticDifferentiation(Integrate):
+class IntegrateAnalytic(Integrate):
     pass
 
 

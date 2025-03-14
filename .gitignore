@@ -11,3 +11,4 @@ kernels/
 *.yml
 experiments/
 pipelines/
+data/config/dust

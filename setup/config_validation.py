@@ -6,7 +6,7 @@ from pydantic import model_validator
 
 
 class Config(BaseModel):
-    mode: Literal["Single Pass", "Monte-Carlo", "Automatic Differentiation"]
+    mode: Literal["Single Pass", "Monte-Carlo", "Analytic"]
 
     # In the case where the user does not define an 'niter' value
     # it means they only need to run the pipeline once in 'Single Pass' mode.
@@ -16,11 +16,11 @@ class Config(BaseModel):
 
     @model_validator(mode="after")
     def niter_based_on_error(self):
-        one_iter_errors = {"Single Pass", "Automatic Differentiation"}
+        one_iter_errors = {"Single Pass", "Analytic"}
         mode = self.mode
         niter = self.niter
 
-        # In case 'niter' is defined in 'Single Pass' or 'Automatic Differentiation'
+        # In case 'niter' is defined in 'Single Pass' or 'Analytic'
         if niter > 1 and mode in one_iter_errors:
             print(f"[WARNING] Ignoring 'niter' field for '{mode}' mode.")
             self.niter = 1

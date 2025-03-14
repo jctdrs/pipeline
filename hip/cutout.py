@@ -52,8 +52,8 @@ class Cutout:
             return CutoutSinglePass(*args, **kwargs)
         elif mode == "Monte-Carlo":
             return CutoutMonteCarlo(*args, **kwargs)
-        elif mode == "Automatic Differentiation":
-            return CutoutAutomaticDifferentiation(*args, **kwargs)
+        elif mode == "Analytic":
+            return CutoutAnalytic(*args, **kwargs)
         else:
             msg = f"[ERROR] Mode '{mode}' not recognized."
             raise ValueError(msg)
@@ -110,7 +110,7 @@ class CutoutMonteCarlo(Cutout):
     pass
 
 
-class CutoutAutomaticDifferentiation(Cutout):
+class CutoutAnalytic(Cutout):
     pass
 
 

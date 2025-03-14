@@ -63,8 +63,8 @@ class Rms:
             return RmsSinglePass(*args, **kwargs)
         elif mode == "Monte-Carlo":
             return RmsMonteCarlo(*args, **kwargs)
-        elif mode == "Automatic Differentiation":
-            return RmsAutomaticDifferentiation(*args, **kwargs)
+        elif mode == "Analytic":
+            return RmsAnalytic(*args, **kwargs)
         else:
             msg = f"[ERROR] Mode '{mode}' not recognized."
             raise ValueError(msg)
@@ -153,7 +153,7 @@ class Rms:
         return None
 
 
-class RmsAutomaticDifferentiation(Rms):
+class RmsAnalytic(Rms):
     pass
 
 

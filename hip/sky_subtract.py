@@ -61,8 +61,8 @@ class SkySubtract:
             return SkySubtractSinglePass(*args, **kwargs)
         elif mode == "Monte-Carlo":
             return SkySubtractMonteCarlo(*args, **kwargs)
-        elif mode == "Automatic Differentiation":
-            return SkySubtractAutomaticDifferentiation(*args, **kwargs)
+        elif mode == "Analytic":
+            return SkySubtractAnalytic(*args, **kwargs)
         else:
             msg = f"[ERROR] Mode '{mode}' not recognized."
             raise ValueError(msg)
@@ -169,7 +169,7 @@ class SkySubtractMonteCarlo(SkySubtract):
     pass
 
 
-class SkySubtractAutomaticDifferentiation(SkySubtract):
+class SkySubtractAnalytic(SkySubtract):
     pass
 
 
