@@ -80,7 +80,7 @@ class SkySubtract:
         pixel_size = read.pixel_size_arcsec(self.data_hdu.header)
         xsize, ysize = read.shape(self.data_hdu.header)
         lcell_px = np.ceil(
-            self.task.parameters.cellSize
+            self.task.parameters.cellFactor
             * self.instruments[self.band.name]["resolutionArcsec"]
             / pixel_size
         )
