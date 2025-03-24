@@ -3,10 +3,10 @@ from typing import Optional
 import matplotlib.pyplot as plt
 
 import astropy
-from astropy.nddata.utils import Cutout2D
-from astropy.coordinates import SkyCoord, ICRS
 import astropy.units as au
 from astropy.wcs import WCS
+from astropy.nddata.utils import Cutout2D
+from astropy.coordinates import SkyCoord, ICRS
 
 
 class Cutout:
