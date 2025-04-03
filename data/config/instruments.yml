@@ -61,6 +61,9 @@ HFI3:
 HFI4: 
     resolutionArcsec: 330
 
+HFI5: 
+    resolutionArcsec: 438
+
 NIKA2_1:
     resolutionArcsec: 12
 
