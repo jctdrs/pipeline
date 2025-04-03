@@ -342,19 +342,20 @@ class MonteCarloPipeline(PipelineGeneric):
 
             self.load_data(band)
             self.load_error(band)
-            self.err_hdu.data, _ = reproject_interp(
-                self.err_hdu,
-                WCS(self.data_hdu.header),
-                shape_out=self.data_hdu.data.shape,
-            )
             self._set_task_control(band)
 
             if self.err_hdu is None:
                 std_data = mad_std(self.data_hdu.data, ignore_nan=True)
                 self.err_hdu = fits.PrimaryHDU(
-                    header=fits.Header(),
+                    header=self.data_hdu.header,
                     data=np.full_like(self.data_hdu.data, std_data),
                 )
+
+            self.err_hdu.data, _ = reproject_interp(
+                self.err_hdu,
+                WCS(self.data_hdu.header),
+                shape_out=self.data_hdu.data.shape,
+            )
 
             for idx, task in enumerate(self.task_control.tasks):
                 self.task_control.idx = idx
