@@ -74,10 +74,6 @@ class HIPForegroundMask(BaseModel):
     band: str
 
 
-class HIPRms(BaseModel):
-    band: str
-
-
 class HIPTest(BaseModel):
     pass
 
@@ -89,6 +85,5 @@ Interface: dict[str, BaseModel] = {
     "hip.cutout": HIPCutout,
     "hip.integrate": HIPIntegrate,
     "hip.foregroundMask": HIPForegroundMask,
-    "hip.rms": HIPRms,
     "hip.test": HIPTest,
 }
