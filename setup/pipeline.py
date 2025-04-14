@@ -1,6 +1,7 @@
 import itertools
 import yaml
 import copy
+from pathlib import Path
 from dataclasses import dataclass
 from dataclasses import field
 
@@ -31,8 +32,9 @@ from reproject import reproject_interp
 
 import numpy as np
 
+LIB_ROOT = Path(__file__).resolve().parents[1]
 
-INSTRUMENTS_CONFIG: str = "/home/jtedros/Repo/pipeline/data/config/instruments.yml"
+INSTRUMENTS_CONFIG: str = f"{LIB_ROOT}/data/config/instruments.yml"
 
 Interface: dict[str, Any] = {
     "hip.degrade": degrade.Degrade.create,
