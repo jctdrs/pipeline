@@ -19,8 +19,8 @@ from hip import regrid
 from hip import foreground_mask
 from hip import cutout
 from hip import integrate
-from hip import rms
 from hip import test
+from hip import rms
 
 from util import read
 
@@ -43,8 +43,8 @@ Interface: dict[str, Any] = {
     "hip.cutout": cutout.Cutout.create,
     "hip.integrate": integrate.Integrate.create,
     "hip.foregroundMask": foreground_mask.ForegroundMask.create,
+    "hip.test": test.Test.create,
     "hip.rms": rms.Rms.create,
-    "hip.test": test.Test,
 }
 
 
