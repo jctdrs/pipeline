@@ -4,6 +4,7 @@ from pathlib import Path
 
 from pydantic import BaseModel
 from pydantic import model_validator
+from pydantic import PositiveFloat
 
 LIB_ROOT = Path(__file__).resolve().parents[1]
 
@@ -13,8 +14,6 @@ DUSTPEDIA_APERTURE_PHOTOMETRY: str = (
 DUSTPEDIA_HYPERLEDA_HERSCHEL: str = (
     f"{LIB_ROOT}/data/config/DustPedia_HyperLEDA_Herschel.csv"
 )
-
-# TODO: Need to be positive floats
 
 
 class Geometry(BaseModel):
@@ -27,14 +26,14 @@ class Geometry(BaseModel):
     # and photometry datasets located in 'data/config/' in case not defined
     # by the user. In case they are not defined, then their default value
     # is None therefore the use of the 'Optional[float]' type hint.
-    ra: Optional[float] = None
+    ra: Optional[PositiveFloat] = None
     dec: Optional[float] = None
     positionAngle: Optional[float] = None
-    axialRatio: Optional[float] = None
-    semiMajorAxis: Optional[float] = None
+    axialRatio: Optional[PositiveFloat] = None
+    semiMajorAxis: Optional[PositiveFloat] = None
     inclination: Optional[float] = None
-    radius: Optional[float] = None
-    distance: Optional[float] = None
+    radius: Optional[PositiveFloat] = None
+    distance: Optional[PositiveFloat] = None
 
     @model_validator(mode="after")
     def geometry_from_config(self):
