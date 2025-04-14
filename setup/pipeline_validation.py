@@ -1,4 +1,5 @@
 from typing import Optional
+from typing import Literal
 
 from setup.config_validation import Config
 from setup.data_validation import Data
@@ -12,7 +13,15 @@ from pydantic import model_validator
 # for each band name. This is exactly as PipelineStep but with the parameters
 # unrolled for each step instead of a list.
 class PipelineStepUnrolled(BaseModel):
-    step: str
+    step: Literal[
+        "hip.cutout",
+        "hip.skySubtract",
+        "hip.foregroundMask",
+        "hip.degrade",
+        "hip.regrid",
+        "hip.integrate",
+        "hip.test",
+    ]
     diagnosis: bool
     parameters: BaseModel
 
