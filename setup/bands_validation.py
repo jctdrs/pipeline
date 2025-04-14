@@ -88,7 +88,6 @@ class Band(BaseModel):
             and self.name != "WISE1"
             and self.name != "WISE2"
             and self.name != "WISE3"
-            and self.name != "WISE3"
             and self.name != "WISE4"
             and self.name != "MIPS1"
             and self.name != "MIPS2"
