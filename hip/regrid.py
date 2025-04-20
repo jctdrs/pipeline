@@ -8,6 +8,8 @@ from astropy.io import fits
 
 from reproject import reproject_interp
 
+import matplotlib.pyplot as plt
+
 from util import read
 
 
@@ -109,9 +111,30 @@ class Regrid:
         hdu.data *= conversion_factor
         return None
 
+    def diagnosis(self) -> None:
+        if self.task.diagnosis:
+            plt.imshow(self.data_hdu.data, origin="lower")
+            plt.title(f"{self.data.body} {self.band.name} regrid map")
+            cbar = plt.colorbar()
+            cbar.ax.set_ylabel("Jy/px")
+            plt.yticks([])
+            plt.xticks([])
+            plt.savefig(
+                f"{self.band.output}/REGRID_{self.data.body}_{self.band.name}.png"
+            )
+            plt.close()
+
 
 class RegridSinglePass(Regrid):
-    pass
+    def run(
+        self,
+    ) -> tuple[
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        Optional[astropy.io.fits.hdu.image.PrimaryHDU],
+    ]:
+        super().run()
+        super().diagnosis()
+        return self.data_hdu, self.err_hdu
 
 
 class RegridMonteCarlo(Regrid):
