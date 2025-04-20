@@ -167,7 +167,7 @@ class Degrade:
             plt.yticks([])
             plt.xticks([])
             plt.savefig(
-                f"{self.band.output}/CONVOLUTION_{self.data.body}_{self.band.name}.png"
+                f"{self.band.output}/DEGRADE_{self.data.body}_{self.band.name}.png"
             )
             plt.close()
 
