@@ -10,6 +10,8 @@ from astropy.convolution import Gaussian2DKernel
 
 from scipy.ndimage import zoom
 
+import matplotlib.pyplot as plt
+
 
 class Degrade:
     _instance = None
@@ -156,9 +158,18 @@ class Degrade:
         hdu.data *= conversion_factor
         return None
 
-
-class DegradeSinglePass(Degrade):
-    pass
+    def diagnosis(self) -> None:
+        if self.task.diagnosis:
+            plt.imshow(self.data_hdu.data, origin="lower")
+            plt.title(f"{self.data.body} {self.band.name} convolution map")
+            cbar = plt.colorbar()
+            cbar.ax.set_ylabel("Jy/px")
+            plt.yticks([])
+            plt.xticks([])
+            plt.savefig(
+                f"{self.band.output}/CONVOLUTION_{self.data.body}_{self.band.name}.png"
+            )
+            plt.close()
 
 
 class DegradeMonteCarlo(Degrade):
@@ -184,4 +195,16 @@ class DegradeAnalytic(Degrade):
         self.err_hdu.data = np.sqrt(convolved)
         self.convert_from_radiance_to_Jyperpx(self.err_hdu)
 
+        return self.data_hdu, self.err_hdu
+
+
+class DegradeSinglePass(Degrade):
+    def run(
+        self,
+    ) -> tuple[
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        Optional[astropy.io.fits.hdu.image.PrimaryHDU],
+    ]:
+        super().run()
+        super().diagnosis()
         return self.data_hdu, self.err_hdu
