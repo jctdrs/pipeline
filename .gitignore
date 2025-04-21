@@ -1,5 +1,6 @@
 venv/
 */__pycache__/
 *.png
+tests/data/outputs/*.fits
 experiments/
 pipelines/
