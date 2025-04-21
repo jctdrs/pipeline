@@ -7,4 +7,8 @@ def test_NGC2454_pipeline():
         check=True,
         capture_output=True,
     )
-    assert "Integrated flux PACS1 = 62.654 Jy/px" in result.stdout.decode("utf-8")
+    try:
+        assert "Integrated flux PACS1 = 62.654 Jy/px" in result.stdout.decode("utf-8")
+    except AssertionError:
+        print(result.stderr.decode("utf-8"))
+        assert False
