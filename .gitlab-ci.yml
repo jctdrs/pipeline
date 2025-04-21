@@ -1,0 +1,46 @@
+stages:
+  - test
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.pip_cache"
+
+cache:
+  key: $CI_COMMIT_REF_SLUG
+  paths:
+    - .pip_cache/
+    - venv/
+
+.test_template: &test_configuration
+  stage: test
+  image: python:$PYTHON_VERSION
+  before_script:
+    - python --version
+    - python -m pip install --upgrade pip
+    - pip install -r requirements.txt
+  script:
+    - pytest --cov=your_project --cov-report=xml -v tests/
+  after_script:
+    - pip install codecov
+    - codecov -f coverage.xml
+  rules:
+    - if: $CI_COMMIT_BRANCH || $CI_MERGE_REQUEST_IID
+
+python38:
+  <<: *test_configuration
+  variables:
+    PYTHON_VERSION: "3.8"
+
+python39:
+  <<: *test_configuration
+  variables:
+    PYTHON_VERSION: "3.9"
+
+python310:
+  <<: *test_configuration
+  variables:
+    PYTHON_VERSION: "3.10"
+
+python311:
+  <<: *test_configuration
+  variables:
+    PYTHON_VERSION: "3.11"
