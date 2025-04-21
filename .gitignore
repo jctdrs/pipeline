@@ -1,13 +1,5 @@
 venv/
-Inputs/
-inputs/
-Outputs/
-outputs/
-Kernels/
-kernels/
 */__pycache__/
-*.fits
 *.png
 experiments/
 pipelines/
-data/config/dust

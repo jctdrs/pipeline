@@ -1,0 +1,53 @@
+meta:
+    name: HIP
+    author: JT
+
+config:
+    mode: Single Pass
+    
+data:
+    body: NGC4254
+    bands:
+      - input: tests/data/inputs/NGC4254_PACS1.fits
+        output: tests/data/outputs/
+        name: PACS1
+
+pipeline:     
+    - step: hip.cutout
+      diagnosis: True
+      parameters:
+        - band: PACS1
+          raTrim: 10
+          decTrim: 10
+    
+    - step: hip.foregroundMask
+      diagnosis: False
+      parameters:
+        - band: PACS2
+          raTrim: 10
+          decTrim: 10
+          factor: 3
+
+    - step: hip.skySubtract
+      diagnosis: True
+      parameters:
+        - band: PACS1
+          cellFactor: 1
+
+    - step: hip.degrade
+      diagnosis: True
+      parameters:
+        - band: PACS1
+          kernel: tests/data/kernels/Kernel_LowRes_PACS1_to_SPIRE3.fits
+
+    - step: hip.regrid
+      diagnosis: True
+      parameters:
+        - band: all
+          target: tests/data/inputs/NGC4254_SPIRE3.fits
+
+    - step: hip.integrate
+      diagnosis: True
+      parameters:
+        - band: all
+          radius: 3

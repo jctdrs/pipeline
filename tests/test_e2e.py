@@ -3,7 +3,7 @@ import subprocess
 
 def test_NGC2454_pipeline():
     result = subprocess.run(
-        ["python", "main.py", "-f", "pipeline.yml"],
+        ["python", "main.py", "-f", "tests/pipeline_test.yml"],
         check=True,
         capture_output=True,
     )
