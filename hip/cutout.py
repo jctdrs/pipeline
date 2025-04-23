@@ -1,4 +1,5 @@
 from typing import Optional
+from typing import Tuple
 
 import matplotlib.pyplot as plt
 
@@ -60,7 +61,7 @@ class Cutout:
 
     def run(
         self,
-    ) -> tuple[
+    ) -> Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
@@ -117,7 +118,7 @@ class CutoutAnalytic(Cutout):
 class CutoutSinglePass(Cutout):
     def run(
         self,
-    ) -> tuple[
+    ) -> Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:

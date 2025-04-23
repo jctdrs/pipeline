@@ -1,4 +1,6 @@
 from typing import Optional
+from typing import Tuple
+
 
 import astropy
 
@@ -54,7 +56,7 @@ class Test:
 
     def run(
         self,
-    ) -> tuple[
+    ) -> Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:

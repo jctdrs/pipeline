@@ -1,4 +1,5 @@
 from typing import Optional
+from typing import Tuple
 
 from util import read
 
@@ -64,7 +65,7 @@ class Degrade:
 
     def run(
         self,
-    ) -> tuple[
+    ) -> Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
@@ -179,7 +180,7 @@ class DegradeMonteCarlo(Degrade):
 class DegradeAnalytic(Degrade):
     def run(
         self,
-    ) -> tuple[
+    ) -> Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
@@ -201,7 +202,7 @@ class DegradeAnalytic(Degrade):
 class DegradeSinglePass(Degrade):
     def run(
         self,
-    ) -> tuple[
+    ) -> Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:

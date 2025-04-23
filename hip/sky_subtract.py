@@ -1,4 +1,5 @@
 from typing import Optional
+from typing import Tuple
 
 import astropy
 from astropy.stats import SigmaClip
@@ -69,7 +70,7 @@ class SkySubtract:
 
     def run(
         self,
-    ) -> tuple[
+    ) -> Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
@@ -176,7 +177,7 @@ class SkySubtractAnalytic(SkySubtract):
 class SkySubtractSinglePass(SkySubtract):
     def run(
         self,
-    ) -> tuple[
+    ) -> Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:

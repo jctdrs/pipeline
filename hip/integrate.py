@@ -1,4 +1,5 @@
 from typing import Optional
+from typing import Tuple
 
 from util import read
 
@@ -69,7 +70,7 @@ class Integrate:
 
     def run(
         self,
-    ) -> tuple[
+    ) -> Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
@@ -222,7 +223,7 @@ class IntegrateMonteCarlo(Integrate):
 
     def run(
         self,
-    ) -> tuple[
+    ) -> Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
@@ -242,7 +243,7 @@ class IntegrateMonteCarlo(Integrate):
 class IntegrateSinglePass(Integrate):
     def run(
         self,
-    ) -> tuple[
+    ) -> Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:

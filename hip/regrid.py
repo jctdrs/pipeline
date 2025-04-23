@@ -1,4 +1,5 @@
 from typing import Optional
+from typing import Tuple
 
 import numpy as np
 
@@ -64,7 +65,7 @@ class Regrid:
 
     def run(
         self,
-    ) -> tuple[
+    ) -> Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
@@ -128,7 +129,7 @@ class Regrid:
 class RegridSinglePass(Regrid):
     def run(
         self,
-    ) -> tuple[
+    ) -> Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
@@ -144,7 +145,7 @@ class RegridMonteCarlo(Regrid):
 class RegridAnalytic(Regrid):
     def run(
         self,
-    ) -> tuple[
+    ) -> Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:

@@ -1,4 +1,6 @@
 from typing import Optional
+from typing import Tuple
+
 
 import copy
 
@@ -71,7 +73,7 @@ class Rms:
 
     def run(
         self,
-    ) -> tuple[
+    ) -> Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
@@ -164,7 +166,7 @@ class RmsMonteCarlo(Rms):
 class RmsSinglePass(Rms):
     def run(
         self,
-    ) -> tuple[
+    ) -> Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:

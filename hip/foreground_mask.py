@@ -1,4 +1,6 @@
 from typing import Optional
+from typing import Tuple
+from typing import List
 
 from astroquery.vizier import Vizier
 
@@ -65,7 +67,7 @@ class ForegroundMask:
 
     def run(
         self,
-    ) -> tuple[
+    ) -> Tuple[
         astropy.io.fits.hdu.image.PrimaryHDU,
         Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
@@ -120,7 +122,7 @@ class ForegroundMask:
 
         return self.data_hdu, self.err_hdu
 
-    def find_fgs(self) -> tuple[list, list]:
+    def find_fgs(self) -> Tuple[List, List]:
         mag = ["<13.5", "<14.", "<15.5", "<16.", "<18.", "<40."]
         rad_fac = [4.6, 3.0, 2.1, 1.4, 1.15, 0.7]
 

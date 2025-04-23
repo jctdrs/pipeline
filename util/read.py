@@ -1,6 +1,7 @@
 from typing import Union
 from typing import Any
 from typing import List
+from typing import Tuple
 
 import math
 
@@ -26,7 +27,7 @@ def pixel_size_arcsec(header: fits.header.Header) -> Union[float, Any]:
 
 def _check_px_size(
     header: fits.header.Header,
-) -> Union[tuple[float, float, str], Any]:
+) -> Union[Tuple[float, float, str], Any]:
     keys: List = list(header.keys())
     if ("CDELT1" in keys) and ("CDELT2" in keys):
         if (
@@ -80,7 +81,7 @@ def _check_px_size(
 
 def shape(
     header: fits.header.Header,
-) -> Union[Any, tuple[int, int]]:
+) -> Union[Any, Tuple[int, int]]:
     keys: List = list(header.keys())
     if "NAXIS" in keys and header["NAXIS"] == 2 and "NAXIS1" in keys:
         xsize = header["NAXIS1"]
