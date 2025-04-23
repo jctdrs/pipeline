@@ -1,11 +1,12 @@
 import os
 from typing import Optional
+from typing import Dict
 
 from pydantic import BaseModel
 from pydantic import NonNegativeFloat
 from pydantic import model_validator
 
-DEFAULT_CALIBRATION_ERROR: dict[str, float] = {
+DEFAULT_CALIBRATION_ERROR: Dict[str, float] = {
     "IRAC1": 10.2,
     "IRAC2": 10.2,
     "IRAC3": 10.2,

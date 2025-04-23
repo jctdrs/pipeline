@@ -1,5 +1,8 @@
 import csv
 from typing import Optional
+from typing import Dict
+from typing import List
+
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -69,7 +72,7 @@ class Geometry(BaseModel):
         return self
 
     def parse_csv(
-        self, config_path: str, none_fields: list[str], required_fields: dict[str, str]
+        self, config_path: str, none_fields: List[str], required_fields: Dict[str, str]
     ) -> None:
         with open(config_path, "r") as f:
             reader = csv.DictReader(f)

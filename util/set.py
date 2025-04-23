@@ -1,8 +1,10 @@
+from typing import List
+
 from astropy.io import fits
 
 
 def unit(header: fits.header.Header, elem: str) -> None:
-    keys: list = list(header.keys())
+    keys: List = List(header.keys())
 
     if "BUNIT" in keys:
         header["BUNIT"] = elem

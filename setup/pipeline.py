@@ -7,6 +7,8 @@ from dataclasses import field
 
 from typing import Union
 from typing import Any
+from typing import List
+from typing import Dict
 
 from setup.pipeline_validation import PipelineStepUnrolled
 from setup.pipeline_validation import Pipeline
@@ -36,7 +38,7 @@ LIB_ROOT = Path(__file__).resolve().parents[1]
 
 INSTRUMENTS_CONFIG: str = f"{LIB_ROOT}/data/config/instruments.yml"
 
-Interface: dict[str, Any] = {
+Interface: Dict[str, Any] = {
     "hip.degrade": degrade.Degrade.create,
     "hip.skySubtract": sky_subtract.SkySubtract.create,
     "hip.regrid": regrid.Regrid.create,
@@ -50,13 +52,13 @@ Interface: dict[str, Any] = {
 
 @dataclass
 class TaskControl:
-    tasks: list[PipelineStepUnrolled]
+    tasks: List[PipelineStepUnrolled]
     mode: str
     idx: int
 
     # Only used for MonteCarloPipeline
-    MC_diagnosis: list = field(default_factory=list)
-    repeat: list = field(default_factory=list)
+    MC_diagnosis: List = field(default_factory=list)
+    repeat: List = field(default_factory=list)
 
 
 class PipelineGeneric:
@@ -180,7 +182,7 @@ class PipelineGeneric:
     def _get_before_tasks_for_band(
         self,
         band: Band,
-    ) -> list[PipelineStepUnrolled]:
+    ) -> List[PipelineStepUnrolled]:
         return [
             PipelineStepUnrolled(
                 step=task.step,
@@ -192,7 +194,7 @@ class PipelineGeneric:
             if params.band in {band.name, "all"}
         ]
 
-    def _get_pipeline_tasks_for_band(self, band: Band) -> list[PipelineStepUnrolled]:
+    def _get_pipeline_tasks_for_band(self, band: Band) -> List[PipelineStepUnrolled]:
         return [
             PipelineStepUnrolled(
                 step=task.step,
@@ -294,9 +296,9 @@ class MonteCarloPipeline(PipelineGeneric):
 
     def _set_task_control(self, band: Band) -> None:
         niter: int = self.spec.config.niter
-        MC_diagnosis: list[bool] = []
-        repeat: list[int] = []
-        tasks: list[PipelineStepUnrolled] = []
+        MC_diagnosis: List[bool] = []
+        repeat: List[int] = []
+        tasks: List[PipelineStepUnrolled] = []
 
         unrolled_before_tasks = self._get_before_tasks_for_band(band)
         unrolled_pipeline_tasks = self._get_pipeline_tasks_for_band(band)
@@ -333,7 +335,7 @@ class MonteCarloPipeline(PipelineGeneric):
         return None
 
     def execute(self) -> None:
-        bands: list = self.spec.data.bands
+        bands: List = self.spec.data.bands
 
         for band in bands:
             count: float = 0

@@ -1,5 +1,6 @@
 import os
 from typing import Optional
+from typing import Dict
 
 from pydantic import BaseModel
 from pydantic import PositiveFloat
@@ -82,7 +83,7 @@ class HIPRms(BaseModel):
     band: str
 
 
-Interface: dict[str, BaseModel] = {
+Interface: Dict[str, BaseModel] = {
     "hip.degrade": HIPDegrade,
     "hip.skySubtract": HIPSkySubtract,
     "hip.regrid": HIPRegrid,
