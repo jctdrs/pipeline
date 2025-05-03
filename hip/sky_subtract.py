@@ -163,6 +163,24 @@ class SkySubtract:
                 f"{self.band.output}/BKGMAP_SRCMASK_{self.data.body}_{self.band.name}.png"
             )
             plt.close()
+            
+            plt.imshow(self.bkg.background_rms, origin="lower")
+            cbar = plt.colorbar()
+            cbar.ax.set_ylabel("Jy/px")
+            plt.yticks([])
+            plt.xticks([])
+            plt.savefig(f"{self.band.output}/BKGMAP_RMS_{self.data.body}_{self.band.name}.png")
+            plt.close()
+
+            plt.imshow(sourcemask, origin="lower")
+            cbar = plt.colorbar()
+            cbar.ax.set_ylabel("Jy/px")
+            plt.yticks([])
+            plt.xticks([])
+            self.bkg.plot_meshes(outlines=True, marker='.', color='red', alpha=0.3)
+            plt.savefig(f"{self.band.output}/BKGMAP_MESHES_{self.data.body}_{self.band.name}.png")
+            plt.close()
+
         return None
 
 
