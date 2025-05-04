@@ -75,7 +75,8 @@ class ForegroundMask:
         px_size = read.pixel_size_arcsec(self.data_hdu.header)
         wcs = WCS(self.data_hdu.header)
 
-        fgs_list, rad_fac = self.find_fgs()
+        fgs_list = self.find_fgs()
+        radius_factor = [4.6, 3.0, 2.1, 1.4, 1.15, 0.7]
 
         # Exclude the central regions of the galaxy from the subtraction
         mask_gal_reg = self.get_mask_source()
@@ -83,8 +84,8 @@ class ForegroundMask:
         # Precompute the radius scaling factors for all FGS sources
         r_masks = [
             (
-                rad_fac[k]
-                * self.task.parameters.factor
+                radius_factor[k]
+                * self.task.parameters.maskFactor
                 * self.instruments[self.band.name]["resolutionArcsec"]
             )
             // 2
@@ -123,8 +124,7 @@ class ForegroundMask:
         return self.data_hdu, self.err_hdu
 
     def find_fgs(self) -> Tuple[List, List]:
-        mag = ["<13.5", "<14.", "<15.5", "<16.", "<18.", "<40."]
-        rad_fac = [4.6, 3.0, 2.1, 1.4, 1.15, 0.7]
+        magnitude = ["<13.5", "<14.", "<15.5", "<16.", "<18.", "<40."]
 
         sizeTrim = (
             self.task.parameters.decTrim * au.arcmin,
@@ -134,12 +134,12 @@ class ForegroundMask:
         fgs_set = set()
         fgs_list = []
 
-        for k in range(len(mag)):
+        for idx, mag in enumerate(magnitude):
             v = Vizier(
                 columns=["RAJ2000", "DEJ2000"],
                 catalog="I/355",
                 row_limit=10000,
-                column_filters={"Gmag": mag[k]},
+                column_filters={"Gmag": mag},
             )
             # Query the region for the current magnitude bin
             fgs_table = v.query_region(
@@ -161,7 +161,7 @@ class ForegroundMask:
 
             fgs_list.append(np.array(fgs_unique))
 
-        return fgs_list, rad_fac
+        return fgs_list
 
     def get_mask_source(self) -> np.ndarray:
         px_size = read.pixel_size_arcsec(self.data_hdu.header)

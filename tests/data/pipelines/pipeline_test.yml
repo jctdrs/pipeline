@@ -26,7 +26,7 @@ pipeline:
         - band: PACS2
           raTrim: 10
           decTrim: 10
-          factor: 3
+          maskFactor: 3
 
     - step: hip.skySubtract
       diagnosis: True
