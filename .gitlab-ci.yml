@@ -41,3 +41,13 @@ python311:
   <<: *test_configuration
   variables:
     PYTHON_VERSION: "3.11"
+
+python312:
+  <<: *test_configuration
+  variables:
+    PYTHON_VERSION: "3.12"
+
+python313:
+  <<: *test_configuration
+  variables:
+    PYTHON_VERSION: "3.13"
