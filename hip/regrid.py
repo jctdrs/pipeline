@@ -189,14 +189,25 @@ class RegridAnalytic(Regrid):
         w11 = dx * dy
 
         self.convert_from_Jyperpx_to_radiance(self.err_hdu)
-        # TODO: This is not valid propagation after convolution because of
-        # the pixels are more correlated
-        propagated_error_matrix = (
-            w00 * np.square(self.err_hdu.data[y0.astype(int), x0.astype(int)])
-            + w10 * np.square(self.err_hdu.data[y0.astype(int), x1.astype(int)])
-            + w01 * np.square(self.err_hdu.data[y1.astype(int), x0.astype(int)])
-            + w11 * np.square(self.err_hdu.data[y1.astype(int), x1.astype(int)])
-        )
+
+        if self.err_hdu.header["ERRCORR"] == "False":
+            propagated_error_matrix = (
+                np.square(w00)
+                * np.square(self.err_hdu.data[y0.astype(int), x0.astype(int)])
+                + np.square(w10)
+                * np.square(self.err_hdu.data[y0.astype(int), x1.astype(int)])
+                + np.square(w01)
+                * np.square(self.err_hdu.data[y1.astype(int), x0.astype(int)])
+                + np.square(w11)
+                * np.square(self.err_hdu.data[y1.astype(int), x1.astype(int)])
+            )
+        else:
+            propagated_error_matrix = (
+                w00 * np.square(self.err_hdu.data[y0.astype(int), x0.astype(int)])
+                + w10 * np.square(self.err_hdu.data[y0.astype(int), x1.astype(int)])
+                + w01 * np.square(self.err_hdu.data[y1.astype(int), x0.astype(int)])
+                + w11 * np.square(self.err_hdu.data[y1.astype(int), x1.astype(int)])
+            )
 
         self.err_hdu.data = np.sqrt(propagated_error_matrix)
         self.err_hdu.header.update(target_wcs.to_header())

@@ -235,6 +235,8 @@ class AnalyticPipeline(PipelineGeneric):
                     data=np.full_like(self.data_hdu.data, std_data),
                 )
 
+            self.err_hdu.header.set("ERRCORR", "False")
+
             for idx, task in enumerate(self.task_control.tasks):
                 self.task_control.idx = idx
                 self.data_hdu, self.err_hdu = Interface[task.step](
@@ -354,6 +356,8 @@ class MonteCarloPipeline(PipelineGeneric):
                     header=self.data_hdu.header,
                     data=np.full_like(self.data_hdu.data, std_data),
                 )
+
+            self.err_hdu.header.set("ERRCORR", "False")
 
             self.err_hdu.data, _ = reproject_interp(
                 self.err_hdu,

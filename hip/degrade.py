@@ -174,7 +174,20 @@ class Degrade:
 
 
 class DegradeMonteCarlo(Degrade):
-    pass
+    def run(
+        self,
+    ) -> Tuple[
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        Optional[astropy.io.fits.hdu.image.PrimaryHDU],
+    ]:
+        super().run()
+        super().diagnosis()
+
+        # Convolution with a 2D kernel will introduct
+        # correlations within all pixels
+        self.err_hdu.header.set("ERRCORR", "True")
+
+        return self.data_hdu, self.err_hdu
 
 
 class DegradeAnalytic(Degrade):
@@ -195,6 +208,10 @@ class DegradeAnalytic(Degrade):
 
         self.err_hdu.data = np.sqrt(convolved)
         self.convert_from_radiance_to_Jyperpx(self.err_hdu)
+
+        # Convolution with a 2D kernel will introduct
+        # correlations within all pixels
+        self.err_hdu.header.set("ERRCORR", "True")
 
         return self.data_hdu, self.err_hdu
 
