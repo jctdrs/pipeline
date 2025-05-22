@@ -14,40 +14,39 @@ data:
 
 pipeline:     
     - step: hip.cutout
-      diagnosis: True
+      diagnosis: False
       parameters:
         - band: PACS1
           raTrim: 10
           decTrim: 10
     
-    - step: hip.foregroundMask
-      diagnosis: False
-      parameters:
-        - band: PACS2
-          raTrim: 10
-          decTrim: 10
-          maskFactor: 3
-
     - step: hip.skySubtract
-      diagnosis: True
+      diagnosis: False
       parameters:
         - band: PACS1
           cellFactor: 1
 
     - step: hip.degrade
-      diagnosis: True
+      diagnosis: False
       parameters:
         - band: PACS1
           kernel: tests/data/kernels/Kernel_LowRes_PACS1_to_SPIRE3.fits
 
     - step: hip.regrid
-      diagnosis: True
+      diagnosis: False
       parameters:
         - band: all
           target: tests/data/inputs/NGC4254_SPIRE3.fits
 
+    - step: hip.cutout
+      diagnosis: False
+      parameters:
+        - band: PACS1
+          raTrim: 10
+          decTrim: 10
+
     - step: hip.integrate
       diagnosis: True
       parameters:
-        - band: all
+        - band: PACS1
           radius: 3

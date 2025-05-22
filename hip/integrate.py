@@ -85,89 +85,23 @@ class Integrate:
         self.rmi = int(np.ceil(rmi_ / px_size))
         nan = ma.masked_invalid(self.data_hdu.data)
 
-        a = [
-            self.rma * 0.2,
-            self.rma * 0.6,
-            self.rma * 1.0,
-            self.rma * 1.3,
-            self.rma * 1.7,
-            self.rma * 2.0,
-            self.rma * 3.0,
-            self.rma * 3.5,
-            self.rma * 4.0,
-            self.rma * 4.5,
-            self.rma * 5.0,
-            self.rma * 5.5,
-            self.rma * 6.0,
-            self.rma * 6.5,
-            self.rma * 7.0,
-            self.rma * 7.5,
-            self.rma * 8.0,
-            self.rma * 8.5,
-            self.rma * 9.0,
-            self.rma * 9.5,
-            self.rma * 10.0,
-        ]
-
-        b = [
-            self.rma * 0.2,
-            self.rma * 0.6,
-            self.rma * 1.0,
-            self.rma * 1.3,
-            self.rma * 1.7,
-            self.rma * 2.0,
-            self.rmi * 2.5,
-            self.rmi * 3.0,
-            self.rmi * 3.5,
-            self.rmi * 4.0,
-            self.rmi * 4.5,
-            self.rmi * 5.0,
-            self.rma * 5.5,
-            self.rma * 6.0,
-            self.rma * 6.5,
-            self.rma * 7.0,
-            self.rmi * 7.5,
-            self.rmi * 8.0,
-            self.rmi * 8.5,
-            self.rmi * 9.0,
-            self.rmi * 9.5,
-            self.rmi * 10.0,
-        ]
-
-        apertures = [
-            EllipticalAperture(
-                self.position_px,
-                a=ai,
-                b=bi,
-                theta=self.data.geometry.positionAngle,
-            )
-            for (ai, bi) in zip(a, b)
-        ]
-        phot_table = aperture_photometry(nan.data, apertures, error=None, mask=nan.mask)
-
-        for col in phot_table.colnames:
-            phot_table[col].info.format = "%.8g"
-
-        integrated_flux_list = [phot_table[f"aperture_sum_{i}"] for i in range(21)]
-
-        self.integrated_flux = np.interp(
-            self.task.parameters.radius,
-            np.arange(21),
-            np.array(integrated_flux_list).reshape((-1,)),
+        self.aperture = EllipticalAperture(
+            self.position_px,
+            a=self.task.parameters.radius * self.rma,
+            b=self.task.parameters.radius * self.rmi,
+            theta=self.data.geometry.positionAngle,
         )
+
+        phot_table = aperture_photometry(
+            nan.data, self.aperture, error=None, mask=nan.mask
+        )
+
+        self.integrated_flux = phot_table["aperture_sum"].value[0]
 
         return self.data_hdu, self.err_hdu
 
     def diagnosis(self) -> None:
         if self.task.diagnosis:
-            # TODO: Use the integrated_L
-            integrated_L = (  # noqa
-                (self.integrated_flux * 1e-26)
-                * pow((self.data.geometry.distance * 3.086e22), 2)
-                * 4
-                * np.pi
-                / (3.846e26)
-            )
             print(
                 f"[INFO] Integrated flux {self.band.name} = {self.integrated_flux:.03f} Jy/px "
             )
