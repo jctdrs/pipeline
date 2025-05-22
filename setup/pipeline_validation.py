@@ -85,3 +85,14 @@ class Pipeline(BaseModel):
     data: Data
     before: Optional[List[PipelineStep]] = []
     pipeline: List[PipelineStep]
+
+    @model_validator(mode="after")
+    def check_if_regrid_before_degrade(self):
+        for idx in range(1, len(self.pipeline)):
+            if (
+                getattr(self.pipeline[idx], "step") == "hip.degrade"
+                and getattr(self.pipeline[idx - 1], "step") == "hip.regrid"
+            ):
+                msg = "[WARNING] It is not advisable to regrid before degrading."
+                raise ValueError(msg)
+        return self
