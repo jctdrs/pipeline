@@ -105,6 +105,11 @@ class Integrate:
             print(
                 f"[INFO] Integrated flux {self.band.name} = {self.integrated_flux:.03f} Jy/px "
             )
+            cal_error = self.integrated_flux * self.band.calError / 100
+
+            print(
+                f"[INFP] Instrumental integrated flux error {self.band.name} = {cal_error:.03f} Jy/px "
+            )
 
             reg = EllipsePixelRegion(
                 PixCoord(self.position_px[0], self.position_px[1]),
@@ -140,7 +145,41 @@ class Integrate:
 
 
 class IntegrateAnalytic(Integrate):
-    pass
+    def run(
+        self,
+    ) -> Tuple[
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        Optional[astropy.io.fits.hdu.image.PrimaryHDU],
+    ]:
+        wcs = WCS(self.data_hdu.header)
+        px_size = read.pixel_size_arcsec(self.data_hdu.header)
+        ra_ = self.data.geometry.ra
+        dec_ = self.data.geometry.dec
+        rma_ = self.data.geometry.semiMajorAxis / 2
+        rmi_ = rma_ / self.data.geometry.axialRatio
+        self.position_px = wcs.all_world2pix(ra_, dec_, 0)
+        self.rma = int(np.ceil(rma_ / px_size))
+        self.rmi = int(np.ceil(rmi_ / px_size))
+        # nan = ma.masked_invalid(self.data_hdu.data)
+
+        self.aperture = EllipticalAperture(
+            self.position_px,
+            a=self.task.parameters.radius * self.rma,
+            b=self.task.parameters.radius * self.rmi,
+            theta=self.data.geometry.positionAngle,
+        )
+
+        phot_table = aperture_photometry(
+            data=self.err_hdu.data,
+            error=self.err_hdu.data,
+            apertures=self.aperture,
+        )
+
+        self.integrated_flux_error = phot_table["aperture_sum_err"].value[0]
+        print(
+            f"[INFO] Statistical integrated flux error {self.band.name} = {np.sqrt(self.integrated_flux_error):.03f} Jy/px"
+        )
+        return self.data_hdu, self.err_hdu
 
 
 class IntegrateMonteCarlo(Integrate):
@@ -167,9 +206,8 @@ class IntegrateMonteCarlo(Integrate):
         idx = self.task_control.idx
         if self.task_control.MC_diagnosis[idx]:
             flux_error = np.sqrt(self.M2 / (self.count - 1))
-            cal_error = self.integrated_flux * self.band.calError / 100
             print(
-                f"[INFO] Integrated flux error = {flux_error:.03f}_stat {cal_error:.03f}_inst {np.sqrt(flux_error**2 + cal_error**2):.03f}_tot"
+                f"[INFO] Statistical integrated flux error {self.band.name} = {flux_error:.03f} Jy/px"
             )
         return self.data_hdu, self.err_hdu
 
