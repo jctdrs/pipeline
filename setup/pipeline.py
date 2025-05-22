@@ -233,7 +233,7 @@ class AnalyticPipeline(PipelineGeneric):
                 self.err_hdu = fits.PrimaryHDU(
                     header=fits.Header(),
                     data=np.full_like(self.data_hdu.data, std_data),
-                )[0]
+                )
 
             for idx, task in enumerate(self.task_control.tasks):
                 self.task_control.idx = idx
