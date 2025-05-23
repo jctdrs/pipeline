@@ -126,6 +126,9 @@ class SkySubtract:
             bkg_estimator=background.SExtractorBackground(),
             bkgrms_estimator=background.StdBackgroundRMS(),
         )
+        print(np.sum(self.bkg.background_rms))
+
+        self.__class__.class_bkg = self.bkg
 
         self.data_hdu.data = self.data_hdu.data - self.bkg.background
         self.data_hdu.data[self.data_hdu_invalid.mask] = np.nan
@@ -163,13 +166,15 @@ class SkySubtract:
                 f"{self.band.output}/BKGMAP_SRCMASK_{self.data.body}_{self.band.name}.png"
             )
             plt.close()
-            
+
             plt.imshow(self.bkg.background_rms, origin="lower")
             cbar = plt.colorbar()
             cbar.ax.set_ylabel("Jy/px")
             plt.yticks([])
             plt.xticks([])
-            plt.savefig(f"{self.band.output}/BKGMAP_RMS_{self.data.body}_{self.band.name}.png")
+            plt.savefig(
+                f"{self.band.output}/BKGMAP_RMS_{self.data.body}_{self.band.name}.png"
+            )
             plt.close()
 
             plt.imshow(sourcemask, origin="lower")
@@ -177,8 +182,10 @@ class SkySubtract:
             cbar.ax.set_ylabel("Jy/px")
             plt.yticks([])
             plt.xticks([])
-            self.bkg.plot_meshes(outlines=True, marker='.', color='red', alpha=0.3)
-            plt.savefig(f"{self.band.output}/BKGMAP_MESHES_{self.data.body}_{self.band.name}.png")
+            self.bkg.plot_meshes(outlines=True, marker=".", color="red", alpha=0.3)
+            plt.savefig(
+                f"{self.band.output}/BKGMAP_MESHES_{self.data.body}_{self.band.name}.png"
+            )
             plt.close()
 
         return None
@@ -189,7 +196,17 @@ class SkySubtractMonteCarlo(SkySubtract):
 
 
 class SkySubtractAnalytic(SkySubtract):
-    pass
+    def run(
+        self,
+    ) -> Tuple[
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        Optional[astropy.io.fits.hdu.image.PrimaryHDU],
+    ]:
+        super().run()
+        self.err_hdu.data = np.sqrt(
+            np.square(self.err_hdu.data) + np.square(self.bkg.background_rms)
+        )
+        return self.data_hdu, self.err_hdu
 
 
 class SkySubtractSinglePass(SkySubtract):

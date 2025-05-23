@@ -151,8 +151,8 @@ class IntegrateAnalytic(Integrate):
         astropy.io.fits.hdu.image.PrimaryHDU,
         Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
-        wcs = WCS(self.data_hdu.header)
-        px_size = read.pixel_size_arcsec(self.data_hdu.header)
+        wcs = WCS(self.err_hdu.header)
+        px_size = read.pixel_size_arcsec(self.err_hdu.header)
         ra_ = self.data.geometry.ra
         dec_ = self.data.geometry.dec
         rma_ = self.data.geometry.semiMajorAxis / 2
@@ -160,7 +160,6 @@ class IntegrateAnalytic(Integrate):
         self.position_px = wcs.all_world2pix(ra_, dec_, 0)
         self.rma = int(np.ceil(rma_ / px_size))
         self.rmi = int(np.ceil(rmi_ / px_size))
-        # nan = ma.masked_invalid(self.data_hdu.data)
 
         self.aperture = EllipticalAperture(
             self.position_px,
@@ -170,12 +169,11 @@ class IntegrateAnalytic(Integrate):
         )
 
         phot_table = aperture_photometry(
-            data=self.err_hdu.data,
-            error=self.err_hdu.data,
+            data=self.err_hdu.data**2,
             apertures=self.aperture,
         )
 
-        self.integrated_flux_error = phot_table["aperture_sum_err"].value[0]
+        self.integrated_flux_error = np.sqrt(phot_table["aperture_sum"][0])
         print(
             f"[INFO] Statistical integrated flux error {self.band.name} = {np.sqrt(self.integrated_flux_error):.03f} Jy/px"
         )
