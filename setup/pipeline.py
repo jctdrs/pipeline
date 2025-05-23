@@ -155,7 +155,7 @@ class PipelineGeneric:
         return None
 
     def execute(self):
-        return None
+        pass
 
     def _load_instruments(self) -> None:
         try:
@@ -177,7 +177,7 @@ class PipelineGeneric:
         return None
 
     def _set_task_control(self, band: Band) -> None:
-        return None
+        pass
 
     def _get_before_tasks_for_band(
         self,
