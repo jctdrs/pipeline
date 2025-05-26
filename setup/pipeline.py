@@ -211,6 +211,7 @@ class AnalyticPipeline(PipelineGeneric):
     def __init__(self, spec: Specification):
         super().__init__(spec)
         print("[INFO] Starting Analytic Pipeline")
+        print("[WARNING] Analytic method is still under testing")
 
     def _set_task_control(self, band: Band) -> None:
         unrolled_before_tasks = self._get_before_tasks_for_band(band)
