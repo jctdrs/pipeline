@@ -169,13 +169,16 @@ class IntegrateAnalytic(Integrate):
         )
 
         phot_table = aperture_photometry(
-            data=self.err_hdu.data**2,
+            data=self.err_hdu.data,
+            error=self.err_hdu.data,
             apertures=self.aperture,
         )
 
-        self.integrated_flux_error = np.sqrt(phot_table["aperture_sum"][0])
+        self.integrated_flux_error = phot_table["aperture_sum_err"][0]
+
         print(
-            f"[INFO] Statistical integrated flux error {self.band.name} = {self.integrated_flux_error:.03f} Jy/px"
+            f"[INFO] Statistical integrated flux error {self.band.name} = "
+            f"{self.integrated_flux_error:.03f} Jy/px"
         )
         return self.data_hdu, self.err_hdu
 
