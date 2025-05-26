@@ -175,7 +175,7 @@ class IntegrateAnalytic(Integrate):
 
         self.integrated_flux_error = np.sqrt(phot_table["aperture_sum"][0])
         print(
-            f"[INFO] Statistical integrated flux error {self.band.name} = {np.sqrt(self.integrated_flux_error):.03f} Jy/px"
+            f"[INFO] Statistical integrated flux error {self.band.name} = {self.integrated_flux_error:.03f} Jy/px"
         )
         return self.data_hdu, self.err_hdu
 
