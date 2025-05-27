@@ -124,7 +124,7 @@ class ForegroundMask:
 
         return self.data_hdu, self.err_hdu
 
-    def find_fgs(self) -> List[np.ndarray[Any, Any]]:
+    def find_fgs(self) -> List:
         magnitude = ["<13.5", "<14.", "<15.5", "<16.", "<18.", "<40."]
 
         sizeTrim = (
