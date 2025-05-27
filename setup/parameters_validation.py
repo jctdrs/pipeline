@@ -1,6 +1,6 @@
 import os
 from typing import Optional
-from typing import Dict
+from typing import Any
 
 from pydantic import BaseModel
 from pydantic import PositiveFloat
@@ -11,7 +11,7 @@ from pydantic import model_validator
 # A factory method design to return the correct validator for each step of the
 # pipeline depending on what the user needs. Each validator is unique to the
 # nature of the step.
-def factory_method(pipeline_step: str, **parameters) -> BaseModel:
+def factory_method(pipeline_step: str, **parameters) -> Any:
     pipeline_step_class = Interface.get(pipeline_step)
     if pipeline_step_class is None:
         msg = f"[ERROR] Pipeline step {pipeline_step} not valid."
@@ -83,7 +83,7 @@ class HIPRms(BaseModel):
     band: str
 
 
-Interface: Dict[str, BaseModel] = {
+Interface = {
     "hip.degrade": HIPDegrade,
     "hip.skySubtract": HIPSkySubtract,
     "hip.regrid": HIPRegrid,

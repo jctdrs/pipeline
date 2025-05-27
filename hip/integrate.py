@@ -108,7 +108,7 @@ class Integrate:
             cal_error = self.integrated_flux * self.band.calError / 100
 
             print(
-                f"[INFP] Instrumental integrated flux error {self.band.name} = {cal_error:.03f} Jy/px "
+                f"[INFO] Instrumental integrated flux error {self.band.name} = {cal_error:.03f} Jy/px "
             )
 
             reg = EllipsePixelRegion(
@@ -121,8 +121,8 @@ class Integrate:
             fig, ax = plt.subplots(1, 1)
             bound = np.argwhere(~np.isnan(self.data_hdu.data))
             if bound.any():
-                ax.set_xlim(min(bound[:, 1]), max(bound[:, 1]))
-                ax.set_ylim(min(bound[:, 0]), max(bound[:, 0]))
+                ax.set_xlim(float(np.min(bound[:, 1])), float(np.max(bound[:, 1])))
+                ax.set_ylim(float(np.min(bound[:, 0])), float(np.max(bound[:, 0])))
 
             plt.imshow(self.data_hdu.data, origin="lower")
             reg.plot(

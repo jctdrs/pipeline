@@ -1,5 +1,6 @@
 from typing import Optional
 from typing import List
+from typing import Any
 
 from setup.geometry_validation import Geometry
 from setup.bands_validation import Band
@@ -17,9 +18,10 @@ class Data(BaseModel):
     # attribute in 'Geometry' is not defined by the user from the specification
     # but manually in the following method.
     @model_validator(mode="before")
-    def pass_body_to_geometry(self):
-        if "geometry" not in self:
-            self["geometry"] = Geometry(body=self["body"])
+    @classmethod
+    def pass_body_to_geometry(cls, data: Any) -> Any:
+        if "geometry" not in data:
+            data["geometry"] = Geometry(body=data["body"])
         else:
-            self["geometry"]["body"] = self["body"]
-        return self
+            data["geometry"]["body"] = data["body"]
+        return data

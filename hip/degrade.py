@@ -118,7 +118,7 @@ class Degrade:
 
         return None
 
-    def convolve(self, data: np.ndarray, kernel: np.ndarray) -> np.ndarray:
+    def convolve(self, data: np.ndarray, kernel: np.ndarray):
         return convolve_fft(
             data,
             kernel,

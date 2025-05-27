@@ -1,6 +1,7 @@
 from typing import Optional
 from typing import Tuple
 from typing import List
+from typing import Any
 
 from astroquery.vizier import Vizier
 
@@ -123,7 +124,7 @@ class ForegroundMask:
 
         return self.data_hdu, self.err_hdu
 
-    def find_fgs(self) -> Tuple[List, List]:
+    def find_fgs(self) -> List[np.ndarray[Any, Any]]:
         magnitude = ["<13.5", "<14.", "<15.5", "<16.", "<18.", "<40."]
 
         sizeTrim = (
@@ -163,7 +164,7 @@ class ForegroundMask:
 
         return fgs_list
 
-    def get_mask_source(self) -> np.ndarray:
+    def get_mask_source(self) -> Any:
         px_size = read.pixel_size_arcsec(self.data_hdu.header)
 
         wcs = WCS(self.data_hdu.header)

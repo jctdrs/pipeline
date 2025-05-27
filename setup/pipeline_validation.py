@@ -1,6 +1,7 @@
 from typing import Optional
 from typing import Literal
 from typing import List
+from typing import Any
 
 from setup.config_validation import Config
 from setup.data_validation import Data
@@ -36,16 +37,17 @@ class PipelineStep(BaseModel):
     # All possible pipeline steps have their own validator. One way of creating
     # that would be to use factory method design.
     @model_validator(mode="before")
-    def pass_step_to_parameters(self):
-        if "parameters" not in self:
+    @classmethod
+    def pass_step_to_parameters(cls, data: Any) -> Any:
+        if "parameters" not in data:
             msg = "[ERROR] 'parameters' not defined."
             raise ValueError(msg)
 
-        for idx, model in enumerate(self["parameters"]):
-            self["parameters"][idx] = parameters_validation.factory_method(
-                self["step"], **self["parameters"][idx]
+        for idx, model in enumerate(data["parameters"]):
+            data["parameters"][idx] = parameters_validation.factory_method(
+                data["step"], **data["parameters"][idx]
             )
-        return self
+        return data
 
     @model_validator(mode="after")
     def validate_pipeline_steps(self):
@@ -78,7 +80,6 @@ class Pipeline(BaseModel):
     # defined by the user, then it is manually filled with all default values.
     meta: Optional[Meta] = Meta(
         name="Default",
-        author="Default",
         description="Default",
     )
     config: Config

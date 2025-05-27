@@ -126,10 +126,6 @@ class SkySubtract:
             bkg_estimator=background.SExtractorBackground(),
             bkgrms_estimator=background.StdBackgroundRMS(),
         )
-        print(np.sum(self.bkg.background_rms))
-
-        self.__class__.class_bkg = self.bkg
-
         self.data_hdu.data = self.data_hdu.data - self.bkg.background
         self.data_hdu.data[self.data_hdu_invalid.mask] = np.nan
 

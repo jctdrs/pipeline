@@ -13,7 +13,6 @@ from typing import Dict
 from setup.pipeline_validation import PipelineStepUnrolled
 from setup.pipeline_validation import Pipeline
 from setup.bands_validation import Band
-from setup.spec_validation import Specification
 
 from hip import degrade
 from hip import sky_subtract
@@ -62,27 +61,27 @@ class TaskControl:
 
 
 class PipelineGeneric:
-    def __init__(self, spec):
-        self.spec = spec
+    def __init__(self, pipe):
+        self.pipe = pipe
         self._load_instruments()
 
     @classmethod
     def create(
-        cls, spec: Pipeline
+        cls, pipe: Pipeline
     ) -> Union["AnalyticPipeline", "MonteCarloPipeline", "SinglePassPipeline"]:
-        if spec.config.mode == "Single Pass":
-            return SinglePassPipeline(spec)
+        if pipe.config.mode == "Single Pass":
+            return SinglePassPipeline(pipe)
 
-        elif spec.config.mode == "Analytic":
-            SinglePassPipeline(spec).execute()
-            return AnalyticPipeline(spec)
+        elif pipe.config.mode == "Analytic":
+            SinglePassPipeline(pipe).execute()
+            return AnalyticPipeline(pipe)
 
-        elif spec.config.mode == "Monte-Carlo":
-            SinglePassPipeline(spec).execute()
-            return MonteCarloPipeline(spec)
+        elif pipe.config.mode == "Monte-Carlo":
+            SinglePassPipeline(pipe).execute()
+            return MonteCarloPipeline(pipe)
 
         else:
-            msg = f"[ERROR] Mode '{spec.config.mode}' not recognized"
+            msg = f"[ERROR] Mode '{pipe.config.mode}' not recognized"
             raise ValueError(msg)
 
     def load_data(self, band: Band) -> None:
@@ -114,20 +113,23 @@ class PipelineGeneric:
             hdul = fits.open(err_path)
             self.err_hdu = hdul[0]
 
-        unit = read.unit(self.data_hdu.header)
-        if "mJy/beam" in unit and "NIKA2" in band.name:
-            beam_deg = read.BMAJ(self.err_hdu.header)
-            px_size_deg = read.pixel_size_arcsec(self.err_hdu.header) / 3600
+        if self.err_hdu is not None:
+            unit = read.unit(self.data_hdu.header)
+            if "mJy/beam" in unit and "NIKA2" in band.name:
+                beam_deg = read.BMAJ(self.err_hdu.header)
+                px_size_deg = read.pixel_size_arcsec(self.err_hdu.header) / 3600
 
-            conversion_factor = (
-                px_size_deg**2 / (np.pi * beam_deg**2 / (4 * 0.693))
-            ) * 1e-3
-            self.err_hdu.data *= conversion_factor
-        elif "Jy/px" in unit or "Jy/pix" in unit:
-            pass
-        else:
-            msg = f"[ERROR] Unit should be Jy/px except for NIKA maps. Input {unit}."
-            raise ValueError(msg)
+                conversion_factor = (
+                    px_size_deg**2 / (np.pi * beam_deg**2 / (4 * 0.693))
+                ) * 1e-3
+                self.err_hdu.data *= conversion_factor
+            elif "Jy/px" in unit or "Jy/pix" in unit:
+                pass
+            else:
+                msg = (
+                    f"[ERROR] Unit should be Jy/px except for NIKA maps. Input {unit}."
+                )
+                raise ValueError(msg)
         return None
 
     def save_data(self, band: Band) -> None:
@@ -164,7 +166,7 @@ class PipelineGeneric:
             msg = "[ERROR] File 'config/instruments.yml' not found."
             raise OSError(msg)
 
-        # Check if specification is valid YAML
+        # Check if spec is valid YAML
         # In case of failure, capture line/col for debug
         try:
             self.instruments = yaml.load(f, yaml.SafeLoader)
@@ -189,7 +191,7 @@ class PipelineGeneric:
                 diagnosis=task.diagnosis,
                 parameters=params,
             )
-            for task in self.spec.before
+            for task in self.pipe.before
             for params in task.parameters
             if params.band in {band.name, "all"}
         ]
@@ -201,15 +203,15 @@ class PipelineGeneric:
                 diagnosis=task.diagnosis,
                 parameters=params,
             )
-            for task in self.spec.pipeline
+            for task in self.pipe.pipeline
             for params in task.parameters
             if params.band in {band.name, "all"}
         ]
 
 
 class AnalyticPipeline(PipelineGeneric):
-    def __init__(self, spec: Specification):
-        super().__init__(spec)
+    def __init__(self, pipe: Pipeline):
+        super().__init__(pipe)
         print("[INFO] Starting Analytic Pipeline")
         print("[WARNING] Analytic method is still under testing")
 
@@ -224,7 +226,7 @@ class AnalyticPipeline(PipelineGeneric):
         return None
 
     def execute(self) -> None:
-        bands = self.spec.data.bands
+        bands = self.pipe.data.bands
         for band in bands:
             self.load_data(band)
             self.load_error(band)
@@ -244,7 +246,7 @@ class AnalyticPipeline(PipelineGeneric):
                     task_control=self.task_control,
                     data_hdu=self.data_hdu,
                     err_hdu=self.err_hdu,
-                    data=self.spec.data,
+                    data=self.pipe.data,
                     task=task,
                     band=band,
                     instruments=self.instruments,
@@ -256,8 +258,8 @@ class AnalyticPipeline(PipelineGeneric):
 
 
 class SinglePassPipeline(PipelineGeneric):
-    def __init__(self, spec: Specification):
-        super().__init__(spec)
+    def __init__(self, pipe: Pipeline):
+        super().__init__(pipe)
         print("[INFO] Starting Single Pass Pipeline")
 
     def _set_task_control(self, band: Band) -> None:
@@ -272,7 +274,7 @@ class SinglePassPipeline(PipelineGeneric):
         return None
 
     def execute(self) -> None:
-        bands = self.spec.data.bands
+        bands = self.pipe.data.bands
         for band in bands:
             self.load_data(band)
             self._set_task_control(band)
@@ -282,7 +284,7 @@ class SinglePassPipeline(PipelineGeneric):
                     task_control=self.task_control,
                     data_hdu=self.data_hdu,
                     err_hdu=None,
-                    data=self.spec.data,
+                    data=self.pipe.data,
                     task=task,
                     band=band,
                     instruments=self.instruments,
@@ -293,12 +295,12 @@ class SinglePassPipeline(PipelineGeneric):
 
 
 class MonteCarloPipeline(PipelineGeneric):
-    def __init__(self, spec: Specification):
-        super().__init__(spec)
+    def __init__(self, pipe: Pipeline):
+        super().__init__(pipe)
         print("[INFO] Starting Monte-Carlo Pipeline")
 
     def _set_task_control(self, band: Band) -> None:
-        niter: int = self.spec.config.niter
+        niter: int = self.pipe.config.niter
         MC_diagnosis: List[bool] = []
         repeat: List[int] = []
         tasks: List[PipelineStepUnrolled] = []
@@ -324,8 +326,8 @@ class MonteCarloPipeline(PipelineGeneric):
                 ([1] + [0] * (len(unrolled_pipeline_tasks) - 2) + [-1]) * niter
             )
             MC_diagnosis.extend(
-                [False] * len(self.spec.pipeline) * (niter - 1)
-                + [True] * len(self.spec.pipeline)
+                [False] * len(self.pipe.pipeline) * (niter - 1)
+                + [True] * len(self.pipe.pipeline)
             )
 
         self.task_control = TaskControl(
@@ -338,7 +340,7 @@ class MonteCarloPipeline(PipelineGeneric):
         return None
 
     def execute(self) -> None:
-        bands: List = self.spec.data.bands
+        bands: List = self.pipe.data.bands
 
         for band in bands:
             count: float = 0
@@ -389,7 +391,7 @@ class MonteCarloPipeline(PipelineGeneric):
                     task_control=self.task_control,
                     data_hdu=self.data_hdu,
                     err_hdu=self.err_hdu,
-                    data=self.spec.data,
+                    data=self.pipe.data,
                     task=task,
                     band=band,
                     instruments=self.instruments,
@@ -401,7 +403,7 @@ class MonteCarloPipeline(PipelineGeneric):
                 ):
                     # Running variance
                     print(
-                        f"[INFO] Monte-Carlo iteration {count+1}/{self.spec.config.niter} \r",
+                        f"[INFO] Monte-Carlo iteration {count+1}/{self.pipe.config.niter} \r",
                         flush=True,
                         end="",
                     )
