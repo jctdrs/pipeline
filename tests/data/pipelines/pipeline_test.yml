@@ -49,4 +49,4 @@ pipeline:
       diagnosis: True
       parameters:
         - band: PACS1
-          radius: 3
+          sizeFactor: 3

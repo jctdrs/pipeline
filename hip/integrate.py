@@ -78,7 +78,7 @@ class Integrate:
         px_size = read.pixel_size_arcsec(self.data_hdu.header)
         ra_ = self.data.geometry.ra
         dec_ = self.data.geometry.dec
-        rma_ = self.data.geometry.semiMajorAxis / 2
+        rma_ = self.data.geometry.semiMajorAxis
         rmi_ = rma_ / self.data.geometry.axialRatio
         self.position_px = wcs.all_world2pix(ra_, dec_, 0)
         self.rma = int(np.ceil(rma_ / px_size))
@@ -87,8 +87,8 @@ class Integrate:
 
         self.aperture = EllipticalAperture(
             self.position_px,
-            a=self.task.parameters.radius * self.rma,
-            b=self.task.parameters.radius * self.rmi,
+            a=self.task.parameters.sizeFactor * self.rma,
+            b=self.task.parameters.sizeFactor * self.rmi,
             theta=self.data.geometry.positionAngle,
         )
 
@@ -113,8 +113,8 @@ class Integrate:
 
             reg = EllipsePixelRegion(
                 PixCoord(self.position_px[0], self.position_px[1]),
-                width=self.task.parameters.radius * self.rma,
-                height=self.task.parameters.radius * self.rmi,
+                width=self.task.parameters.sizeFactor * self.rma,
+                height=self.task.parameters.sizeFactor * self.rmi,
                 angle=Angle(self.data.geometry.positionAngle, "deg"),
             )
 
@@ -130,7 +130,7 @@ class Integrate:
                 facecolor="none",
                 edgecolor="red",
                 lw=1,
-                label=f"radius={self.task.parameters.radius}",
+                label="Aperture",
             )
             cbar = plt.colorbar()
             cbar.ax.set_ylabel("Jy/px")
@@ -163,8 +163,8 @@ class IntegrateAnalytic(Integrate):
 
         self.aperture = EllipticalAperture(
             self.position_px,
-            a=self.task.parameters.radius * self.rma,
-            b=self.task.parameters.radius * self.rmi,
+            a=self.task.parameters.sizeFactor * self.rma,
+            b=self.task.parameters.sizeFactor * self.rmi,
             theta=self.data.geometry.positionAngle,
         )
 

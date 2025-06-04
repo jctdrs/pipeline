@@ -65,7 +65,7 @@ class HIPCutout(BaseModel):
 
 class HIPIntegrate(BaseModel):
     band: str
-    radius: PositiveFloat
+    sizeFactor: PositiveFloat
 
 
 class HIPForegroundMask(BaseModel):
