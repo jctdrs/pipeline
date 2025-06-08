@@ -232,7 +232,7 @@ class AnalyticPipeline(PipelineGeneric):
             if self.err_hdu is None:
                 std_data = mad_std(self.data_hdu.data, ignore_nan=True)
                 self.err_hdu = fits.PrimaryHDU(
-                    header=fits.Header(),
+                    header=self.data_hdu.header,
                     data=np.full_like(self.data_hdu.data, std_data),
                 )
 
