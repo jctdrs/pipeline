@@ -69,7 +69,7 @@ class HIPIntegrate(BaseModel):
 
 
 class HIPForegroundMask(BaseModel):
-    maskFactor: PositiveFloat
+    maskFactor: Optional[PositiveFloat] = 1.0
     raTrim: PositiveFloat
     decTrim: PositiveFloat
     band: str
