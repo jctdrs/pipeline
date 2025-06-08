@@ -6,10 +6,9 @@ from astropy.stats import SigmaClip
 from astropy.wcs import WCS
 
 from photutils import background
+from photutils.aperture import EllipticalAperture
 
 import numpy as np
-
-import pyregion
 
 import copy
 
@@ -87,25 +86,21 @@ class SkySubtract:
         )
         ncells1 = int(np.ceil(xsize / lcell_px))
         ncells2 = int(np.ceil(ysize / lcell_px))
-
         wcs = WCS(self.data_hdu.header)
-        pos = wcs.all_world2pix(self.data.geometry.ra, self.data.geometry.dec, 0)
-        rma = np.ceil(self.data.geometry.semiMajorAxis / 2 / pixel_size)
-        rmi = np.ceil(
-            self.data.geometry.semiMajorAxis
-            / 2
-            / self.data.geometry.axialRatio
-            / pixel_size
+        position_px = wcs.all_world2pix(self.data.geometry.ra, self.data.geometry.dec, 0)
+        rma_ = self.data.geometry.semiMajorAxis / 2
+        rmi_ = rma_ / self.data.geometry.axialRatio 
+        rma = rma_ / pixel_size
+        rmi = rmi_ / pixel_size
+
+        region = EllipticalAperture(
+            position_px,
+            a=rma,
+            b=rmi,
+            theta=np.deg2rad(self.data.geometry.positionAngle),
         )
 
-        region = pyregion.parse(
-            """
-                image
-                ellipse({},{},{},{},{})
-                """.format(pos[0], pos[1], rma, rmi, self.data.geometry.positionAngle)
-        )
-
-        self.bkg_mask = region.get_mask(hdu=self.data_hdu)
+        self.bkg_mask = region.to_mask(method='exact').to_image(self.data_hdu.data.shape, dtype=bool) 
 
         self.bkg = background.Background2D(
             self.data_hdu.data,
