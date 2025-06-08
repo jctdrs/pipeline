@@ -10,8 +10,8 @@ import astropy
 from astropy.wcs import WCS
 from astropy.coordinates import Angle
 
-from photutils.aperture.ellipse import EllipticalAperture
-from photutils.aperture.circle import CircularAperture
+from photutils.aperture import EllipticalAperture
+from photutils.aperture import CircularAperture
 from photutils.aperture import aperture_photometry
 
 import matplotlib.pyplot as plt
