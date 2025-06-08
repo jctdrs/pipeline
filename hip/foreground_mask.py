@@ -11,10 +11,12 @@ import astropy
 
 import numpy as np
 
-import pyregion
-
+from photutils.aperture import EllipticalAperture 
+from photutils.aperture import CircularAperture
 
 from util import read
+
+import matplotlib.pyplot as plt
 
 
 class ForegroundMask:
@@ -72,97 +74,93 @@ class ForegroundMask:
         astropy.io.fits.hdu.image.PrimaryHDU,
         Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
-        # Generate copy to be masked
         px_size = read.pixel_size_arcsec(self.data_hdu.header)
         wcs = WCS(self.data_hdu.header)
 
         fgs_list = self.find_fgs()
-        radius_factor = [4.6, 3.0, 2.1, 1.4, 1.15, 0.7]
 
-        # Exclude the central regions of the galaxy from the subtraction
         mask_gal_reg = self.get_mask_source()
 
-        # Precompute the radius scaling factors for all FGS sources
-        r_masks = [
-            (
-                radius_factor[k]
-                * self.task.parameters.maskFactor
-                * self.instruments[self.band.name]["resolutionArcsec"]
-            )
-            // 2
-            for k in range(len(fgs_list))
-        ]
+        base_radius = [4.6, 3.0, 2.1, 1.4, 1.15, 0.7]
+        resolution = self.instruments[self.band.name]["resolutionArcsec"]
+        mask_factor = self.task.parameters.maskFactor
+        r_masks = [(mask_factor * resolution * radius) / 2 for radius in base_radius]
+
+        self.combined_mask = np.zeros(self.data_hdu.data.shape, dtype=bool)
+        naxis1, naxis2 = self.data_hdu.header["NAXIS1"], self.data_hdu.header["NAXIS2"]
 
         # Create the mask for foreground sources
-        for k, fgs in enumerate(fgs_list):
+        for k, (fgs, r_mask) in enumerate(zip(fgs_list, r_masks)):
+            if len(fgs) == 0:
+                continue
+
             # Convert world coordinates to pixel coordinates
             fgs_pos_px = wcs.all_world2pix(fgs, 0)
-            r_mask = r_masks[k]
+            r_px = r_mask / px_size
 
-            # Iterate over the points and apply the mask
-            for i in range(len(fgs_pos_px)):
-                x = np.ceil(fgs_pos_px[i][0]).astype(int)
-                y = np.ceil(fgs_pos_px[i][1]).astype(int)
+            # Filter coordinates that are within bounds and not in galaxy region
+            valid_coords = []
+            for x_px, y_px in fgs_pos_px:
+                x = int(np.ceil(x_px))
+                y = int(np.ceil(y_px))
+                if x < naxis1 and y < naxis2 and not mask_gal_reg[y, x]:
+                    valid_coords.append((x_px, y_px))
 
-                # Check if the pixel is within bounds and not part of the galaxy region
-                if (
-                    x < self.data_hdu.header["NAXIS1"]
-                    and y < self.data_hdu.header["NAXIS2"]
-                    and not mask_gal_reg[y, x]
-                ):
-                    # Create the circular mask region
-                    r_circle = int(np.ceil(r_mask / px_size))
-                    region = f"""
-                        image
-                        circle({fgs_pos_px[i][0]},{fgs_pos_px[i][1]},{r_circle})
-                    """
-                    r = pyregion.parse(region)
-                    mask_fgs_reg = r.get_mask(hdu=self.data_hdu)
+            if not valid_coords:
+                continue
 
-                    # Apply the mask by setting the corresponding pixels to NaN
-                    self.data_hdu.data[mask_fgs_reg] = np.nan
+            # Create aperture for all valid sources at once
+            apertures = CircularAperture(valid_coords, r_px)
+            masks = apertures.to_mask(method='exact')
+
+            # Combine all masks for this magnitude bin
+            for mask in masks:
+                mask_img = mask.to_image(self.data_hdu.data.shape)
+                if mask_img is not None:
+                    self.combined_mask |= mask_img.astype(bool)
+
+        # Apply the final combined mask
+        self.data_hdu.data[self.combined_mask] = np.nan
 
         return self.data_hdu, self.err_hdu
 
     def find_fgs(self) -> List:
-        magnitude = ["<13.5", "<14.", "<15.5", "<16.", "<18.", "<40."]
+        magnitude_bins = ["<13.5", "<14.", "<15.5", "<16.", "<18.", "<40."]
+        ra_trim = self.task.parameters.raTrim * au.arcmin
+        dec_trim = self.task.parameters.decTrim * au.arcmin
+        width = max(ra_trim * 2, dec_trim *2)
 
-        sizeTrim = (
-            self.task.parameters.decTrim * au.arcmin,
-            self.task.parameters.raTrim * au.arcmin,
+        v = Vizier(
+            columns=["RAJ2000", "DEJ2000", "Gmag"],
+            catalog="I/355",
+            row_limit=10000,
         )
 
-        fgs_set = set()
-        fgs_list = []
+        seen_sources = set()
+        results = [np.empty((0, 2)) for _ in magnitude_bins]
 
-        for idx, mag in enumerate(magnitude):
-            v = Vizier(
-                columns=["RAJ2000", "DEJ2000"],
-                catalog="I/355",
-                row_limit=10000,
-                column_filters={"Gmag": mag},
-            )
-            # Query the region for the current magnitude bin
-            fgs_table = v.query_region(
-                self.data.body, width=max(sizeTrim[0] * 2, sizeTrim[1] * 2)
-            )
+        for idx, mag_filter in enumerate(magnitude_bins):
+            try:
+                fgs_sources = v.query_region(
+                    self.data.body, 
+                    width=width
+                )[0]
+                coords = np.column_stack([fgs_sources["RAJ2000"], fgs_sources["DEJ2000"]])
+                new_sources = []
+                for coord in coords:
+                    coord_tuple = tuple(coord)
+                    if coord_tuple not in seen_sources:
+                        seen_sources.add(coord_tuple)
+                        new_sources.append(coord)
 
-            fgs_sources = fgs_table[0]
-            fgs_RA, fgs_DEC = (
-                np.asarray(fgs_sources["RAJ2000"]),
-                np.asarray(fgs_sources["DEJ2000"]),
-            )
-            fgs = np.vstack([fgs_RA, fgs_DEC]).T
+                if new_sources:
+                    results[idx] = np.array(new_sources)
 
-            fgs_unique = [tuple(elem) for elem in fgs if tuple(elem) not in fgs_set]
+            except Exception as e:
+                print(f"[WARNING] Vizier query failed for magnitude {mag_filter}")
+                continue
 
-            # Add unique sources to the set and the list
-            for elem in fgs_unique:
-                fgs_set.add(elem)
-
-            fgs_list.append(np.array(fgs_unique))
-
-        return fgs_list
+        return results
 
     def get_mask_source(self) -> Any:
         px_size = read.pixel_size_arcsec(self.data_hdu.header)
@@ -170,32 +168,62 @@ class ForegroundMask:
         wcs = WCS(self.data_hdu.header)
 
         position_px = wcs.all_world2pix(
-            self.data.geometry.ra, self.data.geometry.dec, 0
-        )
-        rma_ = self.data.geometry.semiMajorAxis / 2
-        rmi_ = rma_ / self.data.geometry.axialRatio
-
-        rma = int(np.ceil(rma_ / px_size))
-        rmi = int(np.ceil(rmi_ / px_size))
-
-        region = """
-                image
-                ellipse({},{},{},{},{})
-                """.format(
-            position_px[0],
-            position_px[1],
-            rma,
-            rmi,
-            self.data.geometry.positionAngle,
+            self.data.geometry.ra, 
+            self.data.geometry.dec, 
+            0
         )
 
-        r = pyregion.parse(region)
-        mask_reg = r.get_mask(hdu=self.data_hdu)
+        rma = self.data.geometry.semiMajorAxis / 2
+        rmi = rma / self.data.geometry.axialRatio
+        rma_px = rma / px_size
+        rmi_px = rmi / px_size
+
+        region = EllipticalAperture(
+            position_px,
+            a=rma_px,
+            b=rmi_px,
+            theta=np.deg2rad(self.data.geometry.positionAngle),
+        )
+
+        mask_reg = region.to_mask(method='exact').to_image(self.data_hdu.data.shape, dtype=bool) 
+
         return mask_reg
 
 
+    def diagnosis(self) -> None:
+        if self.task.diagnosis:
+           plt.imshow(self.combined_mask, origin="lower")
+           plt.title(f"{self.data.body} {self.band.name} foreground mask")
+           plt.xticks([])
+           plt.yticks([])
+           plt.savefig(
+                f"{self.band.output}/FRG_MASK_{self.data.body}_{self.band.name}.png"
+           )
+           plt.close()
+
+           plt.imshow(self.data_hdu.data, origin="lower")
+           cbar = plt.colorbar()
+           cbar.ax.set_ylabel("Jy/px")
+           plt.title(f"{self.data.body} {self.band.name} foreground result")
+           plt.xticks([])
+           plt.yticks([])
+           plt.savefig(
+                f"{self.band.output}/FRG_DATA_{self.data.body}_{self.band.name}.png"
+           )
+           plt.close()
+
+        return None
+
 class ForegroundMaskSinglePass(ForegroundMask):
-    pass
+    def run(
+        self,
+    ) -> Tuple[
+        astropy.io.fits.hdu.image.PrimaryHDU,
+        Optional[astropy.io.fits.hdu.image.PrimaryHDU],
+    ]:
+        super().run()
+        super().diagnosis()
+        return self.data_hdu, self.err_hdu
 
 
 class ForegroundMaskMonteCarlo(ForegroundMask):
