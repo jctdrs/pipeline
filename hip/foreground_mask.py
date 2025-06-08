@@ -193,7 +193,7 @@ class ForegroundMask:
     def diagnosis(self) -> None:
         if self.task.diagnosis:
            plt.imshow(self.combined_mask, origin="lower")
-           plt.title(f"{self.data.body} {self.band.name} foreground mask")
+           plt.title(f"{self.data.body} {self.band.name} foregroundMask mask")
            plt.xticks([])
            plt.yticks([])
            plt.savefig(
@@ -204,7 +204,7 @@ class ForegroundMask:
            plt.imshow(self.data_hdu.data, origin="lower")
            cbar = plt.colorbar()
            cbar.ax.set_ylabel("Jy/px")
-           plt.title(f"{self.data.body} {self.band.name} foreground result")
+           plt.title(f"{self.data.body} {self.band.name} foregroundMask step result")
            plt.xticks([])
            plt.yticks([])
            plt.savefig(

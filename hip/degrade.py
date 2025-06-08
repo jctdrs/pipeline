@@ -162,7 +162,7 @@ class Degrade:
     def diagnosis(self) -> None:
         if self.task.diagnosis:
             plt.imshow(self.data_hdu.data, origin="lower")
-            plt.title(f"{self.data.body} {self.band.name} convolution map")
+            plt.title(f"{self.data.body} {self.band.name} degrade step result")
             cbar = plt.colorbar()
             cbar.ax.set_ylabel("Jy/px")
             plt.yticks([])

@@ -95,7 +95,7 @@ class Cutout:
     def diagnosis(self) -> None:
         if self.task.diagnosis:
             plt.imshow(self.data_hdu.data, origin="lower")
-            plt.title(f"{self.data.body} {self.band.name} cutout")
+            plt.title(f"{self.data.body} {self.band.name} cutout step result")
             plt.xticks([])
             plt.yticks([])
             cbar = plt.colorbar()

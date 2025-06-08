@@ -135,47 +135,49 @@ class SkySubtract:
             sourcemask[self.bkg_mask] = np.nan
 
             plt.imshow(mask_bkg, origin="lower")
-            plt.title(f"{self.data.body} {self.band.name} background map")
+            plt.title(f"{self.data.body} {self.band.name} skySubtract sky")
             cbar = plt.colorbar()
             cbar.ax.set_ylabel("Jy/px")
             plt.yticks([])
             plt.xticks([])
             plt.savefig(
-                f"{self.band.output}/BKGMAP_{self.data.body}_{self.band.name}.png"
+                f"{self.band.output}/SKY_{self.data.body}_{self.band.name}.png"
             )
             plt.close()
 
             plt.imshow(sourcemask, origin="lower")
             plt.title(
-                f"{self.band.output}/{self.data.body} {self.band.name} background map source masked"
+                f"{self.data.body} {self.band.name} skySubtract step result"
             )
             cbar = plt.colorbar()
             cbar.ax.set_ylabel("Jy/px")
             plt.yticks([])
             plt.xticks([])
             plt.savefig(
-                f"{self.band.output}/BKGMAP_SRCMASK_{self.data.body}_{self.band.name}.png"
+                f"{self.band.output}/SKYSUBTRACT_{self.data.body}_{self.band.name}.png"
             )
             plt.close()
 
             plt.imshow(self.bkg.background_rms, origin="lower")
+            plt.title(f"{self.data.body} {self.band.name} skySubtract rms")
             cbar = plt.colorbar()
             cbar.ax.set_ylabel("Jy/px")
             plt.yticks([])
             plt.xticks([])
             plt.savefig(
-                f"{self.band.output}/BKGMAP_RMS_{self.data.body}_{self.band.name}.png"
+                f"{self.band.output}/SKY_RMS_{self.data.body}_{self.band.name}.png"
             )
             plt.close()
 
             plt.imshow(sourcemask, origin="lower")
+            plt.title(f"{self.data.body} {self.band.name} skySubtract meshes")
             cbar = plt.colorbar()
             cbar.ax.set_ylabel("Jy/px")
             plt.yticks([])
             plt.xticks([])
             self.bkg.plot_meshes(outlines=True, marker=".", color="red", alpha=0.3)
             plt.savefig(
-                f"{self.band.output}/BKGMAP_MESHES_{self.data.body}_{self.band.name}.png"
+                f"{self.band.output}/SKY_MESHES_{self.data.body}_{self.band.name}.png"
             )
             plt.close()
 

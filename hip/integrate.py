@@ -117,6 +117,7 @@ class Integrate:
                 ax.set_ylim(float(np.min(bound[:, 0])), float(np.max(bound[:, 0])))
 
             plt.imshow(self.data_hdu.data, origin="lower")
+            plt.title(f"{self.data.body} {self.band.name} integrate step result")
             self.aperture.plot(
                 ax=ax,
                 facecolor="none",
@@ -130,7 +131,7 @@ class Integrate:
             plt.yticks([])
             plt.legend(loc="lower left")
             plt.savefig(
-                f"{self.band.output}/PHOT_{self.data.body}_{self.band.name}.png"
+                f"{self.band.output}/INTEGRATE_{self.data.body}_{self.band.name}.png"
             )
             plt.close()
         return None
