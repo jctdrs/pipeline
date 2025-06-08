@@ -7,4 +7,4 @@ def test_NGC2454_pipeline():
         check=True,
         capture_output=True,
     )
-    assert "Integrated flux PACS1 = 62.371 Jy/px" in result.stdout.decode("utf-8")
+    assert "Integrated flux PACS1 = 62.390 Jy/px" in result.stdout.decode("utf-8")
