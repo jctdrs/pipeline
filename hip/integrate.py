@@ -11,9 +11,8 @@ from astropy.wcs import WCS
 from astropy.coordinates import Angle
 
 from photutils.aperture.ellipse import EllipticalAperture
+from photutils.aperture.circle import CircularAperture
 from photutils.aperture import aperture_photometry
-
-from regions import PixCoord, EllipsePixelRegion
 
 import matplotlib.pyplot as plt
 
@@ -78,18 +77,18 @@ class Integrate:
         px_size = read.pixel_size_arcsec(self.data_hdu.header)
         ra_ = self.data.geometry.ra
         dec_ = self.data.geometry.dec
-        rma_ = self.data.geometry.semiMajorAxis
-        rmi_ = rma_ / self.data.geometry.axialRatio
+        rma = self.data.geometry.semiMajorAxis / 2
+        rmi = rma / self.data.geometry.axialRatio
         self.position_px = wcs.all_world2pix(ra_, dec_, 0)
-        self.rma = int(np.ceil(rma_ / px_size))
-        self.rmi = int(np.ceil(rmi_ / px_size))
+        self.rma_px = rma / px_size
+        self.rmi_px = rmi / px_size
         nan = ma.masked_invalid(self.data_hdu.data)
 
         self.aperture = EllipticalAperture(
             self.position_px,
-            a=self.task.parameters.sizeFactor * self.rma,
-            b=self.task.parameters.sizeFactor * self.rmi,
-            theta=self.data.geometry.positionAngle,
+            a=self.task.parameters.sizeFactor * self.rma_px,
+            b=self.task.parameters.sizeFactor * self.rmi_px,
+            theta=np.deg2rad(self.data.geometry.positionAngle),
         )
 
         phot_table = aperture_photometry(
@@ -111,13 +110,6 @@ class Integrate:
                 f"[INFO] Instrumental integrated flux error {self.band.name} = {cal_error:.03f} Jy/px "
             )
 
-            reg = EllipsePixelRegion(
-                PixCoord(self.position_px[0], self.position_px[1]),
-                width=self.task.parameters.sizeFactor * self.rma,
-                height=self.task.parameters.sizeFactor * self.rmi,
-                angle=Angle(self.data.geometry.positionAngle, "deg"),
-            )
-
             fig, ax = plt.subplots(1, 1)
             bound = np.argwhere(~np.isnan(self.data_hdu.data))
             if bound.any():
@@ -125,7 +117,7 @@ class Integrate:
                 ax.set_ylim(float(np.min(bound[:, 0])), float(np.max(bound[:, 0])))
 
             plt.imshow(self.data_hdu.data, origin="lower")
-            reg.plot(
+            self.aperture.plot(
                 ax=ax,
                 facecolor="none",
                 edgecolor="red",
@@ -136,7 +128,7 @@ class Integrate:
             cbar.ax.set_ylabel("Jy/px")
             plt.xticks([])
             plt.yticks([])
-            plt.legend()
+            plt.legend(loc="lower left")
             plt.savefig(
                 f"{self.band.output}/PHOT_{self.data.body}_{self.band.name}.png"
             )
@@ -155,17 +147,17 @@ class IntegrateAnalytic(Integrate):
         px_size = read.pixel_size_arcsec(self.err_hdu.header)
         ra_ = self.data.geometry.ra
         dec_ = self.data.geometry.dec
-        rma_ = self.data.geometry.semiMajorAxis
-        rmi_ = rma_ / self.data.geometry.axialRatio
+        rma = self.data.geometry.semiMajorAxis / 2
+        rmi = rma / self.data.geometry.axialRatio
         self.position_px = wcs.all_world2pix(ra_, dec_, 0)
-        self.rma = int(np.ceil(rma_ / px_size))
-        self.rmi = int(np.ceil(rmi_ / px_size))
+        self.rma_px = rma / px_size
+        self.rmi_px = rmi / px_size
 
         self.aperture = EllipticalAperture(
             self.position_px,
-            a=self.task.parameters.sizeFactor * self.rma,
-            b=self.task.parameters.sizeFactor * self.rmi,
-            theta=self.data.geometry.positionAngle,
+            a=self.task.parameters.sizeFactor * self.rma_px,
+            b=self.task.parameters.sizeFactor * self.rmi_px,
+            theta=np.deg2rad(self.data.geometry.positionAngle),
         )
 
         phot_table = aperture_photometry(
