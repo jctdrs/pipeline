@@ -65,7 +65,7 @@ class HIPCutout(BaseModel):
 
 class HIPIntegrate(BaseModel):
     band: str
-    sizeFactor: PositiveFloat
+    sizeFactor: Optional[PositiveFloat] = 1.0
 
 
 class HIPForegroundMask(BaseModel):
