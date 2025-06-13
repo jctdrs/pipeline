@@ -87,9 +87,11 @@ class SkySubtract:
         ncells1 = int(np.ceil(xsize / lcell_px))
         ncells2 = int(np.ceil(ysize / lcell_px))
         wcs = WCS(self.data_hdu.header)
-        position_px = wcs.all_world2pix(self.data.geometry.ra, self.data.geometry.dec, 0)
+        position_px = wcs.all_world2pix(
+            self.data.geometry.ra, self.data.geometry.dec, 0
+        )
         rma_ = self.data.geometry.semiMajorAxis / 2
-        rmi_ = rma_ / self.data.geometry.axialRatio 
+        rmi_ = rma_ / self.data.geometry.axialRatio
         rma = rma_ / pixel_size
         rmi = rmi_ / pixel_size
 
@@ -100,7 +102,9 @@ class SkySubtract:
             theta=np.deg2rad(self.data.geometry.positionAngle),
         )
 
-        self.bkg_mask = region.to_mask(method='exact').to_image(self.data_hdu.data.shape, dtype=bool) 
+        self.bkg_mask = region.to_mask(method="exact").to_image(
+            self.data_hdu.data.shape, dtype=bool
+        )
 
         self.bkg = background.Background2D(
             self.data_hdu.data,
@@ -140,15 +144,11 @@ class SkySubtract:
             cbar.ax.set_ylabel("Jy/px")
             plt.yticks([])
             plt.xticks([])
-            plt.savefig(
-                f"{self.band.output}/SKY_{self.data.body}_{self.band.name}.png"
-            )
+            plt.savefig(f"{self.band.output}/SKY_{self.data.body}_{self.band.name}.png")
             plt.close()
 
             plt.imshow(sourcemask, origin="lower")
-            plt.title(
-                f"{self.data.body} {self.band.name} skySubtract step result"
-            )
+            plt.title(f"{self.data.body} {self.band.name} skySubtract step result")
             cbar = plt.colorbar()
             cbar.ax.set_ylabel("Jy/px")
             plt.yticks([])

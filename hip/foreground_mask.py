@@ -11,7 +11,7 @@ import astropy
 
 import numpy as np
 
-from photutils.aperture import EllipticalAperture 
+from photutils.aperture import EllipticalAperture
 from photutils.aperture import CircularAperture
 
 from util import read
@@ -111,7 +111,7 @@ class ForegroundMask:
 
             # Create aperture for all valid sources at once
             apertures = CircularAperture(valid_coords, r_px)
-            masks = apertures.to_mask(method='exact')
+            masks = apertures.to_mask(method="exact")
 
             # Combine all masks for this magnitude bin
             for mask in masks:
@@ -128,7 +128,7 @@ class ForegroundMask:
         magnitude_bins = ["<13.5", "<14.", "<15.5", "<16.", "<18.", "<40."]
         ra_trim = self.task.parameters.raTrim * au.arcmin
         dec_trim = self.task.parameters.decTrim * au.arcmin
-        width = max(ra_trim * 2, dec_trim *2)
+        width = max(ra_trim * 2, dec_trim * 2)
 
         v = Vizier(
             columns=["RAJ2000", "DEJ2000", "Gmag"],
@@ -141,11 +141,10 @@ class ForegroundMask:
 
         for idx, mag_filter in enumerate(magnitude_bins):
             try:
-                fgs_sources = v.query_region(
-                    self.data.body, 
-                    width=width
-                )[0]
-                coords = np.column_stack([fgs_sources["RAJ2000"], fgs_sources["DEJ2000"]])
+                fgs_sources = v.query_region(self.data.body, width=width)[0]
+                coords = np.column_stack(
+                    [fgs_sources["RAJ2000"], fgs_sources["DEJ2000"]]
+                )
                 new_sources = []
                 for coord in coords:
                     coord_tuple = tuple(coord)
@@ -168,9 +167,7 @@ class ForegroundMask:
         wcs = WCS(self.data_hdu.header)
 
         position_px = wcs.all_world2pix(
-            self.data.geometry.ra, 
-            self.data.geometry.dec, 
-            0
+            self.data.geometry.ra, self.data.geometry.dec, 0
         )
 
         rma = self.data.geometry.semiMajorAxis / 2
@@ -185,34 +182,36 @@ class ForegroundMask:
             theta=np.deg2rad(self.data.geometry.positionAngle),
         )
 
-        mask_reg = region.to_mask(method='exact').to_image(self.data_hdu.data.shape, dtype=bool) 
+        mask_reg = region.to_mask(method="exact").to_image(
+            self.data_hdu.data.shape, dtype=bool
+        )
 
         return mask_reg
 
-
     def diagnosis(self) -> None:
         if self.task.diagnosis:
-           plt.imshow(self.combined_mask, origin="lower")
-           plt.title(f"{self.data.body} {self.band.name} foregroundMask mask")
-           plt.xticks([])
-           plt.yticks([])
-           plt.savefig(
+            plt.imshow(self.combined_mask, origin="lower")
+            plt.title(f"{self.data.body} {self.band.name} foregroundMask mask")
+            plt.xticks([])
+            plt.yticks([])
+            plt.savefig(
                 f"{self.band.output}/FRG_MASK_{self.data.body}_{self.band.name}.png"
-           )
-           plt.close()
+            )
+            plt.close()
 
-           plt.imshow(self.data_hdu.data, origin="lower")
-           cbar = plt.colorbar()
-           cbar.ax.set_ylabel("Jy/px")
-           plt.title(f"{self.data.body} {self.band.name} foregroundMask step result")
-           plt.xticks([])
-           plt.yticks([])
-           plt.savefig(
+            plt.imshow(self.data_hdu.data, origin="lower")
+            cbar = plt.colorbar()
+            cbar.ax.set_ylabel("Jy/px")
+            plt.title(f"{self.data.body} {self.band.name} foregroundMask step result")
+            plt.xticks([])
+            plt.yticks([])
+            plt.savefig(
                 f"{self.band.output}/FRG_DATA_{self.data.body}_{self.band.name}.png"
-           )
-           plt.close()
+            )
+            plt.close()
 
         return None
+
 
 class ForegroundMaskSinglePass(ForegroundMask):
     def run(
