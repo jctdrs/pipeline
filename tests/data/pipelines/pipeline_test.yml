@@ -24,7 +24,7 @@ pipeline:
       diagnosis: False
       parameters:
         - band: PACS1
-          cellFactor: 1
+          cellFactor: 2
 
     - step: hip.degrade
       diagnosis: False
@@ -49,4 +49,4 @@ pipeline:
       diagnosis: True
       parameters:
         - band: PACS1
-          sizeFactor: 3
+          sizeFactor: 1
