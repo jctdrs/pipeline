@@ -90,7 +90,7 @@ class SkySubtract:
         position_px = wcs.all_world2pix(
             self.data.geometry.ra, self.data.geometry.dec, 0
         )
-        rma_ = self.data.geometry.semiMajorAxis / 2
+        rma_ = self.data.geometry.semiMajorAxis
         rmi_ = rma_ / self.data.geometry.axialRatio
         rma = rma_ / pixel_size
         rmi = rmi_ / pixel_size

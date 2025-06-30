@@ -170,7 +170,7 @@ class ForegroundMask:
             self.data.geometry.ra, self.data.geometry.dec, 0
         )
 
-        rma = self.data.geometry.semiMajorAxis / 2
+        rma = self.data.geometry.semiMajorAxis
         rmi = rma / self.data.geometry.axialRatio
         rma_px = rma / px_size
         rmi_px = rmi / px_size

@@ -75,7 +75,7 @@ class Integrate:
         px_size = read.pixel_size_arcsec(self.data_hdu.header)
         ra_ = self.data.geometry.ra
         dec_ = self.data.geometry.dec
-        rma = self.data.geometry.semiMajorAxis / 2
+        rma = self.data.geometry.semiMajorAxis
         rmi = rma / self.data.geometry.axialRatio
         self.position_px = wcs.all_world2pix(ra_, dec_, 0)
         self.rma_px = rma / px_size
@@ -146,7 +146,7 @@ class IntegrateAnalytic(Integrate):
         px_size = read.pixel_size_arcsec(self.err_hdu.header)
         ra_ = self.data.geometry.ra
         dec_ = self.data.geometry.dec
-        rma = self.data.geometry.semiMajorAxis / 2
+        rma = self.data.geometry.semiMajorAxis
         rmi = rma / self.data.geometry.axialRatio
         self.position_px = wcs.all_world2pix(ra_, dec_, 0)
         self.rma_px = rma / px_size
