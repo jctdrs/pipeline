@@ -201,15 +201,18 @@ class RegridAnalytic(Regrid):
                 + np.square(w11)
                 * np.square(self.err_hdu.data[y1.astype(int), x1.astype(int)])
             )
+            self.err_hdu.data = np.sqrt(propagated_error_matrix)
+
         else:
             propagated_error_matrix = (
-                w00 * np.square(self.err_hdu.data[y0.astype(int), x0.astype(int)])
-                + w10 * np.square(self.err_hdu.data[y0.astype(int), x1.astype(int)])
-                + w01 * np.square(self.err_hdu.data[y1.astype(int), x0.astype(int)])
-                + w11 * np.square(self.err_hdu.data[y1.astype(int), x1.astype(int)])
+                w00 * self.err_hdu.data[y0.astype(int), x0.astype(int)]
+                + w10 * self.err_hdu.data[y0.astype(int), x1.astype(int)]
+                + w01 * self.err_hdu.data[y1.astype(int), x0.astype(int)]
+                + w11 * self.err_hdu.data[y1.astype(int), x1.astype(int)]
             )
 
-        self.err_hdu.data = np.sqrt(propagated_error_matrix)
+            self.err_hdu.data = propagated_error_matrix
+
         self.err_hdu.header.update(target_wcs.to_header())
         self.convert_from_radiance_to_Jyperpx(self.err_hdu)
 

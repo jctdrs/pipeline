@@ -8,10 +8,8 @@ import numpy.ma as ma
 
 import astropy
 from astropy.wcs import WCS
-from astropy.coordinates import Angle
 
 from photutils.aperture import EllipticalAperture
-from photutils.aperture import CircularAperture
 from photutils.aperture import aperture_photometry
 
 import matplotlib.pyplot as plt
@@ -167,7 +165,10 @@ class IntegrateAnalytic(Integrate):
             apertures=self.aperture,
         )
 
-        self.integrated_flux_error = phot_table["aperture_sum_err"][0]
+        if self.err_hdu.header["ERRCORR"] == "False":
+            self.integrated_flux_error = phot_table["aperture_sum_err"][0]
+        else:
+            self.integrated_flux_error = phot_table["aperture_sum"][0]
 
         print(
             f"[INFO] Statistical integrated flux error {self.band.name} = "
