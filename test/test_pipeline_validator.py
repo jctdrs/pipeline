@@ -67,48 +67,48 @@ class TestConfig:
 class TestBands:
     def test_valid_creation_with_error_file(self):
         bands = bands_validation.Band(
-            input="tests/data/inputs/NGC4254_PACS1.fits",
-            error="tests/data/error/NGC4254_PACS1_Error.fits",
-            output="tests/data/outputs/",
+            input="test/data/inputs/NGC4254_PACS1.fits",
+            error="test/data/error/NGC4254_PACS1_Error.fits",
+            output="test/data/outputs/",
             calError=5.0,
             name="PACS1",
         )
-        assert bands.input == "tests/data/inputs/NGC4254_PACS1.fits"
-        assert bands.error == "tests/data/error/NGC4254_PACS1_Error.fits"
-        assert bands.output == "tests/data/outputs/"
+        assert bands.input == "test/data/inputs/NGC4254_PACS1.fits"
+        assert bands.error == "test/data/error/NGC4254_PACS1_Error.fits"
+        assert bands.output == "test/data/outputs/"
         assert bands.calError == 5.0
         assert bands.name == "PACS1"
 
     def test_valid_creation_without_error_file(self):
         bands = bands_validation.Band(
-            input="tests/data/inputs/NGC4254_PACS1.fits",
-            output="tests/data/outputs/",
+            input="test/data/inputs/NGC4254_PACS1.fits",
+            output="test/data/outputs/",
             calError=5.0,
             name="PACS1",
         )
-        assert bands.input == "tests/data/inputs/NGC4254_PACS1.fits"
+        assert bands.input == "test/data/inputs/NGC4254_PACS1.fits"
         assert bands.error is None
-        assert bands.output == "tests/data/outputs/"
+        assert bands.output == "test/data/outputs/"
         assert bands.calError == 5.0
         assert bands.name == "PACS1"
 
     def test_valid_creation_without_calError(self):
         bands = bands_validation.Band(
-            input="tests/data/inputs/NGC4254_PACS1.fits",
-            output="tests/data/outputs/",
+            input="test/data/inputs/NGC4254_PACS1.fits",
+            output="test/data/outputs/",
             name="PACS1",
         )
-        assert bands.input == "tests/data/inputs/NGC4254_PACS1.fits"
+        assert bands.input == "test/data/inputs/NGC4254_PACS1.fits"
         assert bands.error is None
-        assert bands.output == "tests/data/outputs/"
+        assert bands.output == "test/data/outputs/"
         assert bands.calError == 5.4
         assert bands.name == "PACS1"
 
     def test_invalid_creation_with_negative_calError(self):
         with pytest.raises(ValueError) as e:
             bands_validation.Band(
-                input="tests/data/inputs/NGC4254_PACS1.fits",
-                output="tests/data/outputs/",
+                input="test/data/inputs/NGC4254_PACS1.fits",
+                output="test/data/outputs/",
                 name="PACS1",
                 calError=-1.5,
             )
@@ -117,34 +117,34 @@ class TestBands:
     def test_invalid_creation_files_not_found(self):
         with pytest.raises(OSError) as e:
             bands_validation.Band(
-                input="tests/data/inputs/NGC4254_PACS2.fits",
-                output="tests/data/outputs/",
+                input="test/data/inputs/NGC4254_PACS2.fits",
+                output="test/data/outputs/",
                 name="PACS1",
             )
-        assert "Path tests/data/inputs/NGC4254_PACS2.fits not found." in str(e.value)
+        assert "Path test/data/inputs/NGC4254_PACS2.fits not found." in str(e.value)
 
         with pytest.raises(OSError) as e:
             bands_validation.Band(
-                input="tests/data/inputs/NGC4254_PACS1.fits",
-                error="tests/data/inputs/NGC4254_PACS2.fits",
-                output="tests/data/outputs/",
+                input="test/data/inputs/NGC4254_PACS1.fits",
+                error="test/data/inputs/NGC4254_PACS2.fits",
+                output="test/data/outputs/",
                 name="PACS1",
             )
-        assert "Path tests/data/inputs/NGC4254_PACS2.fits not found." in str(e.value)
+        assert "Path test/data/inputs/NGC4254_PACS2.fits not found." in str(e.value)
 
         with pytest.raises(OSError) as e:
             bands_validation.Band(
-                input="tests/data/inputs/NGC4254_PACS1.fits",
-                error="tests/data/inputs/NGC4254_PACS1_Error.fits",
-                output="tests/data/outputss/",
+                input="test/data/inputs/NGC4254_PACS1.fits",
+                error="test/data/inputs/NGC4254_PACS1_Error.fits",
+                output="test/data/outputss/",
                 name="PACS1",
             )
-        assert "Path tests/data/outputss/ not found." in str(e.value)
+        assert "Path test/data/outputss/ not found." in str(e.value)
 
     def test_invalid_creation_without_input(self):
         with pytest.raises(ValueError) as e:
             bands_validation.Band(
-                output="tests/data/outputs/",
+                output="test/data/outputs/",
                 name="PACS1",
             )
 
@@ -153,9 +153,9 @@ class TestBands:
     def test_invalid_creation_with_name_not_HerBie(self):
         with pytest.raises(ValueError) as e:
             bands_validation.Band(
-                input="tests/data/inputs/NGC4254_PACS1.fits",
-                error="tests/data/error/NGC4254_PACS1_Error.fits",
-                output="tests/data/outputs/",
+                input="test/data/inputs/NGC4254_PACS1.fits",
+                error="test/data/error/NGC4254_PACS1_Error.fits",
+                output="test/data/outputs/",
                 name="PACS11",
             )
         assert "Band 'PACS11' not valid HerBie naming." in str(e.value)

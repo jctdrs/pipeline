@@ -8,8 +8,8 @@ config:
 data:
     body: NGC4254
     bands:
-      - input: tests/data/inputs/NGC4254_PACS1.fits
-        output: tests/data/outputs/
+      - input: test/data/inputs/NGC4254_PACS1.fits
+        output: test/data/outputs/
         name: PACS1
 
 pipeline:     
@@ -30,13 +30,13 @@ pipeline:
       diagnosis: False
       parameters:
         - band: PACS1
-          kernel: tests/data/kernels/Kernel_LowRes_PACS1_to_SPIRE3.fits
+          kernel: test/data/kernels/Kernel_LowRes_PACS1_to_SPIRE3.fits
 
     - step: hip.regrid
       diagnosis: False
       parameters:
         - band: all
-          target: tests/data/inputs/NGC4254_SPIRE3.fits
+          target: test/data/inputs/NGC4254_SPIRE3.fits
 
     - step: hip.cutout
       diagnosis: False
