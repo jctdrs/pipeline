@@ -15,7 +15,6 @@ from photutils.aperture import EllipticalAperture
 from photutils.aperture import CircularAperture
 
 from utilities import read
-from utilities.instruments import Resolution
 
 import matplotlib.pyplot as plt
 
@@ -81,7 +80,7 @@ class ForegroundMask:
         mask_gal_reg = self.get_mask_source()
 
         base_radius = [4.6, 3.0, 2.1, 1.4, 1.15, 0.7]
-        resolution = getattr(Resolution, self.band.name)
+        resolution = read.BMAJ(self.data_hdu.header, self.band.name)
         mask_factor = self.task.parameters.maskFactor
         r_masks = [(mask_factor * resolution * radius) / 2 for radius in base_radius]
 

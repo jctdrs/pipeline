@@ -1,5 +1,4 @@
 import itertools
-import yaml
 import copy
 from pathlib import Path
 from dataclasses import dataclass
@@ -86,7 +85,7 @@ class PipelineGeneric:
 
         unit = read.unit(self.data_hdu.header)
         if "mJy/beam" in unit and "NIKA2" in band.name:
-            beam_deg = read.BMAJ(self.data_hdu.header)
+            beam_deg = read.BMAJ(self.data_hdu.header) / 3600
             px_size_deg = read.pixel_size_arcsec(self.data_hdu.header) / 3600
 
             conversion_factor = (
@@ -111,7 +110,7 @@ class PipelineGeneric:
         if self.err_hdu is not None:
             unit = read.unit(self.data_hdu.header)
             if "mJy/beam" in unit and "NIKA2" in band.name:
-                beam_deg = read.BMAJ(self.err_hdu.header)
+                beam_deg = read.BMAJ(self.err_hdu.header) / 3600
                 px_size_deg = read.pixel_size_arcsec(self.err_hdu.header) / 3600
 
                 conversion_factor = (

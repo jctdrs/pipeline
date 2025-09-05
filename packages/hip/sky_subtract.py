@@ -16,7 +16,6 @@ import numpy.ma as ma
 import matplotlib.pyplot as plt
 
 from utilities import read
-from utilities.instruments import Resolution
 
 
 class SkySubtract:
@@ -80,7 +79,7 @@ class SkySubtract:
         xsize, ysize = read.shape(self.data_hdu.header)
         lcell_px = np.ceil(
             self.task.parameters.cellFactor
-            * getattr(Resolution, self.band.name)
+            * read.BMAJ(self.data_hdu.header, self.band.name)
             / pixel_size
         )
         ncells1 = int(np.ceil(xsize / lcell_px))

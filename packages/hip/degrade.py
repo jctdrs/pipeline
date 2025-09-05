@@ -2,7 +2,6 @@ from typing import Optional
 from typing import Tuple
 
 from utilities import read
-from utilities.instruments import Resolution
 
 import numpy as np
 
@@ -97,7 +96,7 @@ class Degrade:
                 self.kernel_hdu.data = zoom(self.kernel_hdu.data, ratio) / ratio**2
 
         elif self.task.parameters.target is not None:
-            input_resolution = getattr(Resolution, self.band.name)
+            input_resolution = read.BMAJ(self.data_hdu.header, self.band.name)
             target_resolution = self.task.parameters.target
             if target_resolution <= input_resolution:
                 msg = "[ERROR] Cannot degrade to lower resolution."

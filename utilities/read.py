@@ -7,6 +7,8 @@ import math
 
 from astropy.io import fits
 
+from utilities.instruments import Resolution
+
 
 def pixel_size_arcsec(header: fits.header.Header) -> Union[float, Any]:
     px_size_fits = _check_px_size(header)
@@ -112,11 +114,13 @@ def unit(header: fits.header.Header) -> Union[Any, str]:
         raise KeyError(msg)
 
 
-def BMAJ(header: fits.header.Header) -> Union[Any, float]:
+def BMAJ(header: fits.header.Header, band: str) -> Union[Any, float]:
     keys: List = list(header.keys())
 
     if "BMAJ" in keys:
-        return header["BMAJ"]
+        return header["BMAJ"] * 3600
+    elif hasattr(Resolution, band):
+        return getattr(Resolution, band)
     else:
-        msg = "[ERROR] Unable to read BMAJ from header."
+        msg = f"[ERROR] Unable to find resolution of {band}."
         raise KeyError(msg)
