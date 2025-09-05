@@ -11,7 +11,7 @@ from reproject import reproject_interp
 
 import matplotlib.pyplot as plt
 
-from util import read
+from utilities import read
 
 
 class Regrid:

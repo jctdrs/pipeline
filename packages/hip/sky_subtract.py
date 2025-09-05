@@ -15,7 +15,7 @@ import copy
 import numpy.ma as ma
 import matplotlib.pyplot as plt
 
-from util import read
+from utilities import read
 
 
 class SkySubtract:

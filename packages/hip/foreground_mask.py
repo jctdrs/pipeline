@@ -14,7 +14,7 @@ import numpy as np
 from photutils.aperture import EllipticalAperture
 from photutils.aperture import CircularAperture
 
-from util import read
+from utilities import read
 
 import matplotlib.pyplot as plt
 

@@ -14,15 +14,15 @@ from setup.pipeline_validation import PipelineStepUnrolled
 from setup.pipeline_validation import Pipeline
 from setup.bands_validation import Band
 
-from hip import degrade
-from hip import sky_subtract
-from hip import regrid
-from hip import foreground_mask
-from hip import cutout
-from hip import integrate
-from hip import test
+from packages.hip import degrade
+from packages.hip import sky_subtract
+from packages.hip import regrid
+from packages.hip import foreground_mask
+from packages.hip import cutout
+from packages.hip import integrate
+from packages.hip import test
 
-from util import read
+from utilities import read
 
 from astropy.io import fits
 from astropy.stats import mad_std
