@@ -42,6 +42,7 @@ class HIPDegrade(BaseModel):
 
 class HIPSkySubtract(BaseModel):
     cellFactor: Optional[PositiveInt] = 1
+    sizeFactor: Optional[PositiveFloat] = 1.0
     band: str
 
 

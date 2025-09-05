@@ -92,8 +92,8 @@ class SkySubtract:
         )
         rma_ = self.data.geometry.semiMajorAxis
         rmi_ = rma_ / self.data.geometry.axialRatio
-        rma = rma_ / pixel_size
-        rmi = rmi_ / pixel_size
+        rma = rma_ / pixel_size * self.task.parameters.sizeFactor
+        rmi = rmi_ / pixel_size * self.task.parameters.sizeFactor
 
         region = EllipticalAperture(
             position_px,
