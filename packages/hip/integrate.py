@@ -1,8 +1,6 @@
 from typing import Optional
 from typing import Tuple
 
-from utilities import read
-
 import numpy as np
 import numpy.ma as ma
 
@@ -70,14 +68,13 @@ class Integrate:
         Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
         wcs = WCS(self.data_hdu.header)
-        px_size = read.pixel_size_arcsec(self.data_hdu.header)
         ra_ = self.data.geometry.ra
         dec_ = self.data.geometry.dec
         rma = self.data.geometry.semiMajorAxis
         rmi = rma / self.data.geometry.axialRatio
         self.position_px = wcs.all_world2pix(ra_, dec_, 0)
-        self.rma_px = rma / px_size
-        self.rmi_px = rmi / px_size
+        self.rma_px = rma / self.band.pixelSize
+        self.rmi_px = rmi / self.band.pixelSize
         nan = ma.masked_invalid(self.data_hdu.data)
 
         self.aperture = EllipticalAperture(
@@ -141,14 +138,13 @@ class IntegrateAnalytic(Integrate):
         Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
         wcs = WCS(self.err_hdu.header)
-        px_size = read.pixel_size_arcsec(self.err_hdu.header)
         ra_ = self.data.geometry.ra
         dec_ = self.data.geometry.dec
         rma = self.data.geometry.semiMajorAxis
         rmi = rma / self.data.geometry.axialRatio
         self.position_px = wcs.all_world2pix(ra_, dec_, 0)
-        self.rma_px = rma / px_size
-        self.rmi_px = rmi / px_size
+        self.rma_px = rma / self.band.pixelSize
+        self.rmi_px = rmi / self.band.pixelSize
 
         self.aperture = EllipticalAperture(
             self.position_px,

@@ -14,8 +14,6 @@ import numpy as np
 from photutils.aperture import EllipticalAperture
 from photutils.aperture import CircularAperture
 
-from utilities import read
-
 import matplotlib.pyplot as plt
 
 
@@ -72,17 +70,16 @@ class ForegroundMask:
         astropy.io.fits.hdu.image.PrimaryHDU,
         Optional[astropy.io.fits.hdu.image.PrimaryHDU],
     ]:
-        px_size = read.pixel_size_arcsec(self.data_hdu.header)
         wcs = WCS(self.data_hdu.header)
 
         fgs_list = self.find_fgs()
-
         mask_gal_reg = self.get_mask_source()
 
         base_radius = [4.6, 3.0, 2.1, 1.4, 1.15, 0.7]
-        resolution = read.BMAJ(self.data_hdu.header, self.band.name)
         mask_factor = self.task.parameters.maskFactor
-        r_masks = [(mask_factor * resolution * radius) / 2 for radius in base_radius]
+        r_masks = [
+            (mask_factor * self.band.resolution * radius) / 2 for radius in base_radius
+        ]
 
         self.combined_mask = np.zeros(self.data_hdu.data.shape, dtype=bool)
         naxis1, naxis2 = self.data_hdu.header["NAXIS1"], self.data_hdu.header["NAXIS2"]
@@ -94,7 +91,7 @@ class ForegroundMask:
 
             # Convert world coordinates to pixel coordinates
             fgs_pos_px = wcs.all_world2pix(fgs, 0)
-            r_px = r_mask / px_size
+            r_px = r_mask / self.band.pixelSize
 
             # Filter coordinates that are within bounds and not in galaxy region
             valid_coords = []
@@ -160,8 +157,6 @@ class ForegroundMask:
         return results
 
     def get_mask_source(self) -> Any:
-        px_size = read.pixel_size_arcsec(self.data_hdu.header)
-
         wcs = WCS(self.data_hdu.header)
 
         position_px = wcs.all_world2pix(
@@ -170,8 +165,8 @@ class ForegroundMask:
 
         rma = self.data.geometry.semiMajorAxis
         rmi = rma / self.data.geometry.axialRatio
-        rma_px = rma / px_size
-        rmi_px = rmi / px_size
+        rma_px = rma / self.band.pixelSize
+        rmi_px = rmi / self.band.pixelSize
 
         region = EllipticalAperture(
             position_px,

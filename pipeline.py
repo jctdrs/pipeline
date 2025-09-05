@@ -1,6 +1,5 @@
 import itertools
 import copy
-from pathlib import Path
 from dataclasses import dataclass
 from dataclasses import field
 
@@ -31,7 +30,6 @@ from reproject import reproject_interp
 
 import numpy as np
 
-LIB_ROOT = Path(__file__).resolve().parents[1]
 
 Interface: Dict[str, Any] = {
     "hip.degrade": degrade.Degrade.create,
@@ -85,8 +83,8 @@ class PipelineGeneric:
 
         unit = read.unit(self.data_hdu.header)
         if "mJy/beam" in unit and "NIKA2" in band.name:
-            beam_deg = read.BMAJ(self.data_hdu.header) / 3600
-            px_size_deg = read.pixel_size_arcsec(self.data_hdu.header) / 3600
+            beam_deg = self.band.resolution / 3600
+            px_size_deg = self.band.pixelSize / 3600
 
             conversion_factor = (
                 px_size_deg**2 / (np.pi * beam_deg**2 / (4 * 0.693))
@@ -110,8 +108,8 @@ class PipelineGeneric:
         if self.err_hdu is not None:
             unit = read.unit(self.data_hdu.header)
             if "mJy/beam" in unit and "NIKA2" in band.name:
-                beam_deg = read.BMAJ(self.err_hdu.header) / 3600
-                px_size_deg = read.pixel_size_arcsec(self.err_hdu.header) / 3600
+                beam_deg = self.band.resolution / 3600
+                px_size_deg = self.band.pixelSize / 3600
 
                 conversion_factor = (
                     px_size_deg**2 / (np.pi * beam_deg**2 / (4 * 0.693))

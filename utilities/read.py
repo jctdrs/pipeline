@@ -7,8 +7,6 @@ import math
 
 from astropy.io import fits
 
-from utilities.instruments import Resolution
-
 
 def pixel_size_arcsec(header: fits.header.Header) -> Union[float, Any]:
     px_size_fits = _check_px_size(header)
@@ -23,7 +21,7 @@ def pixel_size_arcsec(header: fits.header.Header) -> Union[float, Any]:
         return math.sqrt(px_size_fits[0] ** 2 + px_size_fits[1] ** 2) * 3600
 
     else:
-        msg = "[ERROR] Unable to get pixel scale from image header."
+        msg = "[ERROR] Unable to get pixel size from image header."
         raise KeyError(msg)
 
 
@@ -114,13 +112,12 @@ def unit(header: fits.header.Header) -> Union[Any, str]:
         raise KeyError(msg)
 
 
-def BMAJ(header: fits.header.Header, band: str) -> Union[Any, float]:
+def resolution(header: fits.header.Header, band) -> Union[Any, float]:
     keys: List = list(header.keys())
-
-    if "BMAJ" in keys:
+    if band.resolution is not None:
+        return band.resolution
+    elif "BMAJ" in keys:
         return header["BMAJ"] * 3600
-    elif hasattr(Resolution, band):
-        return getattr(Resolution, band)
     else:
         msg = f"[ERROR] Unable to find resolution of {band}."
         raise KeyError(msg)
