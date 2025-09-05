@@ -16,6 +16,7 @@ import numpy.ma as ma
 import matplotlib.pyplot as plt
 
 from utilities import read
+from utilities.instruments import Resolution
 
 
 class SkySubtract:
@@ -44,7 +45,6 @@ class SkySubtract:
         data,
         task,
         band,
-        instruments,
     ):
         self.task_control = task_control
         self.data_hdu = data_hdu
@@ -52,7 +52,6 @@ class SkySubtract:
         self.data = data
         self.task = task
         self.band = band
-        self.instruments = instruments
 
     @classmethod
     def create(cls, *args, **kwargs):
@@ -81,7 +80,7 @@ class SkySubtract:
         xsize, ysize = read.shape(self.data_hdu.header)
         lcell_px = np.ceil(
             self.task.parameters.cellFactor
-            * self.instruments[self.band.name]["resolutionArcsec"]
+            * getattr(Resolution, self.band.name)
             / pixel_size
         )
         ncells1 = int(np.ceil(xsize / lcell_px))

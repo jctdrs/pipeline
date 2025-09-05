@@ -2,6 +2,7 @@ from typing import Optional
 from typing import Tuple
 
 from utilities import read
+from utilities.instruments import Resolution
 
 import numpy as np
 
@@ -40,7 +41,6 @@ class Degrade:
         data,
         task,
         band,
-        instruments,
     ):
         self.task_control = task_control
         self.data_hdu = data_hdu
@@ -48,7 +48,6 @@ class Degrade:
         self.data = data
         self.task = task
         self.band = band
-        self.instruments = instruments
 
     @classmethod
     def create(cls, *args, **kwargs):
@@ -98,7 +97,7 @@ class Degrade:
                 self.kernel_hdu.data = zoom(self.kernel_hdu.data, ratio) / ratio**2
 
         elif self.task.parameters.target is not None:
-            input_resolution = self.instruments[self.band.name]["resolutionArcsec"]
+            input_resolution = getattr(Resolution, self.band.name)
             target_resolution = self.task.parameters.target
             if target_resolution <= input_resolution:
                 msg = "[ERROR] Cannot degrade to lower resolution."

@@ -15,6 +15,7 @@ from photutils.aperture import EllipticalAperture
 from photutils.aperture import CircularAperture
 
 from utilities import read
+from utilities.instruments import Resolution
 
 import matplotlib.pyplot as plt
 
@@ -45,7 +46,6 @@ class ForegroundMask:
         data,
         task,
         band,
-        instruments,
     ):
         self.task_control = task_control
         self.data_hdu = data_hdu
@@ -53,7 +53,6 @@ class ForegroundMask:
         self.data = data
         self.task = task
         self.band = band
-        self.instruments = instruments
 
     @classmethod
     def create(cls, *args, **kwargs):
@@ -82,7 +81,7 @@ class ForegroundMask:
         mask_gal_reg = self.get_mask_source()
 
         base_radius = [4.6, 3.0, 2.1, 1.4, 1.15, 0.7]
-        resolution = self.instruments[self.band.name]["resolutionArcsec"]
+        resolution = getattr(Resolution, self.band.name)
         mask_factor = self.task.parameters.maskFactor
         r_masks = [(mask_factor * resolution * radius) / 2 for radius in base_radius]
 
@@ -155,7 +154,7 @@ class ForegroundMask:
                 if new_sources:
                     results[idx] = np.array(new_sources)
 
-            except Exception as e:
+            except Exception:
                 print(f"[WARNING] Vizier query failed for magnitude {mag_filter}")
                 continue
 

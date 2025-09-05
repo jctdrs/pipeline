@@ -34,8 +34,6 @@ import numpy as np
 
 LIB_ROOT = Path(__file__).resolve().parents[1]
 
-INSTRUMENTS_CONFIG: str = f"{LIB_ROOT}/data/config/instruments.yml"
-
 Interface: Dict[str, Any] = {
     "hip.degrade": degrade.Degrade.create,
     "hip.skySubtract": sky_subtract.SkySubtract.create,
@@ -61,7 +59,6 @@ class TaskControl:
 class PipelineGeneric:
     def __init__(self, pipe):
         self.pipe = pipe
-        self._load_instruments()
 
     @classmethod
     def create(
@@ -157,25 +154,6 @@ class PipelineGeneric:
     def execute(self):
         pass
 
-    def _load_instruments(self) -> None:
-        try:
-            f = open(INSTRUMENTS_CONFIG, "r")
-        except OSError:
-            msg = "[ERROR] File 'config/instruments.yml' not found."
-            raise OSError(msg)
-
-        # Check if spec is valid YAML
-        # In case of failure, capture line/col for debug
-        try:
-            self.instruments = yaml.load(f, yaml.SafeLoader)
-            f.close()
-        except (yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
-            line = e.problem_mark.line + 1  # type: ignore
-            column = e.problem_mark.column + 1  # type: ignore
-            msg = f"[ERROR] YAML parsing error at line {line}, column {column}."
-            raise ValueError(msg)
-        return None
-
     def _set_task_control(self, band: Band) -> None:
         pass
 
@@ -247,7 +225,6 @@ class AnalyticPipeline(PipelineGeneric):
                     data=self.pipe.data,
                     task=task,
                     band=band,
-                    instruments=self.instruments,
                 ).run()
 
             self.save_error(band, "AD")
@@ -285,7 +262,6 @@ class SinglePassPipeline(PipelineGeneric):
                     data=self.pipe.data,
                     task=task,
                     band=band,
-                    instruments=self.instruments,
                 ).run()
 
             self.save_data(band)
@@ -392,7 +368,6 @@ class MonteCarloPipeline(PipelineGeneric):
                     data=self.pipe.data,
                     task=task,
                     band=band,
-                    instruments=self.instruments,
                 ).run()
 
                 if (

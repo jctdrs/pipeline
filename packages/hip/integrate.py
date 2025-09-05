@@ -42,7 +42,6 @@ class Integrate:
         data,
         task,
         band,
-        instruments,
     ):
         self.task_control = task_control
         self.data_hdu = data_hdu
@@ -50,7 +49,6 @@ class Integrate:
         self.data = data
         self.task = task
         self.band = band
-        self.instruments = instruments
 
     @classmethod
     def create(cls, *args, **kwargs):
