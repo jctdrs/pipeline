@@ -3,9 +3,9 @@ from typing import Literal
 from typing import List
 from typing import Any
 
-from setup.config_validation import Config
-from setup.data_validation import Data
-from setup import parameters_validation
+from models.config import Config
+from models.data import Data
+from models import parameters
 
 from pydantic import BaseModel
 from pydantic import model_validator
@@ -44,7 +44,7 @@ class PipelineStep(BaseModel):
             raise ValueError(msg)
 
         for idx, model in enumerate(data["parameters"]):
-            data["parameters"][idx] = parameters_validation.factory_method(
+            data["parameters"][idx] = parameters.factory_method(
                 data["step"], **data["parameters"][idx]
             )
         return data

@@ -1,8 +1,8 @@
 import argparse
 import warnings
 
-from setup import spec_validation
-from setup import pipeline
+import pipeline
+from models import spec
 
 warnings.filterwarnings("ignore")
 
@@ -20,9 +20,9 @@ def main() -> None:
     args = parser.parse_args()
     spec_path: str = args.file
 
-    spec = spec_validation.Specification(spec_path).validate()
+    spc = spec.Specification(spec_path).validate()
 
-    pipe = pipeline.PipelineGeneric.create(spec)
+    pipe = pipeline.PipelineGeneric.create(spc)
     pipe.execute()
 
     return None

@@ -9,9 +9,9 @@ from typing import Any
 from typing import List
 from typing import Dict
 
-from setup.pipeline_validation import PipelineStepUnrolled
-from setup.pipeline_validation import Pipeline
-from setup.bands_validation import Band
+from models.pipeline import PipelineStepUnrolled
+from models.pipeline import Pipeline
+from models.bands import Band
 
 from packages.hip import degrade
 from packages.hip import sky_subtract

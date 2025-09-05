@@ -1,7 +1,7 @@
 import yaml
 from typing import Any
 
-from setup.pipeline_validation import Pipeline
+from models.pipeline import Pipeline
 
 
 class DuplicateKeyError(Exception):

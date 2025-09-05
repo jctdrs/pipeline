@@ -2,8 +2,8 @@ from typing import Optional
 from typing import List
 from typing import Any
 
-from setup.geometry_validation import Geometry
-from setup.bands_validation import Band
+from models.geometry import Geometry
+from models.bands import Band
 
 from pydantic import BaseModel
 from pydantic import model_validator
