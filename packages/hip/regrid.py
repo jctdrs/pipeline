@@ -1,6 +1,8 @@
 from typing import Optional
 from typing import Tuple
 
+from utilities import read
+
 import numpy as np
 
 import astropy
@@ -74,8 +76,11 @@ class Regrid:
             input_data=self.data_hdu,
             output_projection=wcs_out,
         )
+
         self.data_hdu.header.update(wcs_out.to_header())
+        self.band.pixelSize = read.pixel_size_arcsec(self.data_hdu.header)
         self.convert_from_radiance_to_Jyperpx(self.data_hdu)
+
         return self.data_hdu, self.err_hdu
 
     def convert_from_Jyperpx_to_radiance(self, hdu) -> None:
