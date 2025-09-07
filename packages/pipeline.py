@@ -86,18 +86,10 @@ class PipelineGeneric:
         self.data_hdu = hdul[0]
 
         unit = read.unit(self.data_hdu.header)
-        if "mJy/beam" in unit and "NIKA2" in band.name:
-            beam_deg = self.band.resolution / 3600
-            px_size_deg = self.band.pixelSize / 3600
-
-            conversion_factor = (
-                px_size_deg**2 / (np.pi * beam_deg**2 / (4 * 0.693))
-            ) * 1e-3
-            self.data_hdu.data *= conversion_factor
-        elif "Jy/px" in unit or "Jy/pix" in unit:
+        if "Jy/px" in unit or "Jy/pix" in unit:
             pass
         else:
-            msg = f"[ERROR] Unit should be Jy/px except for NIKA maps. Input {unit}."
+            msg = "[ERROR] Unit should be Jy/px."
             raise ValueError(msg)
         return None
 
@@ -111,20 +103,10 @@ class PipelineGeneric:
 
         if self.err_hdu is not None:
             unit = read.unit(self.data_hdu.header)
-            if "mJy/beam" in unit and "NIKA2" in band.name:
-                beam_deg = self.band.resolution / 3600
-                px_size_deg = self.band.pixelSize / 3600
-
-                conversion_factor = (
-                    px_size_deg**2 / (np.pi * beam_deg**2 / (4 * 0.693))
-                ) * 1e-3
-                self.err_hdu.data *= conversion_factor
-            elif "Jy/px" in unit or "Jy/pix" in unit:
+            if "Jy/px" in unit or "Jy/pix" in unit:
                 pass
             else:
-                msg = (
-                    f"[ERROR] Unit should be Jy/px except for NIKA maps. Input {unit}."
-                )
+                msg = "[ERROR] Unit should be Jy/px."
                 raise ValueError(msg)
         return None
 
