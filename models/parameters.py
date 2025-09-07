@@ -29,7 +29,7 @@ class HIPDegrade(BaseModel):
         if self.kernel is not None:
             if not os.path.exists(self.kernel):
                 msg = f"[ERROR] Path {self.kernel} not found."
-                raise OSError(msg)
+                raise ValueError(msg)
         return self
 
     @model_validator(mode="after")
@@ -54,7 +54,7 @@ class HIPRegrid(BaseModel):
     def check_if_path_exists(self):
         if not os.path.exists(self.target):
             msg = f"[ERROR] Path {self.target} not found."
-            raise OSError(msg)
+            raise ValueError(msg)
         return self
 
 

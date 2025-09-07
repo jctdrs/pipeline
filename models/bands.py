@@ -24,7 +24,7 @@ class Band(BaseModel):
         def check_if_path_exists(path):
             if not os.path.exists(path):
                 msg = f"[ERROR] Path {path} not found."
-                raise OSError(msg)
+                raise ValueError(msg)
 
         check_if_path_exists(self.input)
         check_if_path_exists(self.output)

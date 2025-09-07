@@ -4,6 +4,8 @@ import warnings
 from packages import pipeline
 from models import spec
 
+from pydantic import ValidationError
+
 warnings.filterwarnings("ignore")
 
 
@@ -20,7 +22,11 @@ def main() -> None:
     args = parser.parse_args()
     spec_path: str = args.file
 
-    spc = spec.Specification(spec_path).validate()
+    try:
+        spc = spec.Specification(spec_path).validate()
+    except ValidationError as e:
+        print(e)
+        exit(-1)
 
     pipe = pipeline.PipelineGeneric.create(spc)
     pipe.execute()
