@@ -1,7 +1,7 @@
 import argparse
 import warnings
 
-import pipeline
+from packages import pipeline
 from models import spec
 
 warnings.filterwarnings("ignore")

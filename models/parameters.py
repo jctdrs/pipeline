@@ -79,10 +79,69 @@ class HIPForegroundMask(BaseModel):
 class HIPTest(BaseModel):
     pass
 
-
-class HIPRms(BaseModel):
+class CoreSubtract(BaseModel):
     band: str
+    target: Optional[str] = None
+    resultOf: Optional[str] = None
+    factor: Optional[float] = None
 
+    @model_validator(mode="after")
+    def check_for_only_one_option_defined(self):
+        vars_dict = {"target": self.target, "resultOf": self.resultOf, "factor": self.factor}
+        defined = [name for name, value in vars_dict.items() if value is not None]
+        if len(defined) > 1:
+            msg = f"More than one option is defined: {defined}"
+            raise ValueError(msg)
+
+        return self
+
+    @model_validator(mode="after")
+    def check_if_target_path_exists(self):
+        if self.target is not None:
+            if not os.path.exists(self.target):
+                msg = f"[ERROR] Path {self.target} not found."
+                raise OSError(msg)
+        return self
+
+    @model_validator(mode="after")
+    def check_if_resultOf_path_exists(self):
+        if self.resultOf is not None:
+            if not os.path.exists(self.resultOf):
+                msg = f"[ERROR] Path {self.resultOf} not found."
+                raise OSError(msg)
+        return self
+
+class CoreMultiply(BaseModel):
+    band: str
+    target: Optional[str] = None
+    resultOf: Optional[str] = None
+    factor: Optional[float] = None
+
+    @model_validator(mode="after")
+    def check_for_only_one_option_defined(self):
+        vars_dict = {"target": self.target, "resultOf": self.resultOf, "factor": self.factor}
+        defined = [name for name, value in vars_dict.items() if value is not None]
+        if len(defined) > 1:
+            msg = f"More than one option is defined: {defined}"
+            raise ValueError(msg)
+
+        return self
+
+    @model_validator(mode="after")
+    def check_if_target_path_exists(self):
+        if self.target is not None:
+            if not os.path.exists(self.target):
+                msg = f"[ERROR] Path {self.target} not found."
+                raise OSError(msg)
+        return self
+
+    @model_validator(mode="after")
+    def check_if_resultOf_path_exists(self):
+        if self.resultOf is not None:
+            if not os.path.exists(self.resultOf):
+                msg = f"[ERROR] Path {self.resultOf} not found."
+                raise OSError(msg)
+        return self
 
 Interface = {
     "hip.degrade": HIPDegrade,
@@ -91,6 +150,7 @@ Interface = {
     "hip.cutout": HIPCutout,
     "hip.integrate": HIPIntegrate,
     "hip.foregroundMask": HIPForegroundMask,
-    "hip.rms": HIPRms,
     "hip.test": HIPTest,
+    "core.subtract": CoreSubtract,
+    "core.multiply": CoreMultiply,
 }

@@ -51,7 +51,7 @@ class Band(BaseModel):
             if self.resolution is None:
                 msg = f"[ERROR] Resolution not defined for {self.name}."
                 print(msg)
-                raise ValueError
+                raise ValueError(msg)
 
         if self.pixelSize is None:
             with fits.open(self.input) as hdu:

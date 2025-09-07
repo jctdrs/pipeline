@@ -19,6 +19,8 @@ from packages.hip import foreground_mask
 from packages.hip import cutout
 from packages.hip import integrate
 from packages.hip import test
+from packages.core import subtract
+from packages.core import multiply
 
 from utilities import read
 
@@ -39,6 +41,8 @@ Interface: Dict[str, Any] = {
     "hip.integrate": integrate.Integrate.create,
     "hip.foregroundMask": foreground_mask.ForegroundMask.create,
     "hip.test": test.Test.create,
+    "core.subtract": subtract.Subtract,
+    "core.multiply": multiply.Multiply,
 }
 
 
@@ -226,7 +230,7 @@ class AnalyticPipeline(PipelineGeneric):
 
             self.save_error(band, "AD")
 
-        return None
+        return self.data_hdu, self.err_hdu
 
 
 class SinglePassPipeline(PipelineGeneric):
@@ -262,7 +266,8 @@ class SinglePassPipeline(PipelineGeneric):
                 ).run()
 
             self.save_data(band)
-        return None
+
+        return self.data_hdu, None
 
 
 class MonteCarloPipeline(PipelineGeneric):
@@ -390,4 +395,5 @@ class MonteCarloPipeline(PipelineGeneric):
 
             del original_data_hdu
             self.save_error(band, "MC")
-        return None
+
+        return self.data_hdu, self.err_hdu

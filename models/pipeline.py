@@ -23,7 +23,8 @@ class PipelineStepUnrolled(BaseModel):
         "hip.regrid",
         "hip.integrate",
         "hip.test",
-        "hip.rms",
+        "core.subtract",
+        "core.multiply",
     ]
     diagnosis: bool
     parameters: BaseModel
@@ -59,7 +60,8 @@ class PipelineStep(BaseModel):
             "hip.integrate",
             "hip.foregroundMask",
             "hip.test",
-            "hip.rms",
+            "core.subtract",
+            "core.multiply",
         }
 
         if self.step not in hip_possible_steps:
