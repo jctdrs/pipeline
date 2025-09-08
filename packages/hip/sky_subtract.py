@@ -75,9 +75,10 @@ class SkySubtract:
         self.data_hdu_invalid = ma.masked_invalid(self.data_hdu.data)
         self.data_hdu.data[self.data_hdu_invalid.mask] = 0.0
 
+        pixel_size = read.pixel_size_arcsec(self.data_hdu.header)
         xsize, ysize = read.shape(self.data_hdu.header)
         lcell_px = np.ceil(
-            self.task.parameters.cellFactor * self.band.resolution / self.band.pixelSize
+            self.task.parameters.cellFactor * self.band.resolution / pixel_size
         )
         ncells1 = int(np.ceil(xsize / lcell_px))
         ncells2 = int(np.ceil(ysize / lcell_px))
@@ -86,9 +87,10 @@ class SkySubtract:
             self.data.geometry.ra, self.data.geometry.dec, 0
         )
         rma_ = self.data.geometry.semiMajorAxis
+        pixel_size = read.pixel_size_arcsec(self.data_hdu.header)
         rmi_ = rma_ / self.data.geometry.axialRatio
-        rma = rma_ / self.band.pixelSize * self.task.parameters.sizeFactor
-        rmi = rmi_ / self.band.pixelSize * self.task.parameters.sizeFactor
+        rma = rma_ / pixel_size * self.task.parameters.sizeFactor
+        rmi = rmi_ / pixel_size * self.task.parameters.sizeFactor
 
         region = EllipticalAperture(
             position_px,

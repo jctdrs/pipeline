@@ -1,6 +1,8 @@
 from typing import Optional
 from typing import Tuple
 
+from utilities import read
+
 import numpy as np
 import numpy.ma as ma
 
@@ -72,9 +74,10 @@ class Integrate:
         dec_ = self.data.geometry.dec
         rma = self.data.geometry.semiMajorAxis
         rmi = rma / self.data.geometry.axialRatio
+        pixel_size = read.pixel_size_arcsec(self.data_hdu.header)
         self.position_px = wcs.all_world2pix(ra_, dec_, 0)
-        self.rma_px = rma / self.band.pixelSize
-        self.rmi_px = rmi / self.band.pixelSize
+        self.rma_px = rma / pixel_size
+        self.rmi_px = rmi / pixel_size
         nan = ma.masked_invalid(self.data_hdu.data)
 
         self.aperture = EllipticalAperture(

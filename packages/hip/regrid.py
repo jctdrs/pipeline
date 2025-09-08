@@ -78,14 +78,14 @@ class Regrid:
         )
 
         self.data_hdu.header.update(wcs_out.to_header())
-        self.band.pixelSize = read.pixel_size_arcsec(self.data_hdu.header)
         self.convert_from_radiance_to_Jyperpx(self.data_hdu)
 
         return self.data_hdu, self.err_hdu
 
     def convert_from_Jyperpx_to_radiance(self, hdu) -> None:
-        px_x: float = self.band.pixelSize * 2 * np.pi / 360
-        px_y: float = self.band.pixelSize * 2 * np.pi / 360
+        pixel_size = read.pixel_size_arcsec(hdu.header)
+        px_x: float = pixel_size * 2 * np.pi / 360
+        px_y: float = pixel_size * 2 * np.pi / 360
 
         # divide by 3.846x10^26 (Lsun in Watt) to convert W/Hz/m2/sr in
         # Lsun/Hz/m2/sr multiply by the galaxy distance in m2 to get Lsun/Hz/sr
@@ -101,8 +101,9 @@ class Regrid:
         return None
 
     def convert_from_radiance_to_Jyperpx(self, hdu) -> None:
-        px_x: float = self.band.pixelSize * 2 * np.pi / 360
-        px_y: float = self.band.pixelSize * 2 * np.pi / 360
+        pixel_size = read.pixel_size_arcsec(hdu.header)
+        px_x: float = pixel_size * 2 * np.pi / 360
+        px_y: float = pixel_size * 2 * np.pi / 360
 
         conversion_factor = (px_x * px_y * 3.846e26) / (
             1e-26 * pow((self.data.geometry.distance * 3.086e22), 2) * 4 * np.pi

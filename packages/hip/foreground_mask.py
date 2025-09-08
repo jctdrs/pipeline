@@ -3,6 +3,8 @@ from typing import Tuple
 from typing import List
 from typing import Any
 
+from utilities import read
+
 from astroquery.vizier import Vizier
 
 from astropy.wcs import WCS
@@ -91,7 +93,7 @@ class ForegroundMask:
 
             # Convert world coordinates to pixel coordinates
             fgs_pos_px = wcs.all_world2pix(fgs, 0)
-            r_px = r_mask / self.band.pixelSize
+            r_px = r_mask / read.pixel_size_arcsec(self.data_hdu.header)
 
             # Filter coordinates that are within bounds and not in galaxy region
             valid_coords = []
@@ -162,11 +164,11 @@ class ForegroundMask:
         position_px = wcs.all_world2pix(
             self.data.geometry.ra, self.data.geometry.dec, 0
         )
-
+        pixel_size = read.pixel_size_arcsec(self.data_hdu.header)
         rma = self.data.geometry.semiMajorAxis
         rmi = rma / self.data.geometry.axialRatio
-        rma_px = rma / self.band.pixelSize
-        rmi_px = rmi / self.band.pixelSize
+        rma_px = rma / pixel_size
+        rmi_px = rmi / pixel_size
 
         region = EllipticalAperture(
             position_px,

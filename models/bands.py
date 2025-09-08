@@ -1,13 +1,9 @@
 import os
 from typing import Optional
 
-from utilities import read
-
 from pydantic import BaseModel
 from pydantic import NonNegativeFloat
 from pydantic import model_validator
-
-from astropy.io import fits
 
 
 class Band(BaseModel):
@@ -16,7 +12,6 @@ class Band(BaseModel):
     name: str
     error: Optional[str] = None
     calError: Optional[NonNegativeFloat] = None
-    pixelSize: Optional[NonNegativeFloat] = None
     resolution: Optional[NonNegativeFloat] = None
 
     @model_validator(mode="after")
@@ -53,18 +48,13 @@ class Band(BaseModel):
                 print(msg)
                 raise ValueError(msg)
 
-        if self.pixelSize is None:
-            with fits.open(self.input) as hdu:
-                pixel_size = read.pixel_size_arcsec(hdu[0].header)
-                self.pixelSize = pixel_size
-
         return self
 
 
 class DefaultBand(BaseModel):
-    calError: float
-    pixelSize: float
-    resolution: float
+    calError: NonNegativeFloat
+    resolution: NonNegativeFloat
+    pixelSize: NonNegativeFloat
 
 
 DEFAULT_DUSTPEDIA_BANDS = {

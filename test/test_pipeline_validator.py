@@ -165,14 +165,3 @@ class TestBands:
             resolution="9",
         )
         assert bds.resolution == 9
-        assert bds.pixelSize == 2.0000016
-
-        bds = bands.Band(
-            input="test/data/inputs/NGC4254_PACS1.fits",
-            output="test/data/outputs/",
-            name="radio1",
-            resolution="9",
-            pixelSize="3",
-        )
-        assert bds.resolution == 9
-        assert bds.pixelSize == 3

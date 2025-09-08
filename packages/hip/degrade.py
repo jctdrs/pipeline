@@ -83,7 +83,7 @@ class Degrade:
             )
 
             self.kernel_hdu = hdu_kernel[0]
-            pixel_scale_i = self.band.pixelSize
+            pixel_scale_i = read.pixel_size_arcsec(self.data_hdu.header)
             pixel_scale_k = read.pixel_size_arcsec(self.kernel_hdu.header)
 
             if pixel_scale_k != pixel_scale_i:
@@ -130,8 +130,9 @@ class Degrade:
         )
 
     def convert_from_Jyperpx_to_radiance(self, hdu) -> None:
-        px_x: float = self.band.pixelSize * 2 * np.pi / 360
-        px_y: float = self.band.pixelSize * 2 * np.pi / 360
+        pixel_size = read.pixel_size_arcsec(hdu.header)
+        px_x: float = pixel_size * 2 * np.pi / 360
+        px_y: float = pixel_size * 2 * np.pi / 360
 
         conversion_factor = (
             1e-26
@@ -145,8 +146,9 @@ class Degrade:
         return None
 
     def convert_from_radiance_to_Jyperpx(self, hdu) -> None:
-        px_x: float = self.band.pixelSize * 2 * np.pi / 360
-        px_y: float = self.band.pixelSize * 2 * np.pi / 360
+        pixel_size = read.pixel_size_arcsec(hdu.header)
+        px_x: float = pixel_size * 2 * np.pi / 360
+        px_y: float = pixel_size * 2 * np.pi / 360
 
         conversion_factor = (px_x * px_y * 3.846e26) / (
             1e-26 * pow((self.data.geometry.distance * 3.086e22), 2) * 4 * np.pi

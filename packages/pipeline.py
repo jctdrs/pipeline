@@ -342,7 +342,6 @@ class MonteCarloPipeline(PipelineGeneric):
                         + np.array(original_err_hdu.data)
                         * np.random.normal(size=original_err_hdu.data.shape),
                     )
-
                     self.err_hdu = copy.copy(original_err_hdu)
 
                 self.data_hdu, self.err_hdu = Interface[task.step](
