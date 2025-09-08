@@ -113,7 +113,7 @@ class TestBands:
         assert "Input should be greater than or equal to 0" in str(e.value)
 
     def test_invalid_creation_files_not_found(self):
-        with pytest.raises(OSError) as e:
+        with pytest.raises(ValueError) as e:
             bands.Band(
                 input="test/data/inputs/NGC4254_PACS2.fits",
                 output="test/data/outputs/",
@@ -121,7 +121,7 @@ class TestBands:
             )
         assert "Path test/data/inputs/NGC4254_PACS2.fits not found." in str(e.value)
 
-        with pytest.raises(OSError) as e:
+        with pytest.raises(ValueError) as e:
             bands.Band(
                 input="test/data/inputs/NGC4254_PACS1.fits",
                 error="test/data/inputs/NGC4254_PACS2.fits",
@@ -130,7 +130,7 @@ class TestBands:
             )
         assert "Path test/data/inputs/NGC4254_PACS2.fits not found." in str(e.value)
 
-        with pytest.raises(OSError) as e:
+        with pytest.raises(ValueError) as e:
             bands.Band(
                 input="test/data/inputs/NGC4254_PACS1.fits",
                 error="test/data/inputs/NGC4254_PACS1_Error.fits",
@@ -162,7 +162,7 @@ class TestBands:
             input="test/data/inputs/NGC4254_PACS1.fits",
             output="test/data/outputs/",
             name="radio1",
-            resolution="9"
+            resolution="9",
         )
         assert bds.resolution == 9
         assert bds.pixelSize == 2.0000016
