@@ -80,8 +80,9 @@ class SkySubtract:
         lcell_px = np.ceil(
             self.task.parameters.cellFactor * self.band.resolution / pixel_size
         )
-        ncells1 = int(np.ceil(xsize / lcell_px))
-        ncells2 = int(np.ceil(ysize / lcell_px))
+        ncells1 = int(lcell_px)
+        ncells2 = int(lcell_px)
+
         wcs = WCS(self.data_hdu.header)
         position_px = wcs.all_world2pix(
             self.data.geometry.ra, self.data.geometry.dec, 0

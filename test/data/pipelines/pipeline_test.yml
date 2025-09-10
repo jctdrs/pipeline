@@ -13,18 +13,18 @@ data:
         name: PACS1
 
 pipeline:     
+    - step: hip.skySubtract
+      diagnosis: False
+      parameters:
+        - band: PACS1
+          cellFactor: 10
+
     - step: hip.cutout
       diagnosis: False
       parameters:
         - band: PACS1
           raTrim: 10
           decTrim: 10
-    
-    - step: hip.skySubtract
-      diagnosis: False
-      parameters:
-        - band: PACS1
-          cellFactor: 2
 
     - step: hip.degrade
       diagnosis: False
@@ -37,13 +37,6 @@ pipeline:
       parameters:
         - band: all
           target: test/data/inputs/NGC4254_SPIRE3.fits
-
-    - step: hip.cutout
-      diagnosis: False
-      parameters:
-        - band: PACS1
-          raTrim: 10
-          decTrim: 10
 
     - step: hip.integrate
       diagnosis: True
