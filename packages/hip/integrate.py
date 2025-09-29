@@ -146,8 +146,10 @@ class IntegrateAnalytic(Integrate):
         rma = self.data.geometry.semiMajorAxis
         rmi = rma / self.data.geometry.axialRatio
         self.position_px = wcs.all_world2pix(ra_, dec_, 0)
-        self.rma_px = rma / self.band.pixelSize
-        self.rmi_px = rmi / self.band.pixelSize
+        pixel_size = read.pixel_size_arcsec(self.data_hdu.header)
+
+        self.rma_px = rma / pixel_size
+        self.rmi_px = rmi / pixel_size
 
         self.aperture = EllipticalAperture(
             self.position_px,
