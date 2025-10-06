@@ -1,23 +1,2 @@
-HIP: Homogenization of IMEGIN Photometry 
-========================================
-HIP is a multi-wavelength homogenization framework, with support for
-error propagation. 
+!! This repository is archived. Active development continues at (https://gitlab.com/imegin/hip.git)
 
-
-Install
--------
-HIP is compatible with Linux and MacOS systems. For Windows users, we
-recommend using WSL2. HIP is compatible with Python >= 3.8. To install
-a local version, clone this repository, create a pyenv virtual
-environment, install the required dependencies, create your pipeline, 
-and run:
-
-> git clone https://gitlab.com/jctdrs/pipeline.git
-> python -m venv venv
-> pip install -r requirements.txt
-> python main.py --file config.yml
-
-Documentation
--------------
-Find the HIP documentation and guides to build pipelines here:
-https://jctdrs.github.io/software/hip.html 
